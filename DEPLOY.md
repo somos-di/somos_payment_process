@@ -44,10 +44,10 @@ cp app/backend/.env.example app/backend/.env
 nano app/backend/.env
 ```
 
-Pra rodar atrás do domínio **`payment.ngrok.dev`** (HTTPS), garanta:
+Pra rodar atrás do domínio **`pagamentos.ngrok.dev`** (HTTPS), garanta:
 
 ```
-CORS_ORIGIN=https://payment.ngrok.dev
+CORS_ORIGIN=https://pagamentos.ngrok.dev
 COOKIE_SECURE=true
 ```
 
@@ -83,10 +83,10 @@ Depois disso, **todo push na `main`** dispara o `cd.yml` automaticamente:
 
 ---
 
-## Domínio + HTTPS (ngrok → `payment.ngrok.dev`)
+## Domínio + HTTPS (ngrok → `pagamentos.ngrok.dev`)
 
 O `docker-compose.yaml` publica o frontend em **`127.0.0.1:8080`** (só loopback). Quem
-expõe pra internet com TLS é o **ngrok**, com o domínio reservado `payment.ngrok.dev`
+expõe pra internet com TLS é o **ngrok**, com o domínio reservado `pagamentos.ngrok.dev`
 apontando pro `localhost:8080` do droplet.
 
 ```bash
@@ -101,10 +101,10 @@ curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
 ngrok config add-authtoken SEU_AUTHTOKEN
 
 # testar o túnel no domínio reservado
-ngrok http 8080 --url=https://payment.ngrok.dev
+ngrok http 8080 --url=https://pagamentos.ngrok.dev
 ```
 
-Confirmado que abre em `https://payment.ngrok.dev`, rode como **serviço** (sobe no boot):
+Confirmado que abre em `https://pagamentos.ngrok.dev`, rode como **serviço** (sobe no boot):
 
 ```bash
 # grava o tunnel no config do ngrok
@@ -114,7 +114,7 @@ tunnels:
   payment:
     proto: http
     addr: 8080
-    domain: payment.ngrok.dev
+    domain: pagamentos.ngrok.dev
 YML
 
 sudo ngrok service install --config /root/.config/ngrok/ngrok.yml
