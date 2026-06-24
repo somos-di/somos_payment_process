@@ -41,8 +41,17 @@ O `docker-compose.yaml` lê `app/backend/.env`. Ele é **gitignored** — crie d
 ```bash
 cd /var/www/somos_payment_process
 cp app/backend/.env.example app/backend/.env
-nano app/backend/.env   # preencher SUPABASE_URL, chaves, COOKIE_*, etc.
+nano app/backend/.env
 ```
+
+Pra rodar atrás do domínio **`payment.ngrok.dev`** (HTTPS), garanta:
+
+```
+CORS_ORIGIN=https://payment.ngrok.dev
+COOKIE_SECURE=true
+```
+
+(mais SUPABASE_URL, chaves, UAU, etc.)
 
 ---
 
@@ -74,12 +83,47 @@ Depois disso, **todo push na `main`** dispara o `cd.yml` automaticamente:
 
 ---
 
-## Portas / reverse proxy
+## Domínio + HTTPS (ngrok → `payment.ngrok.dev`)
 
-O `docker-compose.yaml` expõe o **frontend em `8080:80`** (nginx, que faz proxy de `/api` → backend). Opções no droplet:
+O `docker-compose.yaml` publica o frontend em **`127.0.0.1:8080`** (só loopback). Quem
+expõe pra internet com TLS é o **ngrok**, com o domínio reservado `payment.ngrok.dev`
+apontando pro `localhost:8080` do droplet.
 
-- **Simples:** abrir a porta 8080 no firewall e acessar `http://IP:8080`.
-- **Recomendado (produção):** um nginx/Caddy no host fazendo proxy de `:80/:443` → `127.0.0.1:8080`, com TLS. Nesse caso, troque a porta publicada para `127.0.0.1:8080:80` no compose.
+```bash
+# instalar ngrok (Ubuntu/Debian)
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+  && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+  | sudo tee /etc/apt/sources.list.d/ngrok.list \
+  && sudo apt update && sudo apt install ngrok
+
+# autenticar (token do dashboard ngrok: https://dashboard.ngrok.com)
+ngrok config add-authtoken SEU_AUTHTOKEN
+
+# testar o túnel no domínio reservado
+ngrok http 8080 --url=https://payment.ngrok.dev
+```
+
+Confirmado que abre em `https://payment.ngrok.dev`, rode como **serviço** (sobe no boot):
+
+```bash
+# grava o tunnel no config do ngrok
+mkdir -p ~/.config/ngrok
+cat >> ~/.config/ngrok/ngrok.yml <<'YML'
+tunnels:
+  payment:
+    proto: http
+    addr: 8080
+    domain: payment.ngrok.dev
+YML
+
+sudo ngrok service install --config /root/.config/ngrok/ngrok.yml
+sudo ngrok service start
+# status / logs:  systemctl status ngrok
+```
+
+> O firewall do droplet **não** precisa de portas abertas pro app — o ngrok faz a
+> conexão de saída. Mantenha só a 22 (SSH) aberta.
 
 ## Notas
 
