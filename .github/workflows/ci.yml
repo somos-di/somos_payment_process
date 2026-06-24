@@ -1,10 +1,13 @@
 name: CI
 
+# Validação: roda em PR pra main e em pushes de qualquer branch que NÃO seja a main
+# (na main quem age é o Deploy/cd.yml, que reconstrói no droplet).
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches-ignore:
+      - main
 
 jobs:
   backend:
@@ -24,12 +27,25 @@ jobs:
       - run: npx tsc --noEmit
 
   docker:
-    name: Build images
+    name: Build images (validação)
     runs-on: ubuntu-latest
     needs: backend
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - name: Build backend image
-        run: docker build -t pp-backend ./app/backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/backend
+          push: false
+          tags: somos-pp-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
       - name: Build frontend image
-        run: docker build -t pp-frontend ./app/frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          push: false
+          tags: somos-pp-frontend:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend

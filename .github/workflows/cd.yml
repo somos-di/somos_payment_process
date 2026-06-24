@@ -1,0 +1,28 @@
+name: Deploy
+
+# Deploy contínuo: todo push na main reconstrói no droplet.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            set -e
+            cd /var/www/somos_payment_process
+            # fetch + reset (em vez de pull): idempotente e resistente a force-push
+            # — se a main remota reescreveu o histórico, o droplet aceita sem conflito.
+            git fetch --prune origin main
+            git reset --hard origin/main
+            # sobe backend + frontend (lê app/backend/.env, que vive só no droplet)
+            docker compose up -d --build
+            docker image prune -f
