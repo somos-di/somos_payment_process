@@ -1,0 +1,126 @@
+<main>
+  <style>
+    .lote-steps {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .dropzone-lote {
+      display: block;
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface-2);
+    }
+
+    .dropzone-lote:hover {
+      border-color: var(--accent);
+    }
+
+    .lote-scroll {
+      max-height: 340px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .lote-scroll table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-2);
+      z-index: 1;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress>span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width .2s;
+    }
+
+    .lote-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  </style>
+
+  <div class="section-title">Solicitar em Massa</div>
+  <div class="section-sub" style="margin-bottom:16px">Baixe o modelo, preencha e importe uma planilha <b>.xlsx</b> (ou
+    .csv) para criar vários processos de uma vez.</div>
+
+  <div class="card">
+    <div class="lote-actions" style="margin-bottom:14px">
+      <button class="btn btn-light" id="lm-modelo">Baixar modelo (.xlsx)</button>
+      <span class="section-sub" style="margin:0">Mesmas colunas do import_base.xlsx · datas dd/mm/aaaa ou aaaa-mm-dd ·
+        valor 1.000,00</span>
+    </div>
+
+    <!-- upload -->
+    <div id="lm-upload">
+      <label class="dropzone-lote" for="lm-file">
+        <div><b>Clique para enviar</b> ou arraste a planilha .xlsx</div>
+        <div class="section-sub" style="margin-top:6px">Use "Baixar modelo" para obter o cabeçalho correto.</div>
+      </label>
+      <input id="lm-file" type="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+
+    <div class="alert-box" id="lm-erro" hidden
+      style="border:1px solid var(--danger);background:var(--danger-weak);color:#9f1239;border-radius:10px;padding:12px 14px;margin-top:12px">
+      <span id="lm-erro-msg"></span>
+    </div>
+
+    <!-- preview -->
+    <div id="lm-preview" hidden style="margin-top:14px">
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px">
+        <b id="lm-preview-title"></b>
+        <div class="lote-actions">
+          <button class="btn btn-light" id="lm-limpar">Limpar</button>
+          <button class="btn btn-primary" id="lm-processar">Processar</button>
+        </div>
+      </div>
+      <div class="lote-scroll">
+        <table>
+          <thead id="lm-head"></thead>
+          <tbody id="lm-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- progresso + resultados -->
+    <div id="lm-progresso" hidden style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between"><b id="lm-prog-label">Processando…</b><span
+          class="section-sub" id="lm-prog-cont" style="margin:0"></span></div>
+      <div class="progress"><span id="lm-prog-fill"></span></div>
+      <div class="lote-scroll" style="margin-top:8px">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Descrição</th>
+              <th>Status</th>
+              <th>Parcelas</th>
+              <th>Detalhe</th>
+            </tr>
+          </thead>
+          <tbody id="lm-result"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Processo de Pagamento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/shared/base.css?v=5">
+    <link rel="stylesheet" href="css/shared/layout.css?v=5">
+    <link rel="stylesheet" href="css/shared/responsive.css?v=5">
+    <link rel="stylesheet" href="css/shared/theme.css?v=5">
+    <link rel="stylesheet" href="css/shared/shell.css?v=5">
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar">
+        <button class="collapse-btn" id="collapse-btn" type="button" title="Recolher menu" aria-label="Recolher menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+
+        <a class="brand" href="#/dashboard">
+            <span class="brand-mark"></span>
+            <span class="brand-text">
+                <span class="brand-name">Processo de Pagamento</span>
+                <span class="brand-sub">Gestão Financeira</span>
+            </span>
+        </a>
+
+        <div class="divider"></div>
+
+        <nav class="nav sidebar-scroll" id="nav">
+            <a class="home-link" href="#/dashboard" data-route="dashboard" data-tip="Dashboard">
+                <span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
+                <span class="label">Dashboard</span>
+                <span class="group-tooltip">Dashboard</span>
+            </a>
+
+            <div class="nav-label"><span class="label">Menu</span></div>
+
+            <div class="menu-group" data-group="solicitar">
+                <button class="accordion-header" type="button" data-group-name="Solicitar">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15h6"/></svg></span>
+                    <span class="label group-name">Solicitar</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Solicitar</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/solicitar" data-route="solicitar"><span class="mi-dot"></span><span class="label">Novo Processo</span></a>
+                            <a class="menu-item" href="#/solicitar-massa" data-route="solicitar-massa"><span class="mi-dot"></span><span class="label">Solicitar em Massa</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="correcao">
+                <button class="accordion-header" type="button" data-group-name="Correção">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span>
+                    <span class="label group-name">Correção</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Correção</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/correcao" data-route="correcao"><span class="mi-dot"></span><span class="label">Correções</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="consulta">
+                <button class="accordion-header" type="button" data-group-name="Consulta">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+                    <span class="label group-name">Consulta</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Consulta</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items" id="consulta-tabs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="aprovar">
+                <button class="accordion-header" type="button" data-group-name="Aprovar">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                    <span class="label group-name">Aprovar</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Aprovar</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/aprovacoes" data-route="aprovacoes"><span class="mi-dot"></span><span class="label">Aprovações Pendentes</span></a>
+                            <a class="menu-item" href="#/minhas-aprovacoes" data-route="minhas-aprovacoes"><span class="mi-dot"></span><span class="label">Minhas Aprovações</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="departamento">
+                <button class="accordion-header" type="button" data-group-name="Departamento">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+                    <span class="label group-name">Departamento</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Departamento</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/financeiro" data-route="financeiro"><span class="mi-dot"></span><span class="label">Financeiro</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="integracao">
+                <button class="accordion-header" type="button" data-group-name="Integração">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M20 4v5h-5M4 20v-5h5"/></svg></span>
+                    <span class="label group-name">Integração</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Integração</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/sync" data-route="sync"><span class="mi-dot"></span><span class="label">Sincronização UAU</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-group" data-group="admin">
+                <button class="accordion-header" type="button" data-group-name="Administração">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    <span class="label group-name">Administração</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    <span class="group-tooltip">Administração</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/admin-grupos" data-route="admin-grupos"><span class="mi-dot"></span><span class="label">Grupos &amp; Usuários</span></a>
+                            <a class="menu-item" href="#/sem-aprovador" data-route="sem-aprovador"><span class="mi-dot"></span><span class="label">Processos sem Aprovador</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="user-area" id="user-profile-container">
+            <div class="divider"></div>
+            <div class="user-popup" id="user-menu-popup">
+                <button class="user-popup-item" id="logout-btn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Sair</span>
+                </button>
+            </div>
+            <button class="user-trigger" id="user-profile-trigger" type="button">
+                <span class="avatar" id="user-avatar">·</span>
+                <span class="user-details">
+                    <b id="user-name">—</b>
+                    <span id="user-email"></span>
+                </span>
+                <svg class="user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main">
+        <div class="mobile-top">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </button>
+            <span class="brand-mark"></span>
+            <div class="mobile-name">Processo de Pagamento</div>
+        </div>
+
+        <header class="topbar">
+            <div class="crumb" id="crumb"><span>Início</span><span class="sep">/</span><b>Dashboard</b></div>
+        </header>
+
+        <main id="app-content"><div class="view-loading">Carregando…</div></main>
+    </div>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <script src="js/shared/config.js?v=5"></script>
+    <script src="js/shared/api.js?v=5"></script>
+    <script src="js/shared/backend-client.js?v=5"></script>
+    <script src="js/shared/store.js?v=5"></script>
+    <script src="js/shared/data.js?v=5"></script>
+    <script src="js/shared/auth.js?v=5"></script>
+    <script src="js/shared/sidebar-user.js?v=5"></script>
+    <script src="js/shared/consulta-tabs.js?v=5"></script>
+    <script src="js/shared/process-detail-modal.js?v=5"></script>
+    <script src="js/shared/process-approvers-modal.js?v=5"></script>
+    <script src="js/shared/process-installments-modal.js?v=5"></script>
+    <script src="js/shared/process-list.js?v=5"></script>
+    <script src="js/shared/shell.js?v=5"></script>
+    <script src="js/shared/router.js?v=5"></script>
+</body>
+
+</html>

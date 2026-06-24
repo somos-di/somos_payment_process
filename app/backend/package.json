@@ -1,0 +1,25 @@
+{
+  "name": "payment-process-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend Fastify do Processo de Pagamento (Supabase).",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env main.ts",
+    "start": "tsx --env-file=.env main.ts",
+    "build": "esbuild main.ts --bundle --platform=node --format=esm --outfile=dist/main.mjs --packages=external"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^10.0.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "axios": "^1.7.7",
+    "fastify": "^5.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

@@ -1,0 +1,22 @@
+# Processo de Pagamento — backend (Fastify) + frontend (nginx, proxy /api).
+# Suba com:  docker compose up --build
+# Requer app/backend/.env (copie de app/backend/.env.example).
+services:
+  backend:
+    build: ./app/backend
+    env_file:
+      - ./app/backend/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4000"
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./app/frontend
+    ports:
+      - "8080:80"   # acesse http://localhost:8080
+    depends_on:
+      - backend
+    restart: unless-stopped

@@ -1,0 +1,30 @@
+<main>
+  <div class="card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Sincronização UAU</div>
+        <div class="section-sub">Puxa os dados do UAU (empresas, obras, pessoas, composições, insumos) para o Supabase.
+        </div>
+      </div>
+      <button class="btn btn-primary" id="sync-all">Sincronizar tudo</button>
+    </div>
+
+    <table style="margin-top:16px">
+      <thead>
+        <tr>
+          <th>Entidade</th>
+          <th>Tabela</th>
+          <th>Consulta UAU</th>
+          <th>Status</th>
+          <th style="text-align:right">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="sync-rows">
+        <tr>
+          <td colspan="5" class="empty">Carregando catálogo…</td>
+        </tr>
+      </tbody>
+    </table>
+    <div id="sync-msg" class="section-sub" style="margin-top:12px"></div>
+  </div>
+</main>

@@ -1,0 +1,81 @@
+import { AppError, NotFoundError } from '../errors.js';
+import { adminClient, userClient } from '../gateways/supabase.js';
+import { getSettings } from '../settings.js';
+
+// Recursos (tabelas/views) que o front pode LER. RLS ainda restringe as linhas.
+const READ_RESOURCES = new Set<string>([
+  'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
+  'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'companies',
+  'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
+  'v_process_history', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
+]);
+
+// RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
+const READ_RPCS = new Set<string>([
+  'my_pending_approvals', 'completed_approvals', 'eligible_approvers',
+  'next_levels', 'process_levels', 'current_level',
+]);
+
+type Op = [string, ...unknown[]];
+
+export class DataService {
+  private run<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
+    return Promise.resolve(p).then(({ data, error }) => {
+      if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
+      return data;
+    });
+  }
+
+  // SELECT genérico: aplica as operações registradas no front (eq/ilike/or/order/limit...).
+  // withCount=true  -> devolve { data, count } (total exato no mesmo request).
+  // head=true       -> só o total, SEM trafegar linhas (padrão META: conta 1x e as
+  //                    páginas seguintes vêm sem recontar). Devolve { data: [], count }.
+  async query(token: string, resource: string, ops: Op[], withCount = false, head = false): Promise<any> {
+    if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
+    const selectOpts = (withCount || head) ? { count: 'exact' as const, head } : undefined;
+    let q: any = userClient(token).from(resource).select('*', selectOpts);
+    for (const op of ops || []) {
+      const [fn, ...args] = op;
+      switch (fn) {
+        case 'eq': case 'neq': case 'gt': case 'gte': case 'lt': case 'lte':
+        case 'like': case 'ilike': case 'is':
+          q = q[fn](args[0], args[1]); break;
+        case 'in':
+          q = q.in(args[0], args[1] as unknown[]); break;
+        case 'or':
+          q = q.or(args[0] as string); break;
+        case 'order':
+          q = q.order(args[0] as string, (args[1] as object) || {}); break;
+        case 'limit':
+          q = q.limit(args[0] as number); break;
+        case 'range':
+          q = q.range(args[0] as number, args[1] as number); break;
+        default:
+          throw new AppError(`Operação não suportada: ${fn}`, 400, 'data');
+      }
+    }
+    if (withCount || head) {
+      const { data, error, count } = await q;
+      if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
+      return { data: data ?? [], count };
+    }
+    return this.run(q);
+  }
+
+  async rpc(token: string, fn: string, args: Record<string, unknown>) {
+    if (!READ_RPCS.has(fn)) throw new NotFoundError(`RPC não permitida: ${fn}`);
+    return this.run(userClient(token).rpc(fn, args || {}));
+  }
+
+  // upload de anexo (boleto/NF) -> bucket no Storage; devolve URL pública.
+  async uploadAttachment(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+    const s = getSettings();
+    const buf = Buffer.from(base64, 'base64');
+    const name = `${Date.now()}_${filename.replace(/[^\w.\-]/g, '_')}`;
+    const up = await adminClient().storage.from(s.attachmentsBucket)
+      .upload(name, buf, { contentType: contentType || 'application/octet-stream', upsert: true });
+    if (up.error) throw new AppError(up.error.message, 400, 'storage');
+    const pub = adminClient().storage.from(s.attachmentsBucket).getPublicUrl(name);
+    return { url: pub.data.publicUrl };
+  }
+}

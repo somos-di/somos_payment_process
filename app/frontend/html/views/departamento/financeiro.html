@@ -1,0 +1,48 @@
+<main>
+  <style>
+    .fin-alert-pop {
+      position: fixed;
+      z-index: 9998;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--danger);
+      border-left: 3px solid var(--danger);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #9f1239;
+    }
+
+    .fin-alert-pop ul {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .fin-alert-pop li {
+      margin: 4px 0;
+    }
+
+    .fin-acts {
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .fin-acts .btn {
+      margin-left: 6px;
+    }
+  </style>
+  <div class="section-title">Financeiro</div>
+  <div class="section-sub" style="margin-bottom:16px">Processos aprovados, em análise financeira. Visualize, ajuste
+    parcelas, devolva para correção ou envie ao UAU.</div>
+
+  <div class="card" style="padding:0">
+    <div class="filters-row" style="padding:16px 18px;border-bottom:1px solid var(--border)">
+      <input id="fin-search" placeholder="Buscar por empresa, obra, fornecedor, nota…">
+      <button class="btn btn-excel" id="fin-xlsx">Exportar Excel</button>
+    </div>
+    <div id="fin-body" style="padding:6px 0">
+      <div class="empty">Carregando…</div>
+    </div>
+  </div>
+</main>

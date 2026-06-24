@@ -1,0 +1,188 @@
+<main>
+  <style>
+    .ep-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .ep-form {
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .ep-sec {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      margin: 16px 0 8px;
+    }
+
+    .ep-sec:first-child {
+      margin-top: 0;
+    }
+
+    .ep-search-wrap {
+      position: relative;
+    }
+
+    .ep-results {
+      position: absolute;
+      z-index: 30;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      max-height: 240px;
+      overflow: auto;
+      display: none;
+    }
+
+    .ep-results.show {
+      display: block;
+    }
+
+    .ep-results .it {
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .ep-results .it:hover {
+      background: var(--surface-2);
+    }
+
+    .ep-results .it small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ep-dz-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .ep-dz-file a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .ep-dz-file button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .ep-status {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .ep-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 920px) {
+      .ep-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ep-form {
+        max-height: none;
+      }
+    }
+  </style>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <a href="#/correcao" class="btn btn-light">← Voltar</a>
+    <div>
+      <div class="section-title" id="ep-title">Editar Processo</div>
+      <div class="section-sub" style="margin:2px 0 0">Altere os dados do processo. As alterações são salvas
+        automaticamente.</div>
+    </div>
+  </div>
+
+  <div id="ep-loading" class="empty">Carregando…</div>
+
+  <div class="ep-grid" id="ep-grid" hidden>
+    <!-- coluna esquerda: form -->
+    <div class="card">
+      <div class="ep-form">
+        <div class="ep-sec">Dados Gerais</div>
+        <div class="field"><label>Empresa</label><select id="ep-empresa"></select></div>
+        <div class="field"><label>Obra</label><select id="ep-obra"></select></div>
+        <div class="field ep-search-wrap"><label>Fornecedor</label>
+          <input id="ep-pessoa-input" placeholder="Busque por nome ou CNPJ/CPF" autocomplete="off">
+          <input type="hidden" id="ep-pessoa">
+          <div class="ep-results" id="ep-pessoa-results"></div>
+        </div>
+        <div class="field"><label>Composição / Apropriação</label><select id="ep-apropriacao"></select></div>
+        <div class="field"><label>Tipo de Processo</label><select id="ep-tipo"></select></div>
+        <div class="field"><label>Urgente</label><select id="ep-urgente">
+            <option value="0">Não</option>
+            <option value="1">Sim</option>
+          </select></div>
+
+        <div class="ep-sec">Documento e Valores</div>
+        <div class="field"><label>Tipo de Documento</label><select id="ep-tipodoc"></select></div>
+        <div class="field"><label>Nº Documento</label><input id="ep-numdoc" inputmode="numeric"></div>
+        <div class="field"><label>Data de Emissão</label><input type="date" id="ep-emissao"></div>
+        <div class="field"><label>Data de Vencimento</label><input type="date" id="ep-venc">
+          <small id="ep-venc-erro" style="color:var(--danger);display:none">O vencimento deve ser pelo menos 10 dias a
+            partir de hoje.</small>
+        </div>
+        <div class="field"><label>Valor Total Bruto</label><input id="ep-valor" inputmode="decimal"
+            placeholder="R$ 0,00"></div>
+        <div class="field"><label>Histórico / Descrição</label><input id="ep-historico"></div>
+      </div>
+      <div class="ep-foot">
+        <span class="ep-status" id="ep-status">Salvo automaticamente</span>
+        <button class="btn btn-primary" id="ep-reenviar">Reenviar para aprovação</button>
+      </div>
+    </div>
+
+    <!-- coluna direita: anexos -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:15px">Boleto Bancário</div>
+        <div class="section-sub" style="margin:2px 0 12px">Anexe o boleto para pagamento.</div>
+        <label class="dropzone" for="ep-boleto">
+          <div><b>Clique para enviar</b> ou arraste o arquivo</div>
+        </label>
+        <input id="ep-boleto" type="file" hidden>
+        <div class="ep-dz-file" id="ep-boleto-file" hidden></div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="font-size:15px">Documento Fiscal</div>
+        <div class="section-sub" style="margin:2px 0 12px">Anexe a nota fiscal ou equivalente.</div>
+        <label class="dropzone" for="ep-nf">
+          <div><b>Clique para enviar</b> ou arraste o arquivo</div>
+        </label>
+        <input id="ep-nf" type="file" hidden>
+        <div class="ep-dz-file" id="ep-nf-file" hidden></div>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,105 @@
+<main>
+  <style>
+    .na-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .na-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .na-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .na-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .na-sub {
+      color: var(--muted);
+      font-size: 13.5px;
+      margin-top: 3px;
+    }
+
+    .na-diag {
+      border-left: 3px solid var(--danger);
+      background: var(--danger-weak);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      color: #9f1239;
+    }
+
+    .na-diag h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .na-diag pre {
+      margin: 0;
+      font-family: inherit;
+      white-space: pre-wrap;
+      font-size: 13px;
+      color: #7f1d3a;
+      line-height: 1.7;
+    }
+
+    .na-note {
+      color: var(--muted);
+      font-size: 12.5px;
+      margin-top: 10px;
+    }
+
+    .na-grp {
+      padding: 8px 0;
+      border-top: 1px dashed var(--border);
+    }
+
+    .na-grp:first-child {
+      border-top: 0;
+    }
+
+    .na-miss {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid var(--danger);
+      color: #9f1239;
+      border-radius: 999px;
+      padding: 1px 9px;
+      font-size: 12px;
+      margin: 2px 4px 2px 0;
+    }
+
+    .na-ok {
+      color: #15803d;
+    }
+  </style>
+
+  <div class="na-head">
+    <div>
+      <div class="section-title">Processos sem aprovador</div>
+      <div class="section-sub">Para cada processo, mostramos só o que falta para ele ter um aprovador.</div>
+    </div>
+    <span class="badge warn" id="na-count" style="font-size:13px">…</span>
+  </div>
+  <div id="na-list">
+    <div class="empty">Carregando…</div>
+  </div>
+</main>

@@ -1,0 +1,189 @@
+<main>
+  <style>
+    .sol-search-wrap {
+      position: relative;
+    }
+
+    .sol-results {
+      position: absolute;
+      z-index: 30;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      max-height: 260px;
+      overflow: auto;
+      display: none;
+    }
+
+    .sol-results.show {
+      display: block;
+    }
+
+    .sol-results .it {
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sol-results .it:hover {
+      background: var(--surface-2);
+    }
+
+    .sol-results .it small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .parc-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .parc-row .pl {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .alert-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border: 1px solid var(--danger);
+      background: var(--danger-weak);
+      color: #9f1239;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+  </style>
+
+  <div class="card" style="padding:0">
+    <div
+      style="padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Novo Processo de Pagamento</div>
+        <ol class="stepper" id="sol-stepper" style="margin-top:12px"></ol>
+      </div>
+    </div>
+
+    <div style="padding:20px">
+      <!-- Etapa 1 -->
+      <div class="sol-step" data-step="1">
+        <div class="form-grid cols-2">
+          <div class="field"><label>Empresa</label>
+            <select id="sol-empresa">
+              <option value="">Carregando…</option>
+            </select>
+          </div>
+          <div class="field"><label>Obra</label>
+            <select id="sol-obra" disabled>
+              <option value="">Selecione uma empresa</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Etapa 2 -->
+      <div class="sol-step" data-step="2" hidden>
+        <div class="form-grid">
+          <div class="field full sol-search-wrap">
+            <label>Pessoa (Fornecedor)</label>
+            <input id="sol-pessoa-input" placeholder="Busque por nome ou CNPJ/CPF" autocomplete="off">
+            <input type="hidden" id="sol-pessoa">
+            <div class="sol-results" id="sol-pessoa-results"></div>
+          </div>
+          <div class="field"><label>Apropriação</label>
+            <select id="sol-apropriacao" disabled>
+              <option value="">Selecione uma obra</option>
+            </select>
+          </div>
+          <div class="field"><label>Tipo de Processo</label>
+            <select id="sol-tipo">
+              <option value="">Carregando…</option>
+            </select>
+          </div>
+          <div class="field"><label>Urgente</label>
+            <select id="sol-urgente">
+              <option value="">Selecione</option>
+              <option value="1">Sim</option>
+              <option value="0">Não</option>
+            </select>
+          </div>
+          <div class="field"><label>Tipo de Documento</label>
+            <select id="sol-tipodoc">
+              <option value="">Selecione</option>
+              <option>Nota Fiscal</option>
+              <option>Boleto</option>
+              <option>Recibo</option>
+              <option>Produto</option>
+            </select>
+          </div>
+          <div class="field"><label>Número do Documento</label>
+            <input id="sol-numdoc" placeholder='"Apenas números" 12345…' inputmode="numeric">
+          </div>
+          <div class="field"><label>Data de Emissão</label><input type="date" id="sol-emissao"></div>
+          <div class="field"><label>Valor Total Bruto</label><input id="sol-valor" placeholder="R$ 0,00"
+              inputmode="decimal"></div>
+          <div class="field full"><label>Histórico / Descrição</label>
+            <input id="sol-historico" placeholder="Descrição do serviço ou produto">
+          </div>
+        </div>
+      </div>
+
+      <!-- Etapa 3 -->
+      <div class="sol-step" data-step="3" hidden>
+        <div class="form-grid"
+          style="grid-template-columns:1fr 1fr auto;align-items:end;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:18px">
+          <div class="field"><label>Quantidade de Parcelas</label><input type="number" id="sol-qtd" value="1" min="1">
+          </div>
+          <div class="field"><label>Data do 1º Vencimento</label><input type="date" id="sol-venc1"></div>
+          <button class="btn btn-primary" id="sol-gerar">Gerar Parcelas</button>
+        </div>
+        <div class="alert-box" id="sol-parc-erro" hidden><span id="sol-parc-erro-msg"></span></div>
+        <div id="sol-parcelas">
+          <p class="empty">Clique em "Gerar Parcelas" para visualizar os vencimentos.</p>
+        </div>
+      </div>
+
+      <!-- Etapa 4 -->
+      <div class="sol-step" data-step="4" hidden>
+        <div class="form-grid cols-2">
+          <div class="field"><label>Boleto</label>
+            <div class="section-sub" style="margin:0 0 8px">Anexe o boleto para pagamento.</div>
+            <label class="dropzone" for="sol-boleto">
+              <div><b>Clique para enviar</b> ou arraste</div>
+              <div id="sol-boleto-name" class="section-sub" style="margin-top:6px"></div>
+            </label>
+            <input id="sol-boleto" type="file" hidden>
+          </div>
+          <div class="field"><label>Documento Fiscal</label>
+            <div class="section-sub" style="margin:0 0 8px">Anexe a nota fiscal ou equivalente.</div>
+            <label class="dropzone" for="sol-nf">
+              <div><b>Clique para enviar</b> ou arraste</div>
+              <div id="sol-nf-name" class="section-sub" style="margin-top:6px"></div>
+            </label>
+            <input id="sol-nf" type="file" hidden>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      style="padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <button class="btn btn-light" id="sol-back" disabled>Voltar</button>
+      <div>
+        <button class="btn btn-primary" id="sol-next">Avançar</button>
+        <button class="btn btn-primary" id="sol-save" hidden>Salvar Processo</button>
+      </div>
+    </div>
+  </div>
+</main>

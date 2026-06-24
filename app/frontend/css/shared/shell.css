@@ -1,0 +1,636 @@
+/* ============================================================================
+ * Shell — sidebar "sanfona" colapsável (modelo home.html).
+ * Usa o DESIGN SYSTEM CLARO do app (variáveis de theme.css): superfícies
+ * brancas, fundo cinza-claro, accent azul (#2563eb). Carrega por último.
+ *
+ * Recursos: recolher/expandir, grupos em acordeão (exclusivos), flyout quando
+ * recolhido, tooltips no hover recolhido, popup de usuário no rodapé.
+ * ========================================================================== */
+
+:root {
+    --sidebar-expanded: 272px;
+    --sidebar-collapsed: 76px;
+    --t-fast: 150ms;
+    --t-base: 250ms;
+}
+
+/* ── Sidebar shell ─────────────────────────────────────────── */
+.sidebar {
+    width: var(--sidebar-expanded);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: width var(--t-base) cubic-bezier(.4, 0, .2, 1);
+    z-index: 20;
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-collapsed);
+}
+
+/* Texto que some ao recolher */
+.sidebar .label,
+.sidebar .brand-text,
+.sidebar .user-details,
+.sidebar .user-chevron {
+    transition: opacity var(--t-fast) ease;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .label,
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .user-chevron,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .chevron-icon {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+/* ── Botão recolher ────────────────────────────────────────── */
+.collapse-btn {
+    position: absolute;
+    top: 22px;
+    right: -13px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 30;
+    color: var(--muted);
+    box-shadow: var(--shadow);
+    transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.collapse-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    box-shadow: var(--shadow-md);
+}
+
+.collapse-btn svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--t-base) cubic-bezier(.4, 0, .2, 1);
+}
+
+.sidebar.collapsed .collapse-btn svg {
+    transform: rotate(180deg);
+}
+
+/* ── Brand ─────────────────────────────────────────────────── */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 18px 18px 14px;
+    text-decoration: none;
+    color: var(--text);
+    overflow: hidden;
+}
+
+.sidebar.collapsed .brand {
+    justify-content: center;
+    padding: 18px 0 14px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+}
+
+.brand-name {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.brand-sub {
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 3px;
+}
+
+/* ── Divisor ───────────────────────────────────────────────── */
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 16px;
+    transition: margin var(--t-base) ease;
+}
+
+.sidebar.collapsed .divider {
+    margin: 0 12px;
+}
+
+/* ── Nav (scroll) ──────────────────────────────────────────── */
+.nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 12px 18px;
+}
+
+.sidebar.collapsed .nav {
+    padding: 12px 10px 18px;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+}
+
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.nav-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    padding: 14px 12px 6px;
+    font-weight: 700;
+    transition: opacity var(--t-fast);
+}
+
+/* ── Home link (Dashboard, item solto) ─────────────────────── */
+.home-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: background var(--t-fast), color var(--t-fast);
+    margin-bottom: 2px;
+}
+
+.home-link .mi-icon {
+    width: 22px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--muted);
+}
+
+.home-link .mi-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.home-link .label {
+    font-size: 13.5px;
+    font-weight: 500;
+}
+
+.home-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.home-link.active {
+    background: var(--accent-weak);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--accent-bar);
+}
+
+.home-link.active .mi-icon {
+    color: var(--accent);
+}
+
+/* ── Grupo / cabeçalho de acordeão ─────────────────────────── */
+.menu-group {
+    position: relative;
+    margin-bottom: 1px;
+}
+
+.accordion-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: inherit;
+    transition: background var(--t-fast);
+}
+
+.accordion-header:hover {
+    background: var(--surface-2);
+}
+
+.sidebar.collapsed .accordion-header {
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.group-icon {
+    width: 22px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--muted);
+}
+
+.group-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.accordion-header .group-name {
+    flex: 1;
+    text-align: left;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-2);
+}
+
+.chevron-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: var(--muted-2);
+    transition: transform var(--t-base) cubic-bezier(.4, 0, .2, 1);
+}
+
+.menu-group.open .chevron-icon {
+    transform: rotate(180deg);
+}
+
+/* Grupo com filho ativo: realça o ícone */
+.menu-group.has-active-child .group-icon {
+    color: var(--accent);
+}
+
+.sidebar.collapsed .menu-group.has-active-child .accordion-header {
+    background: var(--accent-weak);
+}
+
+/* ── Conteúdo do acordeão (grid 0fr -> 1fr) ────────────────── */
+.accordion-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--t-base) cubic-bezier(.4, 0, .2, 1);
+}
+
+.menu-group.open .accordion-content {
+    grid-template-rows: 1fr;
+}
+
+.sidebar.collapsed .accordion-content {
+    grid-template-rows: 0fr !important;
+}
+
+.accordion-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.menu-items {
+    padding: 2px 0 4px 33px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* ── Item de menu ──────────────────────────────────────────── */
+.menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12.7px;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.menu-item .mi-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background var(--t-fast);
+}
+
+.menu-item .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.menu-item:hover {
+    background: var(--surface-2);
+    color: var(--text-2);
+}
+
+.menu-item.active {
+    background: var(--accent-weak);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.menu-item.active .mi-dot {
+    background: var(--accent);
+}
+
+/* ── Tooltip (hover quando recolhido) ──────────────────────── */
+.group-tooltip {
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%) scale(.92);
+    background: var(--text);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: all var(--t-fast) cubic-bezier(.4, 0, .2, 1);
+    z-index: 50;
+}
+
+.group-tooltip::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--text);
+}
+
+.sidebar:not(.collapsed) .group-tooltip {
+    display: none;
+}
+
+.sidebar.collapsed .accordion-header:hover .group-tooltip,
+.sidebar.collapsed .home-link:hover .group-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+.sidebar.collapsed .accordion-header.flyout-open .group-tooltip {
+    opacity: 0 !important;
+}
+
+/* ── Flyout (clique no grupo quando recolhido) ─────────────── */
+.flyout-menu {
+    position: fixed;
+    min-width: 210px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    z-index: 100;
+    opacity: 0;
+    transform: translateX(-4px) scale(.97);
+    pointer-events: none;
+    transition: all var(--t-fast) cubic-bezier(.4, 0, .2, 1);
+}
+
+.flyout-menu.visible {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+}
+
+.flyout-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted-2);
+    padding: 6px 10px 5px;
+}
+
+.flyout-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.flyout-item::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+.flyout-item:hover {
+    background: var(--surface-2);
+    color: var(--text-2);
+}
+
+.flyout-item.active {
+    background: var(--accent-weak);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.flyout-item.active::before {
+    background: var(--accent);
+}
+
+/* ── Rodapé: perfil de usuário + popup ─────────────────────── */
+.user-area {
+    position: relative;
+    margin-top: auto;
+}
+
+.user-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: background var(--t-fast);
+}
+
+.user-trigger:hover {
+    background: var(--surface-2);
+}
+
+.sidebar.collapsed .user-trigger {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--accent);
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-details b {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-details span {
+    font-size: 11px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.user-popup {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    z-index: 60;
+    opacity: 0;
+    transform: translateY(8px) scale(.97);
+    pointer-events: none;
+    transition: all var(--t-fast) cubic-bezier(.4, 0, .2, 1);
+}
+
+.user-popup.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.sidebar.collapsed .user-popup {
+    left: 8px;
+    right: auto;
+    min-width: 190px;
+}
+
+.user-popup-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 11px;
+    border-radius: 7px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    text-align: left;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.user-popup-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.user-popup-item:hover {
+    background: var(--danger-weak);
+    color: var(--danger);
+}
+
+/* ── Mobile: sidebar vira drawer; esconde botão recolher ───── */
+@media (max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 50;
+        width: var(--sidebar-expanded);
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.3, .8, .3, 1);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .sidebar.collapsed {
+        width: var(--sidebar-expanded);
+    }
+
+    .collapse-btn {
+        display: none;
+    }
+}

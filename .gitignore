@@ -1,0 +1,28 @@
+# dependências e build
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# segredos — NUNCA versionar (mantém só os .env.example)
+.env
+**/.env
+!**/.env.example
+
+# ignorados a pedido (mantidos fora do repo)
+app/database/
+database/
+directives/
+
+# temporários / logs / SO / editor / agente
+*.log
+.cache/
+scratchpad/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+
+# resíduo da migração antiga (node_modules travado pelo dev server; apague manualmente)
+payment_process/

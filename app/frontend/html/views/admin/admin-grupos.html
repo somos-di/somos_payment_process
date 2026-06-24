@@ -1,0 +1,86 @@
+<main>
+  <style>
+    .ag-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .ag-grouplist {
+      max-height: 70vh;
+      overflow: auto;
+    }
+
+    .ag-grp {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .ag-grp:hover {
+      background: var(--surface-2);
+    }
+
+    .ag-grp.active {
+      background: var(--accent-weak);
+      color: var(--accent);
+    }
+
+    .ag-grp small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ag-grp.active small {
+      color: var(--accent);
+    }
+
+    .ag-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-2);
+    }
+
+    .ag-user input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .ag-user .em {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 820px) {
+      .ag-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div class="section-title">Grupos &amp; Usuários</div>
+  <div class="section-sub" style="margin-bottom:16px">Selecione um grupo e marque os usuários que pertencem a ele. As
+    permissões (empresa, obra, tipo, regras de valor) já vêm das regras migradas do Mitra.</div>
+
+  <div class="ag-grid">
+    <div class="card" style="padding:8px">
+      <input id="ag-search" placeholder="Filtrar grupos…" style="width:100%;margin:6px 0 8px">
+      <div class="ag-grouplist" id="ag-groups">
+        <div class="empty">Carregando…</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="ag-detail">
+        <div class="empty">Selecione um grupo à esquerda para gerenciar os usuários.</div>
+      </div>
+    </div>
+  </div>
+</main>

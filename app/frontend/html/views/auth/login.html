@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login — FLUXO</title>
+</head>
+
+<body>
+    <main class="login-page">
+        <div class="login-card">
+            <div class="login-brand">
+                <span class="brand-mark"></span>
+                <div>
+                    <div class="brand-name">FLUXO</div>
+                    <div class="brand-sub">Processo de Pagamento</div>
+                </div>
+            </div>
+            <h1>Entrar</h1>
+            <form id="login-form" class="login-form">
+                <div class="login-field">
+                    <label for="login-email">E-mail</label>
+                    <input id="login-email" type="email" name="email" required autocomplete="email">
+                </div>
+                <div class="login-field">
+                    <label for="login-password">Senha</label>
+                    <input id="login-password" type="password" name="password" required autocomplete="current-password">
+                </div>
+                <div id="login-error" class="login-error" aria-live="polite"></div>
+                <button type="submit" id="login-submit" class="login-btn">Entrar</button>
+            </form>
+        </div>
+    </main>
+</body>
+
+</html>
