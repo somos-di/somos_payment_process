@@ -16,7 +16,9 @@ services:
   frontend:
     build: ./app/frontend
     ports:
-      - "8080:80"   # acesse http://localhost:8080
+      # bind só no loopback: quem expõe pra internet é o reverse proxy do host
+      # (nginx/Caddy) com TLS. Local (Windows/Mac) o localhost:8080 segue funcionando.
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
     restart: unless-stopped
