@@ -36,6 +36,8 @@
   S.register('persons', function () { return SB.select('persons'); });
   S.register('process_kinds', function () { return SB.select('process_kinds', function (q) { return q.order('name_pkn'); }); });
   S.register('document_kinds', function () { return SB.select('document_kinds', function (q) { return q.order('name_dck'); }); });
+  // catálogo de status (id_skn = status_step_prc) — vira o mapa de labels em CONFIG.STEPS no boot.
+  S.register('status_kind', function () { return SB.select('status_kind', function (q) { return q.order('id_skn'); }); });
 
   // tabelas de ESCOLHA (cascatas) — cacheadas até ação destrutiva (ex.: sync UAU).
   S.register('empresas', function () { return SB.select('v_empresas', function (q) { return q.order('nome'); }); });

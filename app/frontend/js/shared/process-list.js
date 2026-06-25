@@ -66,11 +66,11 @@
         + '<div class="pl-toolbar">'
         + '<div class="pl-search">' + SVG_SEARCH + '<input id="pl-search" placeholder="Buscar…"></div>'
         + (dateFilter
-            ? '<div class="pl-dates">'
-              + '<label>De<input type="date" id="pl-date-from"></label>'
-              + '<label>Até<input type="date" id="pl-date-to"></label></div>'
-              + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
-            : '')
+          ? '<div class="pl-dates">'
+          + '<label>De<input type="date" id="pl-date-from"></label>'
+          + '<label>Até<input type="date" id="pl-date-to"></label></div>'
+          + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
+          : '')
         + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
         + (paged ? '<div class="pl-pager" id="pl-pager"></div>' : '')
@@ -266,7 +266,7 @@
       var safe = term.replace(/[,()*%]/g, ' ').trim();
       if (safe) {
         var ors = ['empresa_nome.ilike.%' + safe + '%', 'obra_nome.ilike.%' + safe + '%',
-          'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%'];
+        'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%'];
         if (/^\d+$/.test(safe)) ors.push('id_prc.eq.' + safe);
         s = s.or(ors.join(','));
       }

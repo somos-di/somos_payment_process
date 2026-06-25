@@ -6,7 +6,7 @@ import { getSettings } from '../settings.js';
 // Recursos (tabelas/views) que o front pode LER. RLS ainda restringe as linhas.
 const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
-  'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'companies',
+  'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
   'v_process_history', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
 ]);
@@ -17,7 +17,7 @@ const READ_RESOURCES = new Set<string>([
 // Invalidados em bloco no sync UAU (que reescreve as tabelas-espelho).
 const CACHEABLE_RESOURCES = new Set<string>([
   'v_empresas', 'v_obras', 'v_fornecedores', 'v_compositions', 'compositions',
-  'process_kinds', 'document_kinds', 'companies', 'cost_centers', 'persons',
+  'process_kinds', 'document_kinds', 'status_kind', 'companies', 'cost_centers', 'persons',
   'departments', 'uau_tables',
 ]);
 
@@ -36,7 +36,7 @@ const READ_RPCS = new Set<string>([
 type Op = [string, ...unknown[]];
 
 export class DataService {
-  constructor(private readonly cache?: CacheManager) {}
+  constructor(private readonly cache?: CacheManager) { }
 
   private run<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
     return Promise.resolve(p).then(({ data, error }) => {

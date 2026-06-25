@@ -11,6 +11,7 @@
             1: 'Pagamento Avulso', 2: 'Reembolso', 3: 'Processo PJ',
             4: 'Taxa de Gestão', 5: 'Distribuição de Lucros', 6: 'Comissão', 7: 'Adiantamento',
         },
+        // Fallback: no boot o router sobrescreve isto com payment.status_kind (fonte da verdade).
         STEPS: {
             0: 'Cancelado',
             1: 'Aguardando aprovação', 2: 'Pendente de Correção', 3: 'Cancelado',

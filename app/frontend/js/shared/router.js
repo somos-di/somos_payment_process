@@ -215,15 +215,31 @@ function warmState() {
     window.Store.warm('pending_approvals')
 }
 
+// Carrega o catálogo de status (payment.status_kind) e sobrescreve CONFIG.STEPS,
+// que vira derivado da tabela (e não mais hardcoded). O mapa de config.js fica só
+// como fallback se a leitura falhar. status_nome das views já vem do JOIN no banco.
+async function loadStatusKinds() {
+    if (!window.Store || !window.Auth || !window.Auth.isAuthenticated()) return
+    try {
+        const rows = await window.Store.get('status_kind')
+        if (Array.isArray(rows) && rows.length) {
+            const m = {}
+            rows.forEach(function (r) { m[r.id_skn] = r.descr_skn })
+            window.CONFIG.STEPS = m
+        }
+    } catch (e) { /* mantém o fallback hardcoded de config.js */ }
+}
+
 async function bootstrapAuth() {
     if (!window.Auth) return
     await window.Auth.init()
+    await loadStatusKinds() // status_kind -> CONFIG.STEPS (antes de renderizar qualquer view)
     warmState() // aquece logo após confirmar a sessão
     window.Auth.onChange(function (session) {
         if (!session && (window.location.hash || '').indexOf(LOGIN_ROUTE) === -1) {
             window.location.hash = window.CONFIG.HASH(LOGIN_ROUTE)
         }
-        if (session) warmState() // novo login: aquece de novo
+        if (session) { loadStatusKinds(); warmState() } // novo login: carrega status + aquece
     })
 }
 
