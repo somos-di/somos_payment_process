@@ -91,11 +91,11 @@ async function initView_admin_grupos() {
         + '<label class="ag-user-main"><input type="checkbox" data-u="' + esc(u.id_usr) + '" ' + checked + '>'
         + '<span><b>' + esc(u.name_usr || (u.email_usr || '').split('@')[0]) + '</b><br><span class="em">' + esc(u.email_usr) + '</span></span></label>'
         + '<div class="ag-uau">'
-        + '<span class="ag-uau-view"><span class="ag-uau-lbl">UAU:</span> <b class="ag-uau-val">' + esc(uau || '—') + '</b>'
-        + '<button type="button" class="ag-uau-pen btn-icon btn-light" title="Editar usuário UAU">' + SVG_PEN + '</button></span>'
+        + '<span class="ag-uau-view"><span class="ag-uau-lbl">UAU</span><b class="ag-uau-val' + (uau ? '' : ' empty') + '">' + esc(uau || 'definir') + '</b>'
+        + '<button type="button" class="ag-uau-pen" title="Editar usuário UAU">' + SVG_PEN + '</button></span>'
         + '<span class="ag-uau-form" hidden><input class="ag-uau-input" placeholder="usuário UAU" value="' + esc(uau) + '">'
         + '<button type="button" class="ag-uau-save btn btn-primary">Salvar</button>'
-        + '<button type="button" class="ag-uau-cancel btn btn-light">×</button></span>'
+        + '<button type="button" class="ag-uau-cancel" title="Cancelar">&times;</button></span>'
         + '</div></div>';
     }).join('') : '<div class="empty">Nenhum usuário encontrado.</div>';
     box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.addEventListener('change', onToggle); });
@@ -119,7 +119,8 @@ async function initView_admin_grupos() {
       try {
         await window.API.post('/admin/users/uau', { id_usr: uid, uau_user: val || null });
         if (user) user.uau_user_usr = val || null;
-        valEl.textContent = val || '—';
+        valEl.textContent = val || 'definir';
+        valEl.classList.toggle('empty', !val);
         show(false);
         toast('Usuário UAU salvo.', true);
       } catch (e) { toast('Erro: ' + e.message); }
