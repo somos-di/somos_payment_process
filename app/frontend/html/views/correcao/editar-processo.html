@@ -2,31 +2,30 @@
   <style>
     .ep-grid {
       display: grid;
-      grid-template-columns: 400px 1fr;
+      grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
       gap: 16px;
       align-items: start;
     }
 
+    /* form em 2 colunas, sem scroll interno (a página rola normalmente) */
     .ep-form {
-      max-height: calc(100vh - 220px);
-      overflow: auto;
-      padding-right: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 16px;
     }
 
     .ep-sec {
+      grid-column: 1 / -1;
       font-weight: 700;
       font-size: 13px;
       color: var(--text);
-      margin: 16px 0 8px;
+      margin: 6px 0 0;
     }
 
-    .ep-sec:first-child {
-      margin-top: 0;
-    }
+    .ep-sec:first-child { margin-top: 0; }
+    .ep-form .full { grid-column: 1 / -1; }
 
-    .ep-search-wrap {
-      position: relative;
-    }
+    .ep-search-wrap { position: relative; }
 
     .ep-results {
       position: absolute;
@@ -43,25 +42,10 @@
       display: none;
     }
 
-    .ep-results.show {
-      display: block;
-    }
-
-    .ep-results .it {
-      padding: 9px 12px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .ep-results .it:hover {
-      background: var(--surface-2);
-    }
-
-    .ep-results .it small {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-    }
+    .ep-results.show { display: block; }
+    .ep-results .it { padding: 9px 12px; cursor: pointer; font-size: 14px; }
+    .ep-results .it:hover { background: var(--surface-2); }
+    .ep-results .it small { display: block; color: var(--muted); font-size: 12px; }
 
     .ep-dz-file {
       display: flex;
@@ -75,47 +59,31 @@
       font-size: 14px;
     }
 
-    .ep-dz-file a {
-      color: var(--accent);
-      text-decoration: none;
-    }
+    .ep-dz-file a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .ep-dz-file button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 18px; }
 
-    .ep-dz-file button {
-      border: 0;
-      background: transparent;
-      cursor: pointer;
-      color: var(--muted);
-      font-size: 18px;
-    }
-
-    .ep-status {
-      font-size: 13px;
-      color: var(--muted);
-    }
+    .ep-status { font-size: 13px; color: var(--muted); }
 
     .ep-foot {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-top: 16px;
+      margin-top: 18px;
       padding-top: 14px;
       border-top: 1px solid var(--border);
       flex-wrap: wrap;
     }
 
-    @media (max-width: 920px) {
-      .ep-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .ep-form {
-        max-height: none;
-      }
+    @media (max-width: 980px) {
+      .ep-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .ep-form { grid-template-columns: 1fr; }
     }
   </style>
 
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
     <a href="#/correcao" class="btn btn-light">← Voltar</a>
     <div>
       <div class="section-title" id="ep-title">Editar Processo</div>
@@ -133,12 +101,12 @@
         <div class="ep-sec">Dados Gerais</div>
         <div class="field"><label>Empresa</label><select id="ep-empresa"></select></div>
         <div class="field"><label>Obra</label><select id="ep-obra"></select></div>
-        <div class="field ep-search-wrap"><label>Fornecedor</label>
+        <div class="field full ep-search-wrap"><label>Fornecedor</label>
           <input id="ep-pessoa-input" placeholder="Busque por nome ou CNPJ/CPF" autocomplete="off">
           <input type="hidden" id="ep-pessoa">
           <div class="ep-results" id="ep-pessoa-results"></div>
         </div>
-        <div class="field"><label>Composição / Apropriação</label><select id="ep-apropriacao"></select></div>
+        <div class="field full"><label>Composição / Apropriação</label><select id="ep-apropriacao"></select></div>
         <div class="field"><label>Tipo de Processo</label><select id="ep-tipo"></select></div>
         <div class="field"><label>Urgente</label><select id="ep-urgente">
             <option value="0">Não</option>
@@ -155,7 +123,7 @@
         </div>
         <div class="field"><label>Valor Total Bruto</label><input id="ep-valor" inputmode="decimal"
             placeholder="R$ 0,00"></div>
-        <div class="field"><label>Histórico / Descrição</label><input id="ep-historico"></div>
+        <div class="field full"><label>Histórico / Descrição</label><input id="ep-historico"></div>
       </div>
       <div class="ep-foot">
         <span class="ep-status" id="ep-status">Salvo automaticamente</span>

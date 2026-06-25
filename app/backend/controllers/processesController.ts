@@ -21,7 +21,7 @@ const CorrectSchema = z.object({
 const ACTIONS: Record<string, string> = {
   approve: 'approve_process', reject: 'reject_process', close: 'close_process',
   'financeiro-reject': 'financeiro_reject', 'send-uau': 'send_to_uau',
-  cancel: 'cancel_process', // autor cancela (status->0) — só em status 1 ou 2
+  // 'cancel' é tratado à parte (controller.action) com guard de autoria/status.
 };
 
 export class ProcessesController {
@@ -87,6 +87,11 @@ export class ProcessesController {
   }
   async action(req: FastifyRequest<{ Params: { uuid: string; action: string } }>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
+    // cancelar: guard de autoria + status no backend (não confia no front)
+    if (req.params.action === 'cancel') {
+      await this.service.cancel(req.accessToken!, req.user!.id, uuid);
+      return reply.send({ success: true });
+    }
     const fn = ACTIONS[req.params.action];
     if (!fn) throw new NotFoundError('Ação inválida');
     await this.service.action(req.accessToken!, fn, uuid);

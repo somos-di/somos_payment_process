@@ -128,6 +128,21 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
   action(token: string, fn: string, uuid: string) {
     return this.run(userClient(token).rpc(fn, { p_uuid: uuid }));
   }
+  // CANCELAR (autor): verificação de status/autoria no BACKEND, não só no front —
+  // alguém chamando o endpoint direto com outro uuid é barrado aqui (e de novo na
+  // função SQL cancel_process, que valida atomicamente author + status ∈ {1,2}).
+  async cancel(token: string, userId: string, uuid: string) {
+    const cur = await this.run(
+      userClient(token).from('processes').select('status_step_prc, author_prc').eq('uuid_prc', uuid).single(),
+    ) as { status_step_prc: number; author_prc: string | null };
+    if (cur.author_prc && cur.author_prc !== userId) {
+      throw new AppError('Você não é o autor deste lançamento', 403, 'auth');
+    }
+    if (![1, 2].includes(cur.status_step_prc)) {
+      throw new AppError('Só é possível cancelar em Aguardando aprovação ou Em correção', 400, 'state');
+    }
+    return this.run(userClient(token).rpc('cancel_process', { p_uuid: uuid }));
+  }
   // registra um evento no histórico (visualizar/etc.) — RPC carrega auth.uid().
   log(token: string, uuid: string, action: string) {
     return this.run(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: action }));
