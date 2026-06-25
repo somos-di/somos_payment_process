@@ -565,10 +565,19 @@ tbody tr:hover td {
 
 .modal-box.xl {
   width: 1180px;
+  height: 88vh;            /* altura FIXA: não muda ao alternar Detalhes/Histórico */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;        /* quem rola é a aba ativa, não o modal */
 }
 .modal-box.xl.no-doc {
-  width: 620px;   /* sem documento, só os campos */
+  width: 620px;            /* sem documento, só os campos */
+  height: 80vh;
 }
+/* dentro do modal de altura fixa, a aba ativa preenche e rola por dentro */
+.modal-box.xl .tabs { flex: 0 0 auto; }
+.modal-box.xl .pane { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.modal-box.xl .pd-doc-frame { min-height: 0; }
 
 /* ---- detalhe do processo: 2 painéis (campos | visualizador de PDF) ---- */
 /* display:flex sobrepõe o display:none do [hidden] — reforça pra aba esconder de fato */
