@@ -4,11 +4,26 @@ async function initView_admin_grupos() {
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   var SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  var SVG_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
       + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3500);
+  }
+  function confirmar(message) {
+    return new Promise(function (resolve) {
+      var o = document.createElement('div'); o.className = 'modal-overlay';
+      o.innerHTML = '<div class="modal-box" style="width:440px"><div class="modal-title">Confirmação</div>'
+        + '<div style="font-size:14px;color:var(--text-2);line-height:1.5">' + esc(message) + '</div>'
+        + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button>'
+        + '<button class="btn btn-primary" data-ok>Confirmar</button></div></div>';
+      function close(v) { o.remove(); resolve(v); }
+      o.addEventListener('click', function (e) { if (e.target === o) close(false); });
+      o.querySelector('[data-x]').addEventListener('click', function () { close(false); });
+      o.querySelector('[data-ok]').addEventListener('click', function () { close(true); });
+      document.body.appendChild(o); o.querySelector('[data-ok]').focus();
+    });
   }
 
   var groups = [], users = [], members = {}; // members[group_usg] = Set(user_usg)
@@ -71,10 +86,45 @@ async function initView_admin_grupos() {
     });
     box.innerHTML = list.length ? list.map(function (u) {
       var checked = set.has(u.id_usr) ? 'checked' : '';
-      return '<label class="ag-user"><input type="checkbox" data-u="' + esc(u.id_usr) + '" ' + checked + '>'
-        + '<span><b>' + esc(u.name_usr || (u.email_usr || '').split('@')[0]) + '</b><br><span class="em">' + esc(u.email_usr) + '</span></span></label>';
+      var uau = u.uau_user_usr || '';
+      return '<div class="ag-user" data-u="' + esc(u.id_usr) + '">'
+        + '<label class="ag-user-main"><input type="checkbox" data-u="' + esc(u.id_usr) + '" ' + checked + '>'
+        + '<span><b>' + esc(u.name_usr || (u.email_usr || '').split('@')[0]) + '</b><br><span class="em">' + esc(u.email_usr) + '</span></span></label>'
+        + '<div class="ag-uau">'
+        + '<span class="ag-uau-view"><span class="ag-uau-lbl">UAU:</span> <b class="ag-uau-val">' + esc(uau || '—') + '</b>'
+        + '<button type="button" class="ag-uau-pen btn-icon btn-light" title="Editar usuário UAU">' + SVG_PEN + '</button></span>'
+        + '<span class="ag-uau-form" hidden><input class="ag-uau-input" placeholder="usuário UAU" value="' + esc(uau) + '">'
+        + '<button type="button" class="ag-uau-save btn btn-primary">Salvar</button>'
+        + '<button type="button" class="ag-uau-cancel btn btn-light">×</button></span>'
+        + '</div></div>';
     }).join('') : '<div class="empty">Nenhum usuário encontrado.</div>';
     box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.addEventListener('change', onToggle); });
+    box.querySelectorAll('.ag-user').forEach(wireUau);
+  }
+
+  // edição inline do usuário UAU (fora do <label> p/ não disparar o checkbox)
+  function wireUau(row) {
+    var uid = row.getAttribute('data-u');
+    var view = row.querySelector('.ag-uau-view'), form = row.querySelector('.ag-uau-form');
+    var input = row.querySelector('.ag-uau-input'), valEl = row.querySelector('.ag-uau-val');
+    var user = users.find(function (u) { return u.id_usr === uid; });
+    function show(editing) { view.hidden = editing; form.hidden = !editing; if (editing) { input.value = (user && user.uau_user_usr) || ''; input.focus(); } }
+    row.querySelector('.ag-uau-pen').addEventListener('click', function () { show(true); });
+    row.querySelector('.ag-uau-cancel').addEventListener('click', function () { show(false); });
+    row.querySelector('.ag-uau-save').addEventListener('click', async function () {
+      var val = (input.value || '').trim();
+      var nome = (user && (user.name_usr || user.email_usr)) || 'usuário';
+      if (!(await confirmar('Salvar usuário UAU "' + (val || '(vazio)') + '" para ' + nome + '?'))) return;
+      var save = row.querySelector('.ag-uau-save'); save.disabled = true;
+      try {
+        await window.API.post('/admin/users/uau', { id_usr: uid, uau_user: val || null });
+        if (user) user.uau_user_usr = val || null;
+        valEl.textContent = val || '—';
+        show(false);
+        toast('Usuário UAU salvo.', true);
+      } catch (e) { toast('Erro: ' + e.message); }
+      finally { save.disabled = false; }
+    });
   }
 
   function renderDetail() {

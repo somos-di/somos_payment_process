@@ -44,14 +44,27 @@
     .ag-userlist { max-height: 56vh; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
 
     .ag-user {
-      display: flex; align-items: center; gap: 11px;
-      padding: 10px 13px; border-bottom: 1px solid var(--border-2); cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 8px 13px; border-bottom: 1px solid var(--border-2);
     }
     .ag-user:last-child { border-bottom: 0; }
     .ag-user:hover { background: var(--surface-2); }
-    .ag-user:has(input:checked) { background: var(--accent-weak); }
-    .ag-user input { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+    .ag-user:has(input[type=checkbox]:checked) { background: var(--accent-weak); }
+    .ag-user-main { display: flex; align-items: center; gap: 11px; cursor: pointer; flex: 1 1 auto; min-width: 0; }
+    .ag-user-main input[type=checkbox] { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
     .ag-user .em { color: var(--muted); font-size: 12.5px; }
+
+    /* edição inline do usuário UAU */
+    .ag-uau { flex: none; display: flex; align-items: center; }
+    .ag-uau-view { display: flex; align-items: center; gap: 7px; }
+    .ag-uau-lbl { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .ag-uau-val { font-size: 13px; color: var(--text); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ag-uau .ag-uau-pen { width: 30px; height: 30px; padding: 0; }
+    .ag-uau .ag-uau-pen svg { width: 15px; height: 15px; }
+    .ag-uau-form { display: flex; align-items: center; gap: 6px; }
+    .ag-uau-input { width: 150px; padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; }
+    .ag-uau-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+    .ag-uau-form .btn { padding: 6px 10px; font-size: 13px; }
 
     @media (max-width: 820px) {
       .ag-grid { grid-template-columns: 1fr; }

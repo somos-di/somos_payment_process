@@ -13,7 +13,11 @@ export class AdminService {
 
   listUsers() {
     return this.run(adminClient().from('users')
-      .select('id_usr,email_usr,name_usr,department_usr').order('email_usr'));
+      .select('id_usr,email_usr,name_usr,department_usr,uau_user_usr').order('email_usr'));
+  }
+  setUauUser(user: string, uau: string | null) {
+    return this.run(adminClient().from('users')
+      .update({ uau_user_usr: uau && uau.trim() ? uau.trim() : null }).eq('id_usr', user));
   }
   addMembership(user: string, group: number) {
     return this.run(adminClient().from('users_group')

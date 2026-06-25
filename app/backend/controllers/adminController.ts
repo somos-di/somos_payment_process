@@ -3,12 +3,20 @@ import { z } from 'zod';
 import type { AdminService } from '../services/adminService.js';
 
 const MembershipSchema = z.object({ user_usg: z.string().uuid(), group_usg: z.number().int() });
+const UauSchema = z.object({ id_usr: z.string().uuid(), uau_user: z.string().max(120).nullable().optional() });
 
 export class AdminController {
   constructor(private readonly service: AdminService) {
     this.users = this.users.bind(this);
     this.addMembership = this.addMembership.bind(this);
     this.removeMembership = this.removeMembership.bind(this);
+    this.setUau = this.setUau.bind(this);
+  }
+
+  async setUau(req: FastifyRequest, reply: FastifyReply) {
+    const { id_usr, uau_user } = UauSchema.parse(req.body);
+    await this.service.setUauUser(id_usr, uau_user ?? null);
+    return reply.send({ success: true });
   }
 
   async users(_req: FastifyRequest, reply: FastifyReply) {
