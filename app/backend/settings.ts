@@ -16,6 +16,8 @@ export interface AppSettings {
   cookieName: string;
   cookieSecure: boolean;
   attachmentsBucket: string;
+  redisUrl: string | null;   // null => cache só L1 (in-process)
+  cacheTtlMs: number;
   uau: {
     baseUrl: string;
     user: string;
@@ -40,6 +42,9 @@ export function getSettings(): AppSettings {
     cookieName: process.env.SESSION_COOKIE || 'pp_session',
     cookieSecure: (process.env.COOKIE_SECURE || 'false') === 'true',
     attachmentsBucket: process.env.ATTACHMENTS_BUCKET || 'attachments',
+    redisUrl: process.env.REDIS_URL || null,
+    cacheTtlMs: Number(process.env.CACHE_TTL_MS || 600000), // 10 min
+
     uau: {
       baseUrl: process.env.UAU_BASE_URL || '',
       user: process.env.UAU_USER || '',

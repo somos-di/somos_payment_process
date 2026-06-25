@@ -18,11 +18,6 @@ export class AuthController {
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
     this.me = this.me.bind(this);
-    this.whoami = this.whoami.bind(this);
-  }
-
-  async whoami(req: FastifyRequest, reply: FastifyReply) {
-    return reply.send({ success: true, data: await this.service.whoami(req.accessToken!) });
   }
 
   async login(req: FastifyRequest, reply: FastifyReply) {

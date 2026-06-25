@@ -2,6 +2,16 @@
 # Suba com:  docker compose up --build
 # Requer app/backend/.env (copie de app/backend/.env.example).
 services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]  # cache puro, sem persistência
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   backend:
     build: ./app/backend
     env_file:
@@ -9,8 +19,12 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: "4000"
+      REDIS_URL: redis://redis:6379   # DNS interno do compose (ignora o do .env)
     expose:
       - "4000"
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:

@@ -1,3 +1,4 @@
+import type { CacheManager } from '../cache/cacheManager.js';
 import { AppError, NotFoundError } from '../errors.js';
 import { adminClient, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
@@ -10,6 +11,16 @@ const READ_RESOURCES = new Set<string>([
   'v_process_history', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
 ]);
 
+// Recursos GLOBAIS (mesmo resultado pra qualquer usuário: mirrors UAU + lookups).
+// Só estes entram no cache de servidor — dados RLS por-usuário (v_processes,
+// v_financeiro, etc.) NUNCA são cacheados globalmente (vazaria entre usuários).
+// Invalidados em bloco no sync UAU (que reescreve as tabelas-espelho).
+const CACHEABLE_RESOURCES = new Set<string>([
+  'v_empresas', 'v_obras', 'v_fornecedores', 'v_compositions', 'compositions',
+  'process_kinds', 'document_kinds', 'companies', 'cost_centers', 'persons',
+  'departments', 'uau_tables',
+]);
+
 // RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
 const READ_RPCS = new Set<string>([
   'my_pending_approvals', 'completed_approvals', 'eligible_approvers',
@@ -19,6 +30,8 @@ const READ_RPCS = new Set<string>([
 type Op = [string, ...unknown[]];
 
 export class DataService {
+  constructor(private readonly cache?: CacheManager) {}
+
   private run<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
     return Promise.resolve(p).then(({ data, error }) => {
       if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
@@ -26,12 +39,19 @@ export class DataService {
     });
   }
 
-  // SELECT genérico: aplica as operações registradas no front (eq/ilike/or/order/limit...).
-  // withCount=true  -> devolve { data, count } (total exato no mesmo request).
-  // head=true       -> só o total, SEM trafegar linhas (padrão META: conta 1x e as
-  //                    páginas seguintes vêm sem recontar). Devolve { data: [], count }.
+  // SELECT genérico. Recursos globais (CACHEABLE_RESOURCES) passam pelo cache
+  // de servidor (L1+L2), com chave = resource + flags + ops. Os demais (RLS)
+  // vão direto no Supabase.
   async query(token: string, resource: string, ops: Op[], withCount = false, head = false): Promise<any> {
     if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
+    if (this.cache && CACHEABLE_RESOURCES.has(resource)) {
+      const key = `data:${resource}:${withCount ? 'c' : ''}${head ? 'h' : ''}:${JSON.stringify(ops || [])}`;
+      return this.cache.wrap(key, () => this.runQuery(token, resource, ops, withCount, head));
+    }
+    return this.runQuery(token, resource, ops, withCount, head);
+  }
+
+  private async runQuery(token: string, resource: string, ops: Op[], withCount: boolean, head: boolean): Promise<any> {
     const selectOpts = (withCount || head) ? { count: 'exact' as const, head } : undefined;
     let q: any = userClient(token).from(resource).select('*', selectOpts);
     for (const op of ops || []) {
