@@ -38,6 +38,12 @@ async function initView_financeiro() {
     return out;
   }
 
+  var FIN_ICONS = {
+    parcelas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    correcao: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    uau: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
+  };
+
   var rows = [];
   try { rows = await window.Store.get('financeiro'); }
   catch (e) { $('fin-body').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return; }
@@ -65,9 +71,13 @@ async function initView_financeiro() {
     $('fin-body').innerHTML = html;
     $('fin-body').querySelectorAll('tr[data-i]').forEach(function (tr) {
       var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
-      function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b; }
-      cell.appendChild(btn('Parcelas', 'btn-light', function () { window.openInstallments(p, reloadAll); }));
-      cell.appendChild(btn('Correção', 'btn-danger', async function () {
+      function iconBtn(svg, cls, title, fn) {
+        var b = document.createElement('button'); b.className = 'btn btn-icon ' + cls;
+        b.style.marginLeft = '6px'; b.title = title; b.setAttribute('aria-label', title);
+        b.innerHTML = svg; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
+      }
+      cell.appendChild(iconBtn(FIN_ICONS.parcelas, 'btn-light', 'Parcelas', function () { window.openInstallments(p, reloadAll); }));
+      cell.appendChild(iconBtn(FIN_ICONS.correcao, 'btn-danger', 'Correção', async function () {
         if (!(await confirmar('Devolver para correção? Isto remove parcelas e aprovações e volta o processo para "Pendente de Correção".'))) return;
         try {
           await window.Store.commit(
@@ -76,7 +86,7 @@ async function initView_financeiro() {
           toast('Devolvido para correção.', true); reloadAll();
         } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
       }));
-      cell.appendChild(btn('Enviar UAU', 'btn-primary', async function () {
+      cell.appendChild(iconBtn(FIN_ICONS.uau, 'btn-primary', 'Enviar UAU', async function () {
         if (!(await confirmar('Enviar este processo para integração com o UAU?'))) return;
         try {
           await window.Store.commit(
@@ -108,16 +118,6 @@ async function initView_financeiro() {
     $('fin-body').innerHTML = '<div class="empty">Carregando…</div>';
     try { rows = await window.Store.get('financeiro'); render(); } catch (e) { $('fin-body').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; }
   }
-  function exportCsv() {
-    var head = ['#', 'Empresa', 'Obra', 'Fornecedor', 'Nota Fiscal', 'Status', 'Vencimento', 'Valor', 'Alertas'];
-    var lines = [head.join(';')].concat(filtered().map(function (p) {
-      return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc, p.status_nome, p.due_date_prc, p.value_prc, alertas(p).join(' | ')]
-        .map(function (x) { return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"'; }).join(';');
-    }));
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'financeiro.csv'; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  }
   $('fin-search').addEventListener('input', render);
-  $('fin-xlsx').addEventListener('click', exportCsv);
   render();
 }
