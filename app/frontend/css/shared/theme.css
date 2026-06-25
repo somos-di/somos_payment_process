@@ -687,6 +687,13 @@ tbody tr:hover td {
   font-size: 13px;
 }
 
+.u-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-2); }
+.u-card:last-child { border-bottom: 0; }
+.u-id { display: flex; flex-direction: column; min-width: 0; }
+.u-id b { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.u-tag { flex-shrink: 0; white-space: nowrap; }
+
 .proc-head {
   color: var(--muted);
   margin: 4px 0 6px;

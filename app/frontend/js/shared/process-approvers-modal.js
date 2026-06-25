@@ -4,6 +4,17 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+  // cartão de pessoa: nome (ou email) em destaque, email secundário, grupo×nível em badge
+  function personRow(a) {
+    var name = a.name || a.email || '—';
+    var sub = (a.name && a.email && a.name !== a.email) ? a.email : '';
+    var tag = a.group_name || ('Nível ' + a.level);
+    return '<div class="u-card">'
+      + '<div class="u-id"><b>' + esc(name) + '</b>'
+      + (sub ? '<span class="u-sub">' + esc(sub) + '</span>' : '') + '</div>'
+      + '<span class="badge blue u-tag">' + esc(tag) + '</span></div>';
+  }
+
   function shell(proc) {
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML =
@@ -25,9 +36,9 @@
     var $ = function (k) { return o.querySelector('[data-col="' + k + '"]'); };
     try {
       var done = await window.Store.get('approvers', uuid);
-      $('done').innerHTML = done.length ? done.map(function (a) { return '<div class="row-u"><b>' + esc(a.name || a.email) + '</b><span>' + esc(a.group_name || ('nível ' + a.level)) + '</span></div>'; }).join('') : '<div class="empty">Ninguém aprovou ainda.</div>';
+      $('done').innerHTML = done.length ? done.map(personRow).join('') : '<div class="empty">Ninguém aprovou ainda.</div>';
       var elig = await window.Store.get('eligible_approvers', uuid);
-      $('elig').innerHTML = elig.length ? elig.map(function (a) { return '<div class="row-u"><b>' + esc(a.name || a.email) + '</b><span>' + esc(a.group_name || ('nível ' + a.level)) + '</span></div>'; }).join('') : '<div class="empty">Nenhum aprovador elegível.</div>';
+      $('elig').innerHTML = elig.length ? elig.map(personRow).join('') : '<div class="empty">Nenhum aprovador elegível.</div>';
       var next = await window.Store.get('next_levels', uuid);
       $('next').innerHTML = next.length ? next.map(function (n) { return '<div class="row-u">Aguardando nível ' + esc(n.level) + '</div>'; }).join('') : '<div class="empty">Sem etapas futuras.</div>';
     } catch (e) { console.error(e); o.querySelector('.cols-3').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; }

@@ -46,7 +46,13 @@ export class AuthService {
     const { data, error } = await oauthClient(memStorage(initial)).auth.exchangeCodeForSession(code);
     if (error || !data?.session) throw new UnauthorizedError(error?.message || 'Falha no login Microsoft');
     const id = data.user!.id, mail = data.user!.email || '';
-    await adminClient().from('users').upsert({ id_usr: id, email_usr: mail }, { onConflict: 'id_usr', ignoreDuplicates: true });
+    // nome vindo do perfil Microsoft (Azure mapeia p/ user_metadata.full_name/name)
+    const meta = (data.user!.user_metadata || {}) as Record<string, unknown>;
+    const name = (meta.full_name || meta.name || null) as string | null;
+    const row: Record<string, unknown> = { id_usr: id, email_usr: mail };
+    if (name) row.name_usr = name; // só seta se veio (não zera nome existente)
+    // sem ignoreDuplicates: atualiza o nome no row já existente do usuário
+    await adminClient().from('users').upsert(row, { onConflict: 'id_usr' });
     return { token: data.session.access_token, user: { id, email: mail } };
   }
 
