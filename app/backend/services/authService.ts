@@ -56,10 +56,27 @@ export class AuthService {
     return { token: data.session.access_token, user: { id, email: mail } };
   }
 
+  // brute-force por E-MAIL (independe de IP/XFF): N falhas por conta numa janela -> 429.
+  // Complementa o rate-limit por IP do /auth/login. In-memory (1 instância).
+  private static readonly LOGIN_MAX = 10;
+  private static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000;
+  private readonly failed = new Map<string, { n: number; until: number }>();
+
   // login : retorna o access_token (vai virar cookie) + dados não-sensíveis do usuário.
   async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
+    const key = (email || '').toLowerCase();
+    const now = Date.now();
+    const f = this.failed.get(key);
+    if (f && f.until > now && f.n >= AuthService.LOGIN_MAX) {
+      throw new AppError('Muitas tentativas para esta conta. Tente novamente em alguns minutos.', 429, 'rate_limited');
+    }
     const { data, error } = await anonClient().auth.signInWithPassword({ email, password });
-    if (error || !data.session) throw new UnauthorizedError(error?.message || 'Credenciais inválidas');
+    if (error || !data.session) {
+      const cur = (f && f.until > now) ? f : { n: 0, until: now + AuthService.LOGIN_WINDOW_MS };
+      cur.n++; this.failed.set(key, cur);
+      throw new UnauthorizedError(error?.message || 'Credenciais inválidas');
+    }
+    this.failed.delete(key); // sucesso zera o contador
     const id = data.user!.id, mail = data.user!.email || '';
     // auto-provisiona o perfil em payment.users (assim o usuário é atribuível a grupos
     // e serve de FK p/ author_prc). service_role pois users não tem policy de insert.

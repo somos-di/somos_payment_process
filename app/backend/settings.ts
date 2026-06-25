@@ -5,10 +5,20 @@ function req(name: string): string {
   return v;
 }
 
+// TRUST_PROXY: 'true'/'false' (booleano) ou número de hops (ex.: '2' p/ ngrok+nginx).
+// Pinar o nº de hops evita spoof de X-Forwarded-For no req.ip. Default true (dev).
+function parseTrustProxy(v: string | undefined): boolean | number {
+  if (v == null || v === '' || v === 'true') return true;
+  if (v === 'false') return false;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : true;
+}
+
 export interface AppSettings {
   port: number;
   host: string;
   corsOrigin: string;
+  trustProxy: boolean | number | string;  // hops confiáveis p/ derivar req.ip do XFF
   publicUrl: string;   // origem pública (ex.: https://pagamentos.ngrok.dev) p/ redirect do OAuth
   supabaseUrl: string;
   supabaseAnonKey: string;
@@ -36,6 +46,7 @@ export function getSettings(): AppSettings {
     port: Number(process.env.PORT || 4000),
     host: process.env.HOST || '0.0.0.0',
     corsOrigin: process.env.CORS_ORIGIN || '*',
+    trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
     publicUrl: process.env.PUBLIC_URL || (process.env.CORS_ORIGIN || '').split(',')[0].trim() || '',
     supabaseUrl: req('SUPABASE_URL'),
     supabaseAnonKey: req('SUPABASE_ANON_KEY'),
