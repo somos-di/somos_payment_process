@@ -40,6 +40,13 @@
   box-sizing: border-box;
 }
 
+/* o atributo [hidden] tem que SEMPRE esconder — senão display:flex/inline-flex
+   (ex.: .btn, .pane) sobrepõe o display:none do user-agent e o elemento "some"
+   no JS mas continua visível. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   background: var(--bg);
