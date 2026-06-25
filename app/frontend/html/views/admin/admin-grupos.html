@@ -44,21 +44,25 @@
     .ag-userlist { max-height: 56vh; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
 
     .ag-user {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      display: grid; grid-template-columns: minmax(0, 1fr) 200px auto; align-items: center; gap: 12px;
       padding: 8px 13px; border-bottom: 1px solid var(--border-2);
     }
     .ag-user:last-child { border-bottom: 0; }
     .ag-user:hover { background: var(--surface-2); }
     .ag-user:has(input[type=checkbox]:checked) { background: var(--accent-weak); }
-    .ag-user-main { display: flex; align-items: center; gap: 11px; cursor: pointer; flex: 1 1 auto; min-width: 0; }
+    .ag-user-main { display: flex; align-items: center; gap: 11px; cursor: pointer; min-width: 0; }
     .ag-user-main input[type=checkbox] { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
     .ag-user .em { color: var(--muted); font-size: 12.5px; }
 
-    /* edição inline do usuário UAU */
+    /* coluna do usuário UAU (alinhada ao lado do nome) */
+    .ag-uau-col { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+    .ag-uau-col .ag-uau-lbl { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; flex: none; }
+    .ag-uau-col .ag-uau-val { font-size: 13px; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ag-uau-col .ag-uau-val.empty { color: var(--muted); font-weight: 500; }
+
+    /* edição inline do usuário UAU (lápis + form à direita) */
     .ag-uau { flex: none; display: flex; align-items: center; }
     .ag-uau-view { display: flex; align-items: center; gap: 7px; }
-    .ag-uau-lbl { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-    .ag-uau-val { font-size: 13px; color: var(--text); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ag-uau .ag-uau-pen { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .ag-uau .ag-uau-pen svg { width: 15px; height: 15px; }
     .ag-uau-form { display: flex; align-items: center; gap: 6px; }
