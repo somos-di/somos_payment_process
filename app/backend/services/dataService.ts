@@ -21,6 +21,11 @@ const CACHEABLE_RESOURCES = new Set<string>([
   'departments', 'uau_tables',
 ]);
 
+// Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
+// ignora RLS) e o mapeamento usuário↔grupo. Leitura barrada a não-admin no backend
+// (o menu/rota no front é só cosmético).
+const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group']);
+
 // RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
 const READ_RPCS = new Set<string>([
   'my_pending_approvals', 'completed_approvals', 'eligible_approvers',
@@ -42,8 +47,17 @@ export class DataService {
   // SELECT genérico. Recursos globais (CACHEABLE_RESOURCES) passam pelo cache
   // de servidor (L1+L2), com chave = resource + flags + ops. Os demais (RLS)
   // vão direto no Supabase.
+  // gate de admin: lê is_admin do banco pelo sub do JWT (já validado no requireAuth).
+  private async assertAdmin(token: string): Promise<void> {
+    let sub = '';
+    try { sub = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()).sub || ''; } catch { /* token malformado */ }
+    const { data } = await adminClient().from('users').select('is_admin').eq('id_usr', sub).maybeSingle();
+    if (!data?.is_admin) throw new AppError('Acesso restrito a administradores', 403, 'forbidden');
+  }
+
   async query(token: string, resource: string, ops: Op[], withCount = false, head = false): Promise<any> {
     if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
+    if (ADMIN_RESOURCES.has(resource)) await this.assertAdmin(token); // 403 se não-admin
     if (this.cache && CACHEABLE_RESOURCES.has(resource)) {
       const key = `data:${resource}:${withCount ? 'c' : ''}${head ? 'h' : ''}:${JSON.stringify(ops || [])}`;
       return this.cache.wrap(key, () => this.runQuery(token, resource, ops, withCount, head));
