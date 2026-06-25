@@ -1,5 +1,12 @@
 (function () {
+    function reflectAdmin(user) {
+        // mostra o grupo "Administração" só pra admin (cosmético; o backend é o gate)
+        const grp = document.querySelector('.menu-group[data-group="admin"]')
+        if (grp) grp.style.display = (user && user.is_admin) ? '' : 'none'
+    }
+
     function reflectUser(user) {
+        reflectAdmin(user)
         const nameEl = document.getElementById('user-name')
         const emailEl = document.getElementById('user-email')
         const avatarEl = document.getElementById('user-avatar')

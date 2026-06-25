@@ -77,10 +77,10 @@ export class AuthService {
   // }
   // esse whoami eu usei para diagnóstico, mas não é neces´sario expor
   // perfil do usuário logado (inclui o departamento) — lido com o JWT (RLS vale).
-  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null }> {
+  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null; is_admin: boolean }> {
     const { data, error } = await userClient(token)
-      .from('users').select('name_usr, department_usr').eq('id_usr', id).maybeSingle();
+      .from('users').select('name_usr, department_usr, is_admin').eq('id_usr', id).maybeSingle();
     if (error) throw new AppError(error.message, 400, 'supabase');
-    return { id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null };
+    return { id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null, is_admin: !!data?.is_admin };
   }
 }

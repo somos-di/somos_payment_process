@@ -10,7 +10,7 @@ async function initView_sem_aprovador() {
   catch (e) { $('na-list').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; $('na-count').textContent = 'erro'; return; }
 
   $('na-count').textContent = rows.length + ' processo(s) sem aprovador';
-  if (!rows.length) { $('na-list').innerHTML = '<div class="empty">Nenhum processo sem aprovador. 🎉</div>'; return; }
+  if (!rows.length) { $('na-list').innerHTML = '<div class="empty">Nenhum processo sem aprovador. </div>'; return; }
 
   function diagSemRegra(p) {
     return '<div class="na-diag"><h4>Ainda não existe uma regra de aprovação. Crie uma com:</h4><pre>'

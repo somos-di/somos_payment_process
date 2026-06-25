@@ -14,8 +14,8 @@ const ROUTES = {
     'minhas-aprovacoes': { title: 'Minhas Aprovações', folder: 'aprovar', parentLabel: 'Aprovar' },
     'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento' },
     'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração' },
-    'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração' },
-    'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração' },
+    'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
 }
 
 const loadedScripts = new Set()
@@ -158,6 +158,14 @@ async function loadView(route, params) {
     if (route === LOGIN_ROUTE && authed) {
         window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
         return
+    }
+    // rota de admin: só pra is_admin (o backend também barra via requireAdmin)
+    if (meta.admin) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || !u.is_admin) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
     }
 
     document.body.classList.toggle('auth-mode', route === LOGIN_ROUTE)
