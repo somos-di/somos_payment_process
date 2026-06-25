@@ -1,8 +1,10 @@
 (function () {
     function reflectAdmin(user) {
-        // mostra o grupo "Administração" só pra admin (cosmético; o backend é o gate)
-        const grp = document.querySelector('.menu-group[data-group="admin"]')
-        if (grp) grp.style.display = (user && user.is_admin) ? '' : 'none'
+        // grupos só de admin: Administração + Integração (sincronização). Cosmético —
+        // o gate real é no backend (requireAdmin).
+        const show = (user && user.is_admin) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="admin"], .menu-group[data-group="integracao"]')
+            .forEach(function (g) { g.style.display = show })
     }
 
     function reflectUser(user) {

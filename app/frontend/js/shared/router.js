@@ -13,7 +13,7 @@ const ROUTES = {
     'aprovacoes': { title: 'Aprovações Pendentes', folder: 'aprovar', parentLabel: 'Aprovar' },
     'minhas-aprovacoes': { title: 'Minhas Aprovações', folder: 'aprovar', parentLabel: 'Aprovar' },
     'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento' },
-    'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração' },
+    'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração', admin: true },
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
     'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
 }
