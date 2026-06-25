@@ -27,9 +27,10 @@ const CACHEABLE_RESOURCES = new Set<string>([
 const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group']);
 
 // RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
+// completed_approvals/eligible_approvers gateiam can_see_process por dentro.
+// process_levels/current_level saíram: não são usados pelo front e reduzem superfície.
 const READ_RPCS = new Set<string>([
-  'my_pending_approvals', 'completed_approvals', 'eligible_approvers',
-  'next_levels', 'process_levels', 'current_level',
+  'my_pending_approvals', 'completed_approvals', 'eligible_approvers', 'next_levels',
 ]);
 
 type Op = [string, ...unknown[]];
