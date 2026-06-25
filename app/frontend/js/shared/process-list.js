@@ -132,9 +132,11 @@
           var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>';
           data.forEach(function (p, i) {
             html += '<tr data-i="' + i + '" style="cursor:pointer">'
-              + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
+              + '<td><span class="id-cell">' + esc(p.id_prc)
+              + (p.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
+              + '</span></td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
               + '<td>' + esc(p.fornecedor_nome) + '</td>'
-              + '<td>' + esc(p.tipo_nome) + (p.is_urgent_prc ? ' <span class="badge red">Urgente</span>' : '') + '</td>'
+              + '<td>' + esc(p.tipo_nome) + '</td>'
               + '<td>' + money(p.value_prc) + '</td><td>' + fmtDate(p.due_date_prc) + '</td>'
               + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
               + '<td style="white-space:nowrap;text-align:right"></td></tr>';
