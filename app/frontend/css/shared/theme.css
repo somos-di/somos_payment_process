@@ -571,6 +571,8 @@ tbody tr:hover td {
 }
 
 /* ---- detalhe do processo: 2 painéis (campos | visualizador de PDF) ---- */
+/* display:flex sobrepõe o display:none do [hidden] — reforça pra aba esconder de fato */
+.pane[hidden] { display: none !important; }
 .pd-detail { display: flex; gap: 20px; align-items: stretch; }
 .pd-fields { flex: 0 0 320px; min-width: 0; }
 .modal-box.no-doc .pd-fields { flex: 1 1 auto; }
