@@ -56,7 +56,7 @@ async function initView_financeiro() {
   function render() {
     var data = filtered();
     if (!data.length) { $('fin-body').innerHTML = '<div class="empty">Nenhum processo em análise financeira.</div>'; return; }
-    var html = '<table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Status</th><th>Vencimento</th><th>Valor Bruto</th><th>Alertas</th><th></th></tr></thead><tbody>';
+    var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Status</th><th>Vencimento</th><th>Valor Bruto</th><th>Alertas</th><th></th></tr></thead><tbody>';
     data.forEach(function (p, i) {
       var al = alertas(p);
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
@@ -67,7 +67,7 @@ async function initView_financeiro() {
         + '<td>' + (al.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + al.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';
     });
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     $('fin-body').innerHTML = html;
     $('fin-body').querySelectorAll('tr[data-i]').forEach(function (tr) {
       var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
