@@ -9,6 +9,7 @@ export interface AppSettings {
   port: number;
   host: string;
   corsOrigin: string;
+  publicUrl: string;   // origem pública (ex.: https://pagamentos.ngrok.dev) p/ redirect do OAuth
   supabaseUrl: string;
   supabaseAnonKey: string;
   supabaseServiceKey: string;
@@ -35,6 +36,7 @@ export function getSettings(): AppSettings {
     port: Number(process.env.PORT || 4000),
     host: process.env.HOST || '0.0.0.0',
     corsOrigin: process.env.CORS_ORIGIN || '*',
+    publicUrl: process.env.PUBLIC_URL || (process.env.CORS_ORIGIN || '').split(',')[0].trim() || '',
     supabaseUrl: req('SUPABASE_URL'),
     supabaseAnonKey: req('SUPABASE_ANON_KEY'),
     supabaseServiceKey: req('SUPABASE_SERVICE_KEY'),

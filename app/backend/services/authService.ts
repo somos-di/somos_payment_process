@@ -1,8 +1,55 @@
+import { createClient } from '@supabase/supabase-js';
 import { AppError, UnauthorizedError } from '../errors.js';
 import { adminClient, anonClient, userClient } from '../gateways/supabase.js';
+import { getSettings } from '../settings.js';
+
+// storage em memória pro handshake PKCE: o verifier que o supabase-js gera no
+// `signInWithOAuth` é capturado daqui e persistido num cookie curto entre
+// start→callback (backend é stateless). No callback, restauramos o verifier.
+function memStorage(initial: Record<string, string> = {}) {
+  const store: Record<string, string> = { ...initial };
+  return {
+    store,
+    getItem: (k: string) => (k in store ? store[k] : null),
+    setItem: (k: string, v: string) => { store[k] = v; },
+    removeItem: (k: string) => { delete store[k]; },
+  };
+}
+
+function oauthClient(storage: ReturnType<typeof memStorage>) {
+  const s = getSettings();
+  return createClient(s.supabaseUrl, s.supabaseAnonKey, {
+    auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: false, detectSessionInUrl: false, storage },
+    db: { schema: s.schema },
+  });
+}
 
 // Auth fica 100% no backend.  cookie httpcnly
 export class AuthService {
+  // OAuth (Microsoft/Azure via Supabase). Inicia o fluxo PKCE e devolve a URL de
+  // autorização + o estado PKCE serializado (vai num cookie curto).
+  async oauthStart(redirectTo: string): Promise<{ url: string; pkce: string }> {
+    const storage = memStorage();
+    const { data, error } = await oauthClient(storage).auth.signInWithOAuth({
+      provider: 'azure',
+      options: { redirectTo, skipBrowserRedirect: true, scopes: 'openid email profile' },
+    });
+    if (error || !data?.url) throw new AppError(error?.message || 'Falha ao iniciar OAuth', 400, 'oauth');
+    return { url: data.url, pkce: JSON.stringify(storage.store) };
+  }
+
+  // Troca o `code` pela sessão (usando o verifier restaurado), provisiona o perfil
+  // e devolve o access_token (vira cookie httpOnly, igual ao login email/senha).
+  async oauthCallback(code: string, pkce: string): Promise<{ token: string; user: { id: string; email: string } }> {
+    let initial: Record<string, string> = {};
+    try { initial = JSON.parse(pkce || '{}'); } catch { /* cookie ausente/corrompido */ }
+    const { data, error } = await oauthClient(memStorage(initial)).auth.exchangeCodeForSession(code);
+    if (error || !data?.session) throw new UnauthorizedError(error?.message || 'Falha no login Microsoft');
+    const id = data.user!.id, mail = data.user!.email || '';
+    await adminClient().from('users').upsert({ id_usr: id, email_usr: mail }, { onConflict: 'id_usr', ignoreDuplicates: true });
+    return { token: data.session.access_token, user: { id, email: mail } };
+  }
+
   // login : retorna o access_token (vai virar cookie) + dados não-sensíveis do usuário.
   async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
     const { data, error } = await anonClient().auth.signInWithPassword({ email, password });
