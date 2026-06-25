@@ -15,6 +15,20 @@
   }
   function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.style.marginLeft = '6px'; b.textContent = label; b.addEventListener('click', fn); return b; }
 
+  // ícones (stroke currentColor) p/ as ações da linha
+  var ICONS = {
+    aprovadores: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    Aprovar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>',
+    Corrigir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  };
+  // botão só-ícone (title/aria-label preservam o significado textual)
+  function iconBtn(svg, cls, title, fn) {
+    var b = document.createElement('button');
+    b.className = 'btn btn-icon ' + cls; b.style.marginLeft = '6px';
+    b.title = title; b.setAttribute('aria-label', title);
+    b.innerHTML = svg; b.addEventListener('click', fn); return b;
+  }
+
   function uiConfirm(message, danger) {
     return new Promise(function (resolve) {
       var o = document.createElement('div'); o.className = 'modal-overlay';
@@ -129,14 +143,18 @@
           bodyEl.innerHTML = html;
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
-            cell.appendChild(btn('Aprovadores', 'btn-light', function (e) { e.stopPropagation(); window.openProcessApprovers(p); }));
+            cell.appendChild(iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); }));
             (opts.actions || []).forEach(function (a) {
-              cell.appendChild(btn(a.label, a.cls || 'btn-primary', async function (e) {
+              var handler = async function (e) {
                 e.stopPropagation();
                 var danger = (a.cls || '').indexOf('danger') >= 0;
                 if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
                 try { await a.run(p); await reload(); toast('Feito.', true); } catch (err) { toast('Erro: ' + err.message); }
-              }));
+              };
+              var svg = ICONS[a.label];
+              cell.appendChild(svg
+                ? iconBtn(svg, a.cls || 'btn-primary', a.label, handler)
+                : btn(a.label, a.cls || 'btn-primary', handler));
             });
             tr.addEventListener('click', function () { window.openProcessDetail(p); });
           });
