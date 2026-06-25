@@ -21,6 +21,7 @@ const CorrectSchema = z.object({
 const ACTIONS: Record<string, string> = {
   approve: 'approve_process', reject: 'reject_process', close: 'close_process',
   'financeiro-reject': 'financeiro_reject', 'send-uau': 'send_to_uau',
+  cancel: 'cancel_process', // autor cancela (status->0) — só em status 1 ou 2
 };
 
 export class ProcessesController {

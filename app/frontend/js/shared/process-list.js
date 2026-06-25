@@ -10,8 +10,11 @@
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
   function statusBadge(step, name) {
-    var cls = ({ 1: 'warn', 2: 'red', 3: 'red', 4: 'blue', 6: 'blue', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
-    return '<span class="badge ' + cls + '">' + esc(name) + '</span>';
+    var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
+    // usa o nome resolvido da view; se vier vazio/numérico (ex.: status 0), cai no rótulo do config
+    var label = (name && name !== String(step)) ? name : (steps[step] || name || ('Status ' + step));
+    var cls = ({ 0: 'red', 1: 'warn', 2: 'red', 3: 'red', 4: 'blue', 6: 'blue', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
+    return '<span class="badge ' + cls + '">' + esc(label) + '</span>';
   }
   function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.style.marginLeft = '6px'; b.textContent = label; b.addEventListener('click', fn); return b; }
 
@@ -20,7 +23,9 @@
     aprovadores: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     Aprovar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>',
     Corrigir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    Cancelar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>',
   };
+  var SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
   // botão só-ícone (title/aria-label preservam o significado textual)
   function iconBtn(svg, cls, title, fn) {
     var b = document.createElement('button');
@@ -50,17 +55,6 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
 
-  function exportCsv(rows) {
-    var head = ['#', 'Empresa', 'Obra', 'Fornecedor', 'Tipo', 'Valor', 'Vencimento', 'Status'];
-    var lines = [head.join(';')].concat(rows.map(function (p) {
-      return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.tipo_nome, p.value_prc, p.due_date_prc, p.status_nome]
-        .map(function (x) { return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"'; }).join(';');
-    }));
-    var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'processos.csv'; a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  }
-
   window.ProcessList = {
     mount: async function (host, opts) {
       var paged = typeof opts.fetchPage === 'function';
@@ -70,15 +64,13 @@
 
       host.innerHTML = '<div class="card" style="padding:0">'
         + '<div class="pl-toolbar">'
-        + '<input id="pl-search" class="pl-input" placeholder="Buscar por empresa, obra, fornecedor, tipo, nº…">'
+        + '<div class="pl-search">' + SVG_SEARCH + '<input id="pl-search" placeholder="Buscar…"></div>'
         + (dateFilter
             ? '<div class="pl-dates">'
               + '<label>De<input type="date" id="pl-date-from"></label>'
               + '<label>Até<input type="date" id="pl-date-to"></label></div>'
+              + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
             : '')
-        + '<div class="pl-toolbar-actions">'
-        + (dateFilter ? '<button class="btn btn-ghost" id="pl-clear">Limpar filtros</button>' : '')
-        + '<button class="btn btn-excel" id="pl-xlsx">Exportar Excel</button></div>'
         + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
         + (paged ? '<div class="pl-pager" id="pl-pager"></div>' : '')
@@ -147,6 +139,7 @@
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
             cell.appendChild(iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); }));
             (opts.actions || []).forEach(function (a) {
+              if (typeof a.show === 'function' && !a.show(p)) return; // ação condicional por linha
               var handler = async function (e) {
                 e.stopPropagation();
                 var danger = (a.cls || '').indexOf('danger') >= 0;
@@ -260,7 +253,6 @@
         });
       }
 
-      host.querySelector('#pl-xlsx').addEventListener('click', function () { exportCsv(filtered()); });
       await reload();
       return { reload: reload };
     }

@@ -12,6 +12,7 @@
             4: 'Taxa de Gestão', 5: 'Distribuição de Lucros', 6: 'Comissão', 7: 'Adiantamento',
         },
         STEPS: {
+            0: 'Cancelado',
             1: 'Aguardando aprovação', 2: 'Pendente de Correção', 3: 'Cancelado',
             4: 'Em integração', 6: 'Em análise financeiro', 7: 'Integrado',
             8: 'Erro - Sem planejamento', 9: 'UAU - Processo Criado',

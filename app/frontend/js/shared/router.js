@@ -6,6 +6,7 @@ const ROUTES = {
     'dashboard': { title: 'Dashboard', folder: 'dashboard', parentLabel: 'Início' },
     'solicitar': { title: 'Novo Processo', folder: 'solicitar', parentLabel: 'Solicitar' },
     'solicitar-massa': { title: 'Solicitar em Massa', folder: 'solicitar', parentLabel: 'Solicitar' },
+    'meus-lancamentos': { title: 'Meus Lançamentos', folder: 'solicitar', parentLabel: 'Solicitar' },
     'correcao': { title: 'Correções', folder: 'correcao', parentLabel: 'Correção' },
     'editar-processo': { title: 'Editar Processo', folder: 'correcao', parentLabel: 'Correção' },
     'consulta': { title: 'Processos', folder: 'consulta', parentLabel: 'Consulta' },
