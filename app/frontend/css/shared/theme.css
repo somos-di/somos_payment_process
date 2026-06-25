@@ -455,7 +455,7 @@ tbody tr:hover td {
 
 /* ---- marcador de urgente: bolinha vermelha ao lado do ID (tooltip nativo) ---- */
 .id-cell { display: inline-flex; align-items: center; gap: 6px; }
-.urgent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; cursor: help; box-shadow: 0 0 0 3px var(--danger-weak); }
+.urgent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; box-shadow: 0 0 0 3px var(--danger-weak); }
 
 /* ---- tabela responsiva: rola na horizontal sem quebrar a página/zoom ---- */
 .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
