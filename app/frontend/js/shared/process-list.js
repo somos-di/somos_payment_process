@@ -51,18 +51,30 @@
     mount: async function (host, opts) {
       var paged = typeof opts.fetchPage === 'function';
       var pageSize = opts.pageSize || 50;
+      var dateFilter = !!opts.dateFilter;          // mostra filtro de range de data
+      var dateField = opts.dateField || 'due_date_prc'; // coluna usada no range
 
       host.innerHTML = '<div class="card" style="padding:0">'
-        + '<div class="filters-row" style="padding:16px 18px;border-bottom:1px solid var(--border)">'
-        + '<input id="pl-search" placeholder="Buscar por empresa, obra, fornecedor, tipo, nº…">'
+        + '<div class="pl-toolbar">'
+        + '<input id="pl-search" class="pl-input" placeholder="Buscar por empresa, obra, fornecedor, tipo, nº…">'
+        + (dateFilter
+            ? '<div class="pl-dates">'
+              + '<label>De<input type="date" id="pl-date-from"></label>'
+              + '<label>Até<input type="date" id="pl-date-to"></label></div>'
+            : '')
+        + '<div class="pl-toolbar-actions">'
+        + (dateFilter ? '<button class="btn btn-ghost" id="pl-clear">Limpar filtros</button>' : '')
         + '<button class="btn btn-excel" id="pl-xlsx">Exportar Excel</button></div>'
+        + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
-        + (paged ? '<div class="pl-pager" id="pl-pager" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border)"></div>' : '')
+        + (paged ? '<div class="pl-pager" id="pl-pager"></div>' : '')
         + '</div>';
 
       var bodyEl = host.querySelector('#pl-body');
       var search = host.querySelector('#pl-search');
       var pagerEl = host.querySelector('#pl-pager');
+      var dFrom = host.querySelector('#pl-date-from');
+      var dTo = host.querySelector('#pl-date-to');
 
       var rows = [];        // linhas atualmente exibidas (página atual no modo paginado)
       var page = 0;         // página 0-indexada (modo paginado)
@@ -70,14 +82,32 @@
       var hasMore = false;  // fallback se o total vier nulo
       var term = '';        // termo de busca corrente
 
-      // Filtro client-side (apenas no modo simples)
+      function isoDay(v) { return v ? String(v).split('T')[0] : ''; } // 'YYYY-MM-DD'
+
+      // Filtro client-side (apenas no modo simples): busca textual + range de data.
+      // O range é PERSISTENTE — só zera no "Limpar filtros".
       function filtered() {
         if (paged) return rows;
+        var out = rows;
         var t = (search.value || '').toLowerCase().trim();
-        if (!t) return rows;
-        return rows.filter(function (p) {
-          return [p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.tipo_nome, p.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
-        });
+        if (t) {
+          out = out.filter(function (p) {
+            return [p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.tipo_nome, p.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
+          });
+        }
+        if (dateFilter) {
+          var from = dFrom && dFrom.value, to = dTo && dTo.value;
+          if (from || to) {
+            out = out.filter(function (p) {
+              var d = isoDay(p[dateField]);
+              if (!d) return false;
+              if (from && d < from) return false;
+              if (to && d > to) return false;
+              return true;
+            });
+          }
+        }
+        return out;
       }
 
       function render() {
@@ -85,7 +115,7 @@
         if (!data.length) {
           bodyEl.innerHTML = '<div class="empty">' + esc(page > 0 ? 'Nada nesta página.' : (opts.emptyText || 'Nenhum processo.')) + '</div>';
         } else {
-          var html = '<table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>';
+          var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>';
           data.forEach(function (p, i) {
             html += '<tr data-i="' + i + '" style="cursor:pointer">'
               + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
@@ -95,7 +125,7 @@
               + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
               + '<td style="white-space:nowrap;text-align:right"></td></tr>';
           });
-          html += '</tbody></table>';
+          html += '</tbody></table></div>';
           bodyEl.innerHTML = html;
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
@@ -198,6 +228,17 @@
         clearTimeout(debTimer);
         debTimer = setTimeout(function () { term = (search.value || '').trim(); page = 0; total = null; reload(); }, 350);
       });
+
+      // filtro de data (modo simples): re-renderiza ao mudar; persiste até "Limpar"
+      if (dateFilter) {
+        if (dFrom) dFrom.addEventListener('change', render);
+        if (dTo) dTo.addEventListener('change', render);
+        var clearBtn = host.querySelector('#pl-clear');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+          search.value = ''; if (dFrom) dFrom.value = ''; if (dTo) dTo.value = '';
+          render();
+        });
+      }
 
       host.querySelector('#pl-xlsx').addEventListener('click', function () { exportCsv(filtered()); });
       await reload();
