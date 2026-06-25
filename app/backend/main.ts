@@ -1,5 +1,6 @@
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
 import { createContainer } from './factories/container.js';
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -17,6 +18,24 @@ const app = Fastify({ logger: { level: 'info' }, trustProxy: true, bodyLimit: 20
 const corsOrigins = s.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean);
 await app.register(cors, { origin: corsOrigins.length ? corsOrigins : true, credentials: true });
 await app.register(cookie);
+
+// Rate limiting / anti-brute-force. Chaveia por USUÁRIO (sub do JWT no cookie),
+// caindo pra IP quando anônimo — assim 1 usuário não derruba os outros e não dá
+// pra burlar trocando de IP atrás de NAT. Global: 200 req/min (override por rota,
+// ex.: /auth/login mais estrito). Registrado antes das rotas.
+await app.register(rateLimit, {
+  global: true,
+  max: 200,
+  timeWindow: '1 minute',
+  keyGenerator: (req) => {
+    const tok = req.cookies?.[s.cookieName];
+    if (tok) {
+      try { return JSON.parse(Buffer.from(tok.split('.')[1], 'base64').toString()).sub || req.ip; } catch { /* fallback */ }
+    }
+    return req.ip;
+  },
+});
+
 app.setErrorHandler(errorHandler);
 app.get('/health', async () => ({ ok: true }));
 

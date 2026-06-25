@@ -3,7 +3,8 @@ import type { AuthController } from '../controllers/authController.js';
 
 // públicas: login/logout. (me é protegida — registrada no plugin com requireAuth)
 export function registerPublicAuthRoutes(app: FastifyInstance, c: AuthController): void {
-  app.post('/auth/login', c.login);
+  // brute-force: login bem mais estrito que o global (10/min por IP)
+  app.post('/auth/login', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, c.login);
   app.post('/auth/logout', c.logout);
   // SSO Microsoft (Azure via Supabase) — fluxo por redirect, sem auth prévia
   app.get('/auth/oauth/microsoft', c.oauthStart);

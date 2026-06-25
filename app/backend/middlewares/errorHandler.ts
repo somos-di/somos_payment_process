@@ -15,6 +15,12 @@ export function errorHandler(error: Error | FastifyError, request: FastifyReques
       error: { code: error.code, message: error.message },
     });
   }
+  if ('statusCode' in error && error.statusCode === 429) {
+    return reply.status(429).send({
+      success: false,
+      error: { code: 'rate_limited', message: 'Muitas requisições. Aguarde um instante e tente novamente.' },
+    });
+  }
   if ('statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500) {
     return reply.status(error.statusCode).send({
       success: false,
