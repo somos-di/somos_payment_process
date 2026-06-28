@@ -16,7 +16,8 @@ async function initView_com_aprovador() {
   var search = $('ca-search');
 
   function applyFilters(s) {
-    s = s.eq('status_step_prc', 1);   // sempre: só "Aguardando aprovação"
+    // status_step_prc=1 ("Aguardando aprovação") é enforçado NA VIEW v_with_approver
+    // (server-side, não-burlável) — não filtramos status aqui.
     var t = (term || '').trim().replace(/[,()*%]/g, ' ').trim();
     if (t) {
       var ors = ['empresa_nome.ilike.%' + t + '%', 'obra_nome.ilike.%' + t + '%', 'fornecedor_nome.ilike.%' + t + '%'];
