@@ -8,7 +8,7 @@ const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
   'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
-  'v_process_history', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
+  'v_process_history', 'v_no_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
 ]);
 
 // Recursos GLOBAIS (mesmo resultado pra qualquer usuário: mirrors UAU + lookups).
@@ -24,7 +24,7 @@ const CACHEABLE_RESOURCES = new Set<string>([
 // Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
 // ignora RLS) e o mapeamento usuário↔grupo. Leitura barrada a não-admin no backend
 // (o menu/rota no front é só cosmético).
-const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group']);
+const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'groups', 'users_group']);
 
 // RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
 // completed_approvals/eligible_approvers gateiam can_see_process por dentro.

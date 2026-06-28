@@ -16,6 +16,7 @@ const ROUTES = {
     'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração', admin: true },
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
     'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
 }
 
 const loadedScripts = new Set()

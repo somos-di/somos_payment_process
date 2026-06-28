@@ -1,0 +1,39 @@
+<main>
+  <style>
+    .ca-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .ca-toolbar { display:flex; gap:14px; align-items:center; padding:12px 14px; flex-wrap:wrap; border-bottom:1px solid var(--border-2); }
+    .ca-toolbar .pl-search { flex:1 1 280px; }
+    .ca-only { display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-2); cursor:pointer; white-space:nowrap; user-select:none; }
+    .ca-only input { width:16px; height:16px; }
+    .ca-prog { font-weight:700; white-space:nowrap; }
+    .ca-prog.done { color:#15803d; }
+    .ca-prog.wait { color:var(--accent); }
+    .ca-aprovs { color:var(--text-2); font-size:12.5px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ca-dias { font-weight:600; white-space:nowrap; }
+    tr.ca-slow td { background: var(--danger-weak); }
+    tr.ca-slow .ca-dias { color:#9f1239; }
+    #ca-pager { justify-content: space-between; }
+    .pl-pager-info { color: var(--muted); font-size: 13px; }
+    .pl-pager-btns { display: flex; gap: 8px; margin-left: auto; }
+  </style>
+
+  <div class="ca-head">
+    <div>
+      <div class="section-title">Processos com aprovador</div>
+      <div class="section-sub">Acompanhe a fila de aprovação — progresso (aprovações / nível) e há quanto tempo cada processo está parado. Linhas em vermelho = aguardando há muito tempo.</div>
+    </div>
+    <span class="badge blue" id="ca-count" style="font-size:13px">…</span>
+  </div>
+
+  <div class="card" style="padding:0">
+    <div class="ca-toolbar">
+      <div class="pl-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="ca-search" placeholder="Buscar por id, empresa, obra ou fornecedor…">
+      </div>
+      <label class="ca-only"><input type="checkbox" id="ca-pendentes"> Só aguardando aprovação</label>
+    </div>
+    <div id="ca-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>
+    <div class="pl-pager" id="ca-pager"></div>
+  </div>
+</main>
