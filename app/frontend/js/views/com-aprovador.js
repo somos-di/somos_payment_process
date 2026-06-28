@@ -11,12 +11,12 @@ async function initView_com_aprovador() {
   var SLOW_DAYS = 5;                          // aguardando há mais que isso = "lento" (vermelho)
   var SVG_PEOPLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 
-  var pageSize = 50, page = 0, total = null, rows = [], term = '', onlyPending = false;
+  var pageSize = 50, page = 0, total = null, rows = [], term = '';
   var bodyEl = $('ca-body'), pagerEl = $('ca-pager'), countEl = $('ca-count');
-  var search = $('ca-search'), pendChk = $('ca-pendentes');
+  var search = $('ca-search');
 
   function applyFilters(s) {
-    if (onlyPending) s = s.eq('status_step_prc', 1);
+    s = s.eq('status_step_prc', 1);   // sempre: só "Aguardando aprovação"
     var t = (term || '').trim().replace(/[,()*%]/g, ' ').trim();
     if (t) {
       var ors = ['empresa_nome.ilike.%' + t + '%', 'obra_nome.ilike.%' + t + '%', 'fornecedor_nome.ilike.%' + t + '%'];
@@ -95,7 +95,6 @@ async function initView_com_aprovador() {
   var t;
   function refilter() { clearTimeout(t); t = setTimeout(function () { page = 0; loadCount(); loadPage(); }, 300); }
   search.addEventListener('input', function () { term = search.value; refilter(); });
-  pendChk.addEventListener('change', function () { onlyPending = pendChk.checked; page = 0; loadCount(); loadPage(); });
 
   await loadCount();
   await loadPage();
