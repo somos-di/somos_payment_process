@@ -15,6 +15,7 @@ const ROUTES = {
     'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento' },
     'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração', admin: true },
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'permissoes': { title: 'Permissões (Empresa/Obra/Tipo)', folder: 'admin', parentLabel: 'Administração', admin: true },
     'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
 }

@@ -10,4 +10,6 @@ export function registerAdminRoutes(app: FastifyInstance, c: AdminController): v
   app.post('/admin/users-group', admin, c.addMembership);
   app.post('/admin/users-group/delete', admin, c.removeMembership);
   app.post('/admin/users/uau', admin, c.setUau);   // edita o usuário UAU de uma pessoa
+  app.post('/admin/permissions', admin, c.addPermission);          // empresa+obra+tipo -> grupo
+  app.post('/admin/permissions/delete', admin, c.removePermission);
 }

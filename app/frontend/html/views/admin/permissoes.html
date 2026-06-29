@@ -1,0 +1,48 @@
+<main>
+  <style>
+    .pm-form { display:grid; gap:16px; }
+    .pm-row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; }
+    .pm-field { display:flex; flex-direction:column; gap:6px; }
+    .pm-field > label { font-size:12.5px; font-weight:600; color:var(--text-2); }
+    .pm-field select { padding:9px 11px; border:1px solid var(--border); border-radius:9px; font-size:14px; min-width:240px; font-family:inherit; }
+    .pm-helpers { display:flex; gap:12px; font-size:12.5px; }
+    .pm-helpers a { color:var(--accent); cursor:pointer; user-select:none; }
+    .pm-checks { display:flex; flex-wrap:wrap; gap:8px 18px; max-height:180px; overflow:auto; border:1px solid var(--border); border-radius:10px; padding:11px 13px; }
+    .pm-check { display:flex; align-items:center; gap:6px; font-size:13.5px; white-space:nowrap; cursor:pointer; }
+    .pm-check input { width:16px; height:16px; accent-color:var(--accent); }
+    .pm-list-grp { border:1px solid var(--border); border-radius:12px; padding:12px 16px; margin-bottom:12px; }
+    .pm-emp-title { font-weight:700; font-size:14px; }
+    .pm-obra { padding:8px 0; border-top:1px dashed var(--border-2); }
+    .pm-obra:first-child { border-top:0; }
+    .pm-obra-name { font-size:13px; color:var(--text-2); margin-bottom:4px; }
+    .pm-tag { display:inline-flex; align-items:center; gap:6px; background:var(--accent-weak); color:var(--accent); border-radius:7px; padding:2px 4px 2px 9px; font-size:12.5px; margin:2px 6px 2px 0; }
+    .pm-tag button { border:0; background:transparent; color:inherit; cursor:pointer; font-size:15px; line-height:1; padding:0 3px; border-radius:5px; }
+    .pm-tag button:hover { background:#fff; }
+  </style>
+
+  <div class="section-title">Permissões — Empresa / Obra / Tipo</div>
+  <div class="section-sub">Concede a um grupo a <b>visibilidade</b> de processos por empresa, obra e tipo (as 3 regras de eliminação). Não torna o grupo aprovador.</div>
+
+  <div class="card" style="padding:18px 20px; margin-top:16px">
+    <div class="pm-form">
+      <div class="pm-row">
+        <div class="pm-field"><label>Grupo</label><select id="pm-group"></select></div>
+        <div class="pm-field"><label>Empresa</label><select id="pm-empresa"><option value="">Selecione…</option></select></div>
+      </div>
+      <div class="pm-field">
+        <label>Obras</label>
+        <div class="pm-helpers"><a id="pm-obras-all">marcar todas</a><a id="pm-obras-none">limpar</a></div>
+        <div class="pm-checks" id="pm-obras"><div class="empty" style="padding:4px">Selecione uma empresa.</div></div>
+      </div>
+      <div class="pm-field">
+        <label>Tipos de processo</label>
+        <div class="pm-helpers"><a id="pm-tipos-all">todos</a><a id="pm-tipos-nopj">todos menos PJ</a><a id="pm-tipos-none">limpar</a></div>
+        <div class="pm-checks" id="pm-tipos"></div>
+      </div>
+      <div><button class="btn btn-primary" id="pm-add">Adicionar permissões</button> <span id="pm-msg" style="font-size:13px;margin-left:10px"></span></div>
+    </div>
+  </div>
+
+  <div class="section-title" style="font-size:16px; margin-top:24px">Permissões atuais do grupo</div>
+  <div id="pm-list" style="margin-top:10px"><div class="empty">Selecione um grupo.</div></div>
+</main>
