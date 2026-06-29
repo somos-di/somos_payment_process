@@ -402,6 +402,26 @@ tbody tr:hover td {
   color: var(--danger);
 }
 
+/* Aviso amigável (ex.: sessão expirada) — card centralizado com ação */
+.view-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  max-width: 360px;
+  margin: 28px auto;
+  padding: 28px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.view-notice svg { width: 34px; height: 34px; color: var(--accent); }
+.view-notice .vn-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.view-notice .vn-sub { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.view-notice .vn-act { margin-top: 6px; }
+
 .act-btn {
   display: inline-grid;
   place-items: center;

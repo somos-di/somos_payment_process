@@ -46,7 +46,7 @@ async function initView_financeiro() {
 
   var rows = [];
   try { rows = await window.Store.get('financeiro'); }
-  catch (e) { $('fin-body').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return; }
+  catch (e) { window.viewError($('fin-body'), e); return; }
 
   function filtered() {
     var t = ($('fin-search').value || '').toLowerCase().trim();
@@ -116,7 +116,7 @@ async function initView_financeiro() {
   }
   async function reloadAll() {
     $('fin-body').innerHTML = '<div class="empty">Carregando…</div>';
-    try { rows = await window.Store.get('financeiro'); render(); } catch (e) { $('fin-body').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; }
+    try { rows = await window.Store.get('financeiro'); render(); } catch (e) { window.viewError($('fin-body'), e); }
   }
   $('fin-search').addEventListener('input', render);
   render();

@@ -19,7 +19,7 @@ async function initView_permissoes() {
     groups = await window.SB.select('groups', function (q) { return q.order('name_grp'); });
     empresas = await window.SB.select('v_empresas', function (q) { return q.order('nome'); });
     kinds = await window.SB.select('process_kinds', function (q) { return q.order('name_pkn'); });
-  } catch (e) { $('pm-list').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return; }
+  } catch (e) { window.viewError($('pm-list'), e); return; }
 
   empresas.forEach(function (e) { empNome[String(e.codigo)] = e.nome; });
   kinds.forEach(function (k) { kindNome[k.id_pkn] = k.name_pkn; });
@@ -70,7 +70,7 @@ async function initView_permissoes() {
     host.innerHTML = '<div class="empty">Carregando…</div>';
     var rules;
     try { rules = await window.SB.select('process_kind_rules', function (q) { return q.eq('group_pkr', Number(g)); }); }
-    catch (e) { host.innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return; }
+    catch (e) { window.viewError(host, e); return; }
     if (!rules.length) { host.innerHTML = '<div class="empty">Este grupo ainda não tem permissões.</div>'; return; }
     // garante nomes de obra das empresas presentes
     var emps = {}; rules.forEach(function (r) { emps[String(r.company_pkr)] = 1; });

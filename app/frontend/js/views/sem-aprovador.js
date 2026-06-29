@@ -7,7 +7,7 @@ async function initView_sem_aprovador() {
 
   var rows;
   try { rows = await window.SB.select('v_no_approver'); }
-  catch (e) { $('na-list').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; $('na-count').textContent = 'erro'; return; }
+  catch (e) { window.viewError($('na-list'), e); $('na-count').textContent = 'erro'; return; }
 
   $('na-count').textContent = rows.length + ' processo(s) sem aprovador';
   if (!rows.length) { $('na-list').innerHTML = '<div class="empty">Nenhum processo sem aprovador. </div>'; return; }

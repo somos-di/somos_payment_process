@@ -35,7 +35,7 @@ async function initView_admin_grupos() {
     var ug = await window.SB.select('users_group');
     ug.forEach(function (r) { (members[r.group_usg] = members[r.group_usg] || new Set()).add(r.user_usg); });
   } catch (e) {
-    $('ag-groups').innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return;
+    window.viewError($('ag-groups'), e); return;
   }
 
   function count(gid) { return (members[gid] && members[gid].size) || 0; }

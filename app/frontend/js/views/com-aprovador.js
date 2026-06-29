@@ -88,7 +88,7 @@ async function initView_com_aprovador() {
       rows = await window.SB.select('v_with_approver', function (s) {
         return applyFilters(s).order('created_at_prc', { ascending: true }).range(page * pageSize, page * pageSize + pageSize - 1);
       }) || [];
-    } catch (e) { bodyEl.innerHTML = '<div class="view-error">' + esc(e.message) + '</div>'; return; }
+    } catch (e) { window.viewError(bodyEl, e); return; }
     render();
   }
 

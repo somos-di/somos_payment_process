@@ -229,7 +229,7 @@
           }
           render();
         } catch (e) {
-          bodyEl.innerHTML = '<div class="view-error">' + esc(e.message) + '</div>';
+          window.viewError(bodyEl, e);
           updatePager();
         }
       }

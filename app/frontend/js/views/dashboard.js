@@ -3,7 +3,7 @@ async function initView_dashboard() {
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   var d;
   try { d = await window.Store.get('dashboard'); }
-  catch (e) { document.getElementById('app-content').innerHTML = '<div class="view-error">' + e.message + '</div>'; return; }
+  catch (e) { window.viewError(document.getElementById('app-content'), e); return; }
   var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
   set('kpi-pend', d.pendentes); set('kpi-aguard', d.aguardando); set('kpi-total', d.total);
   set('kpi-valor', money(d.rows.reduce(function (s, p) { return s + (Number(p.value_prc) || 0); }, 0)));
