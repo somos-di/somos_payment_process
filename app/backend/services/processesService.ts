@@ -149,8 +149,7 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
   }
 
   // ── Integração UAU ──────────────────────────────────────────────────────
-  private readonly webhookUrl = process.env.INTEGRATION_WEBHOOK_URL
-    || 'http://24.144.66.163:5678/webhook-test/payment_process';
+  // URL do webhook vem só do ambiente (INTEGRATION_WEBHOOK_URL) — nada chumbado.
 
   private static dt(d?: string | null): string {           // 'YYYY-MM-DD HH:mm:ss'
     if (!d) return '';
@@ -267,10 +266,14 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
     if (alerts.length) {
       throw new AppError('Processo com pendência; resolva antes de integrar: ' + alerts.join(' '), 422, 'validation');
     }
+    const webhookUrl = process.env.INTEGRATION_WEBHOOK_URL;
+    if (!webhookUrl) {
+      throw new AppError('Integração não configurada: defina INTEGRATION_WEBHOOK_URL no ambiente.', 500, 'config');
+    }
     const payload = await this.buildUauPayload(uuid);
     let resp: Response;
     try {
-      resp = await fetch(this.webhookUrl, {
+      resp = await fetch(webhookUrl, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
     } catch (e) {
