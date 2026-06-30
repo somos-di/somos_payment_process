@@ -30,3 +30,4 @@ export function errorHandler(error: Error | FastifyError, request: FastifyReques
   request.log.error({ err: error }, 'Erro não tratado');
   return reply.status(500).send({ success: false, error: { code: 'INTERNAL', message: 'Erro interno' } });
 }
+
