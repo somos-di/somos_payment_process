@@ -86,15 +86,21 @@ async function initView_financeiro() {
           toast('Devolvido para correção.', true); reloadAll();
         } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
       }));
-      cell.appendChild(iconBtn(FIN_ICONS.uau, 'btn-primary', 'Enviar UAU', async function () {
-        if (!(await confirmar('Enviar este processo para integração com o UAU?'))) return;
-        try {
-          await window.Store.commit(
-            function () { return window.API.post('/processes/' + p.uuid_prc + '/send-uau'); },
-            function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
-          toast('Enviado ao UAU.', true); reloadAll();
-        } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
-      }));
+      var alRow = alertas(p);
+      var uauBtn = iconBtn(FIN_ICONS.uau, 'btn-primary',
+        alRow.length ? 'Resolva os ' + alRow.length + ' alerta(s) antes de integrar' : 'Enviar UAU',
+        async function () {
+          if (alRow.length) { toast('Processo com ' + alRow.length + ' alerta(s). Resolva antes de integrar.'); return; }
+          if (!(await confirmar('Enviar este processo para integração com o UAU?'))) return;
+          try {
+            await window.Store.commit(
+              function () { return window.API.post('/processes/' + p.uuid_prc + '/send-uau'); },
+              function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
+            toast('Enviado ao UAU.', true); reloadAll();
+          } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
+        });
+      if (alRow.length) { uauBtn.disabled = true; uauBtn.style.opacity = '0.45'; uauBtn.style.cursor = 'not-allowed'; }
+      cell.appendChild(uauBtn);
       tr.addEventListener('click', function () { window.openProcessDetail(p); });
     });
     // popover de alertas

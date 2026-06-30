@@ -241,8 +241,32 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
     };
   }
 
+  // Recalcula no BACKEND os mesmos alertas da tela do Financeiro (espelha financeiro.js → alertas()):
+  // sem parcelas, soma das parcelas divergente do valor do processo, ou parcelas fora de ordem.
+  // Não confia no front: um POST direto em /send-uau de um processo com pendência é barrado aqui.
+  private async pendingAlerts(uuid: string): Promise<string[]> {
+    const a = adminClient();
+    const p = await this.run(a.from('processes').select('value_prc').eq('uuid_prc', uuid).single()) as { value_prc: number | null };
+    const inst = await this.run(a.from('installments')
+      .select('due_date_ins,value_ins,number_ins').eq('process_ins', uuid).order('number_ins')) as Array<{ due_date_ins: string; value_ins: number; number_ins: number }>;
+    const out: string[] = [];
+    const total = Number(p.value_prc) || 0;
+    const soma = inst.reduce((s, x) => s + (Number(x.value_ins) || 0), 0);
+    const diff = Math.round((soma - total) * 100) / 100;
+    if (inst.length === 0) out.push('Processo sem parcelas cadastradas.');
+    if (inst.length > 0 && Math.abs(diff) >= 0.01) out.push('A soma das parcelas diverge do valor do processo.');
+    for (let i = 1; i < inst.length; i++) {                          // ordenado por number_ins: vencimentos devem ser não-decrescentes
+      if (String(inst[i].due_date_ins) < String(inst[i - 1].due_date_ins)) { out.push('Há parcelas com vencimento fora de ordem.'); break; }
+    }
+    return out;
+  }
+
   // ENVIAR UAU (botão Integrar): monta o payload, POSTa no webhook e marca status 4 + histórico.
   async sendToUau(token: string, _userId: string, uuid: string): Promise<{ uuid_prc: string; sent: true }> {
+    const alerts = await this.pendingAlerts(uuid);
+    if (alerts.length) {
+      throw new AppError('Processo com pendência; resolva antes de integrar: ' + alerts.join(' '), 422, 'validation');
+    }
     const payload = await this.buildUauPayload(uuid);
     let resp: Response;
     try {
