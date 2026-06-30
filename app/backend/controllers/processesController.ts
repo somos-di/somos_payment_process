@@ -20,8 +20,9 @@ const CorrectSchema = z.object({
 
 const ACTIONS: Record<string, string> = {
   approve: 'approve_process', reject: 'reject_process', close: 'close_process',
-  'financeiro-reject': 'financeiro_reject', 'send-uau': 'send_to_uau',
-  // 'cancel' é tratado à parte (controller.action) com guard de autoria/status.
+  'financeiro-reject': 'financeiro_reject',
+  // 'send-uau' e 'cancel' são tratados à parte (controller.action): send-uau monta o
+  // payload + POSTa no webhook; cancel tem guard de autoria/status.
 };
 
 export class ProcessesController {
@@ -91,6 +92,11 @@ export class ProcessesController {
     if (req.params.action === 'cancel') {
       await this.service.cancel(req.accessToken!, req.user!.id, uuid);
       return reply.send({ success: true });
+    }
+    // integrar (Enviar UAU): monta o payload do payment e POSTa no webhook de integração
+    if (req.params.action === 'send-uau') {
+      const data = await this.service.sendToUau(req.accessToken!, req.user!.id, uuid);
+      return reply.send({ success: true, data });
     }
     const fn = ACTIONS[req.params.action];
     if (!fn) throw new NotFoundError('Ação inválida');

@@ -147,4 +147,116 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
   log(token: string, uuid: string, action: string) {
     return this.run(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: action }));
   }
+
+  // ── Integração UAU ──────────────────────────────────────────────────────
+  private readonly webhookUrl = process.env.INTEGRATION_WEBHOOK_URL
+    || 'http://24.144.66.163:5678/webhook-test/payment_process';
+
+  private static dt(d?: string | null): string {           // 'YYYY-MM-DD HH:mm:ss'
+    if (!d) return '';
+    return (String(d).includes('T') ? String(d) : String(d) + 'T00:00:00').slice(0, 19).replace('T', ' ');
+  }
+  private static maxToday(d?: string | null): string {     // vencimento nunca no passado
+    const today = new Date().toISOString().slice(0, 10);
+    const day = d ? String(d).slice(0, 10) : today;
+    return (day < today ? today : day) + ' 00:00:00';
+  }
+  private static mesAno(d?: string | null): string {       // 'MM/YYYY'
+    if (!d) return '';
+    const [y, m] = String(d).slice(0, 10).split('-');
+    return (m || '') + '/' + (y || '');
+  }
+
+  // Monta o payload de integração a partir do schema payment (equivalente à query do Mitra).
+  // Impostos (DescontoVinculado) ficam vazios por ora; Cap não existe no espelho.
+  async buildUauPayload(uuid: string): Promise<Record<string, unknown>> {
+    const a = adminClient();
+    const p = await this.run(a.from('processes').select('*').eq('uuid_prc', uuid).single()) as any;
+    const comp = ((await this.run(a.from('compositions')
+      .select('item_cins,prod_cins,contrato_cins,codigo_composicao,codigo_insumo,unidade_insumo')
+      .eq('codigo_composicao', p.composition_prc).eq('codigo_insumo', p.supply_prc).limit(1)) as any[])[0]) || {};
+    const doc = p.doc_kind_prc != null
+      ? ((await this.run(a.from('document_kinds').select('especie_dck,tipo_dck,modelo_dck,serie_dck')
+          .eq('id_dck', p.doc_kind_prc).maybeSingle()) as any) || {})
+      : {};
+    const apprs = await this.run(a.from('process_approvers')
+      .select('approver_app,level_app').eq('process_app', uuid).order('level_app').limit(2)) as any[];
+    const uau: Record<string, string | null> = {};
+    if (apprs.length) {
+      const us = await this.run(a.from('users').select('id_usr,uau_user_usr')
+        .in('id_usr', apprs.map((x) => x.approver_app))) as any[];
+      us.forEach((u) => { uau[u.id_usr] = u.uau_user_usr; });
+    }
+    const inst = await this.run(a.from('installments')
+      .select('due_date_ins,value_ins,number_ins').eq('process_ins', uuid).order('number_ins')) as any[];
+
+    const D = ProcessesService;
+    return {
+      Id: p.id_prc,
+      Empresa: p.company_prc,
+      Obra: p.building_prc,
+      CodigoFornecedor: p.person_prc,
+      TipoProcesso: 1,
+      ControlarEstoque: 0,
+      AcompanhaEntrega: 0,
+      DataPrevisaoEntrega: '',
+      TipoItem: 0,
+      HistoricoLancContabil: 'A PAGAR Fornecedor [pgto_NomeFornecedor] Número [pgto_NumNF]',
+      HistoricoLancContabilPago: 'PAGO Fornecedor [pgto_NomeFornecedor] NF [pgto_NumNF] Cheque [pgto_Cheque]',
+      aprovador1_uau: apprs[0] ? (uau[apprs[0].approver_app] ?? null) : null,
+      aprovador2_uau: apprs[1] ? (uau[apprs[1].approver_app] ?? null) : null,
+      anexo_boleto_url: p.attachment_url_prc || '',
+      anexo_docfiscal_url: p.attachment_url2_prc || '',
+      DocumentoFiscal: {
+        NumeroNota: p.fiscal_doc_prc ?? 0,
+        SerieNota: doc.serie_dck ?? '',
+        EspecieNota: doc.especie_dck ?? '',
+        TipoNota: doc.tipo_dck ?? 0,
+        DataEmissao: D.dt(p.issue_date_prc),
+        NFEletronica: 0,
+        ChaveNFe: '',
+        Modelo: doc.modelo_dck ?? '',
+      },
+      Parametro: {},
+      Parcelas: (inst || []).map((x) => ({ Datavencimento: D.maxToday(x.due_date_ins), Valor: x.value_ins })),
+      Itens: [{
+        Item: p.supply_prc,
+        Quantidade: 1,
+        Preco: p.value_prc,
+        Cap: '',
+        Unidade: comp.unidade_insumo ?? '',
+        VinculoPL: [{
+          Item: comp.item_cins ?? '',
+          CodigoProduto: comp.prod_cins ?? '',
+          Contrato: comp.contrato_cins ?? '',
+          Servico: comp.codigo_composicao ?? p.composition_prc,
+          Insumo: comp.codigo_insumo ?? p.supply_prc,
+          MesPlanejamento: D.mesAno(p.due_date_prc),
+          Quantidade: 1,
+          Preco: p.value_prc,
+          numeroItemContrato: 0,
+        }],
+      }],
+      DescontoVinculado: [],   // impostos ainda não tratados
+    };
+  }
+
+  // ENVIAR UAU (botão Integrar): monta o payload, POSTa no webhook e marca status 4 + histórico.
+  async sendToUau(token: string, _userId: string, uuid: string): Promise<{ uuid_prc: string; sent: true }> {
+    const payload = await this.buildUauPayload(uuid);
+    let resp: Response;
+    try {
+      resp = await fetch(this.webhookUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      throw new AppError('Não consegui chamar o webhook de integração: ' + ((e as { message?: string }).message || e), 502, 'integration');
+    }
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new AppError('Webhook de integração retornou ' + resp.status + ': ' + body.slice(0, 200), 502, 'integration');
+    }
+    await this.run(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));   // status 4 + histórico (auth.uid())
+    return { uuid_prc: uuid, sent: true };
+  }
 }
