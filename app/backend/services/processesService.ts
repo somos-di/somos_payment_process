@@ -176,7 +176,7 @@ export class ProcessesService extends CrudService<ProcessRow, ProcessInsert, Pro
       .eq('codigo_composicao', p.composition_prc).eq('codigo_insumo', p.supply_prc).limit(1)) as any[])[0]) || {};
     const doc = p.doc_kind_prc != null
       ? ((await this.run(a.from('document_kinds').select('especie_dck,tipo_dck,modelo_dck,serie_dck')
-          .eq('id_dck', p.doc_kind_prc).maybeSingle()) as any) || {})
+        .eq('id_dck', p.doc_kind_prc).maybeSingle()) as any) || {})
       : {};
     const apprs = await this.run(a.from('process_approvers')
       .select('approver_app,level_app').eq('process_app', uuid).order('level_app').limit(2)) as any[];

@@ -18,7 +18,7 @@ export interface Container {
   controllers: ControllersContainer;
 }
 
-// instancia gateways, services e controllers. Novas entidades entram aqui
+// instancia gateways, services e controllers. quaisquer novas entidades entram aqui
 export function createContainer(): Container {
   const settings = getSettings();
   const uau = new UauGateway(settings);

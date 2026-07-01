@@ -25,6 +25,7 @@ export class UauSyncService {
     return r;
   }
 
+  
   async syncAll(): Promise<Array<{ table: string; rows: number }>> {
     const { data, error } = await this.sb.from('uau_tables').select('*').order('id_uat');
     if (error) throw error;

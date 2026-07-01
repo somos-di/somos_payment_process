@@ -169,7 +169,6 @@ async function loadView(route, params) {
             return
         }
     }
-
     document.body.classList.toggle('auth-mode', route === LOGIN_ROUTE)
 
     updateBreadcrumb(meta)

@@ -19,15 +19,15 @@ export interface ControllersContainer {
 }
 
 // públicas sem requireAuth — login/logout do Supabase Auth ficam no backend
-export function registerPublicRoutes(app: FastifyInstance, c: ControllersContainer): void {
-  registerPublicAuthRoutes(app, c.auth);
+export function registerPublicRoutes(app: FastifyInstance, controller_center: ControllersContainer): void {
+  registerPublicAuthRoutes(app, controller_center.auth);
 }
 
 // protegidas — main.ts registra dentro de um plugin com preHandler requireAuthm
-export function registerProtectedRoutes(app: FastifyInstance, c: ControllersContainer): void {
-  registerProtectedAuthRoutes(app, c.auth);
-  registerProcessesRoutes(app, c.processes);
-  registerSyncRoutes(app, c.sync);
-  registerDataRoutes(app, c.data);
-  registerAdminRoutes(app, c.admin);
+export function registerProtectedRoutes(app: FastifyInstance, controller_center: ControllersContainer): void {
+  registerProtectedAuthRoutes(app, controller_center.auth);
+  registerProcessesRoutes(app, controller_center.processes);
+  registerSyncRoutes(app, controller_center.sync);
+  registerDataRoutes(app, controller_center.data);
+  registerAdminRoutes(app, controller_center.admin);
 }

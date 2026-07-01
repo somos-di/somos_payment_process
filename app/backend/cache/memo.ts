@@ -1,9 +1,9 @@
-// Cache em memória genérico com TTL único (L1 in-process). Portado do projeto de
-// referência. Node single-thread por worker: get/set/delete são atômicos.
+
+
 export class Memo<K, V> {
   private readonly store = new Map<K, { value: V; expiresAt: number }>();
 
-  constructor(private readonly ttlMs: number) {}
+  constructor(private readonly ttlMs: number) { }
 
   get(key: K): V | undefined {
     const entry = this.store.get(key);

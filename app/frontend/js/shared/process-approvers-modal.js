@@ -70,7 +70,7 @@
       if (key === 'next') {
         body.innerHTML = pendente
           ? '<div class="apv-next"><span class="apv-next-ic">' + SVG_WAIT + '</span>'
-            + '<div><b>Aguardando aprovação</b><span>Todos os aprovadores</span></div></div>'
+          + '<div><b>Aguardando aprovação</b><span>Todos os aprovadores</span></div></div>'
           : emptyState();
         return;
       }

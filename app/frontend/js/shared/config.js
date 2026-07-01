@@ -1,7 +1,5 @@
 (function () {
     window.CONFIG = {
-        // NENHUMA chave/segredo no front. Tudo passa pelo backend Fastify, que
-        // guarda as chaves do Supabase e mantém a sessão em cookie httpOnly.
         // Relativo por padrão: o nginx faz proxy de /api -> backend (same-origin,
         // resolve cookie/CORS). Override em dev via `window.__API_BASE__`.
         API_BASE: (window.__API_BASE__ || '/api/v1'),

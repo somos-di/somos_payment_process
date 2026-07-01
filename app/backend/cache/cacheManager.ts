@@ -7,9 +7,8 @@ import { Memo } from './memo.js';
 // Resiliente: qualquer falha no Redis degrada pra L1, nunca derruba o request.
 //
 // Limitação consciente: single-process. Com múltiplos workers, o L1 de cada um
-// pode divergir após um invalidate em outro worker até o TTL expirar — aí
-// entraria um pub/sub (crossProcessCacheManager da referência). Hoje rodamos
-// 1 container/1 processo, então não compensa.
+// pode divergir após um invalidate em outro worker até o TTL expirar
+
 export class CacheManager {
   private readonly l1: Memo<string, unknown>;
   private readonly ttlSec: number;
@@ -36,7 +35,7 @@ export class CacheManager {
           this.l1.set(key, value);
           return value;
         }
-      } catch { /* degrada pra fetcher */ }
+      } catch { }
     }
 
     const value = await fetcher();
@@ -47,8 +46,6 @@ export class CacheManager {
     return value;
   }
 
-  // Invalida tudo que começa com `prefix`. Chamado no sync UAU. L1 é zerado
-  // por inteiro (operação rara; repopula lazy); no Redis usa SCAN + DEL.
   async invalidatePrefix(prefix: string): Promise<void> {
     this.l1.clear();
     if (!this.redis) return;
