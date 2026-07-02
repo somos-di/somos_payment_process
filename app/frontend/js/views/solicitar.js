@@ -222,7 +222,8 @@ async function initView_solicitar() {
         due_date_prc: parcelas[0] ? parcelas[0].vencimento : null,
         value_prc: parseVal($('sol-valor').value), fiscal_doc_prc: $('sol-numdoc').value || null,
         attachment_url_prc: anexos.boleto, attachment_url2_prc: anexos.nf,
-        status_step_prc: 1, approving_status_prc: 1,
+        // status_step_prc/approving_status_prc não são enviados: o RPC ignora colunas
+        // de controle e o banco aplica o default (1 = Aguardando aprovação).
       };
       var installments = parcelas.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
       return window.API.post('/processes/full', { process: process, installments: installments });

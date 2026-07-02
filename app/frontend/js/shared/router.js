@@ -216,31 +216,45 @@ function warmState() {
     window.Store.warm('pending_approvals')
 }
 
-// Carrega o catálogo de status (payment.status_kind) e sobrescreve CONFIG.STEPS,
-// que vira derivado da tabela (e não mais hardcoded). O mapa de config.js fica só
-// como fallback se a leitura falhar. status_nome das views já vem do JOIN no banco.
-async function loadStatusKinds() {
-    if (!window.Store || !window.Auth || !window.Auth.isAuthenticated()) return
+// Carrega os catálogos de domínio (fonte da verdade = tabelas do banco), que viram
+// derivados e não mais hardcoded. Os mapas de config.js ficam só como fallback.
+// Status: o backend desserializa/normaliza e cacheia (GET /catalog/status) — o front
+// só consome { byId -> STEPS, byKey -> STATUS }, sem parse.
+async function loadStatusCatalog() {
     try {
-        const rows = await window.Store.get('status_kind')
+        const cat = await window.API.get('/catalog/status')
+        if (cat && cat.byId) window.CONFIG.STEPS = cat.byId
+        if (cat && cat.byKey) window.CONFIG.STATUS = cat.byKey
+    } catch (e) { /* mantém o fallback de config.js */ }
+}
+
+// process_kinds: só rótulos (sem lógica), montado direto das linhas.
+async function loadProcessKinds() {
+    try {
+        const rows = await window.Store.get('process_kinds')
         if (Array.isArray(rows) && rows.length) {
             const m = {}
-            rows.forEach(function (r) { m[r.id_skn] = r.descr_skn })
-            window.CONFIG.STEPS = m
+            rows.forEach(function (r) { m[r.id_pkn] = r.name_pkn })
+            window.CONFIG.PROCESS_KINDS = m
         }
-    } catch (e) { /* mantém o fallback hardcoded de config.js */ }
+    } catch (e) { /* mantém o fallback de config.js */ }
+}
+
+async function loadCatalogs() {
+    if (!window.Store || !window.Auth || !window.Auth.isAuthenticated()) return
+    await Promise.all([loadStatusCatalog(), loadProcessKinds()])
 }
 
 async function bootstrapAuth() {
     if (!window.Auth) return
     await window.Auth.init()
-    await loadStatusKinds() // status_kind -> CONFIG.STEPS (antes de renderizar qualquer view)
+    await loadCatalogs() // status_kind/process_kinds -> CONFIG (antes de renderizar qualquer view)
     warmState() // aquece logo após confirmar a sessão
     window.Auth.onChange(function (session) {
         if (!session && (window.location.hash || '').indexOf(LOGIN_ROUTE) === -1) {
             window.location.hash = window.CONFIG.HASH(LOGIN_ROUTE)
         }
-        if (session) { loadStatusKinds(); warmState() } // novo login: carrega status + aquece
+        if (session) { loadCatalogs(); warmState() } // novo login: carrega catálogos + aquece
     })
 }
 

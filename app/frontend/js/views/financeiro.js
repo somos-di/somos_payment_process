@@ -48,10 +48,35 @@ async function initView_financeiro() {
   try { rows = await window.Store.get('financeiro'); }
   catch (e) { window.viewError($('fin-body'), e); return; }
 
+  // filtros persistentes (empresa/obra/data/status) — opções do banco (ProcessFilters)
+  var filters = { company: '', building: '', from: '', to: '', status: '' };
+  var pf = await window.ProcessFilters.mount($('fin-filters'), {
+    storageKey: 'financeiro',
+    onChange: function (values) { filters = values; render(); },
+  });
+  filters = pf.getValues();
+  $('fin-clear').addEventListener('click', function () { $('fin-search').value = ''; pf.clear(); });
+
+  function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
   function filtered() {
+    var out = rows;
     var t = ($('fin-search').value || '').toLowerCase().trim();
-    if (!t) return rows;
-    return rows.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+    if (t) {
+      out = out.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+    }
+    return out.filter(function (p) {
+      if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
+      if (filters.building && String(p.building_prc || '').toUpperCase() !== String(filters.building).toUpperCase()) return false;
+      if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
+      if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
+      if (filters.from || filters.to) {
+        var d = isoDay(p.due_date_prc);
+        if (!d) return false;
+        if (filters.from && d < filters.from) return false;
+        if (filters.to && d > filters.to) return false;
+      }
+      return true;
+    });
   }
   function render() {
     var data = filtered();
@@ -62,7 +87,7 @@ async function initView_financeiro() {
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
         + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
         + '<td>' + esc(p.fornecedor_nome) + '</td><td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
-        + '<td><span class="badge ' + (p.status_step_prc === 8 ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
+        + '<td><span class="badge ' + (p.status_step_prc === window.CONFIG.STATUS.erro ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
         + '<td>' + (al.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + al.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';

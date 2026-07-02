@@ -1,126 +1,135 @@
 <main>
   <style>
-    .lote-steps {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
+    /* ── passos (baixar modelo / importar) ─────────────────────────────── */
+    .lm-steps { display: grid; grid-template-columns: 400px 1fr; gap: 16px; align-items: stretch; }
+    .lm-step { padding: 20px 22px; display: flex; flex-direction: column; }
+    .lm-step-head { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+    .lm-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-weak);
+                   color: var(--accent); font-weight: 700; font-size: 13px; display: grid; place-items: center; flex: none; }
+    .lm-step-head b { display: block; font-size: 14.5px; color: var(--text); }
+    .lm-step-head span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
 
-    .dropzone-lote {
-      display: block;
-      border: 1.5px dashed var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      text-align: center;
-      cursor: pointer;
-      background: var(--surface-2);
-    }
+    .lm-hints { margin: 0 0 16px; padding-left: 18px; font-size: 13px; color: var(--text-2); display: grid; gap: 7px; }
+    .lm-hints li::marker { color: var(--accent); }
+    .lm-step .btn { align-self: flex-start; margin-top: auto; }
 
-    .dropzone-lote:hover {
-      border-color: var(--accent);
-    }
+    .dropzone-lote { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                     gap: 8px; border: 1.5px dashed var(--border); border-radius: 12px; padding: 34px 24px;
+                     text-align: center; cursor: pointer; background: var(--surface-2);
+                     transition: border-color .12s, background .12s; }
+    .dropzone-lote:hover { border-color: var(--accent); background: var(--accent-weak); }
+    .dropzone-lote.dragover { border-color: var(--accent); border-style: solid; background: var(--accent-weak);
+                              box-shadow: 0 0 0 3px var(--accent-weak); }
+    .dropzone-lote svg { width: 32px; height: 32px; color: var(--accent); }
+    .lm-dz-sub { font-size: 12.5px; color: var(--muted); }
 
-    .lote-scroll {
-      max-height: 340px;
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
+    /* ── erro ───────────────────────────────────────────────────────────── */
+    .lm-error { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px;
+                border: 1px solid #f5c6d1; background: var(--danger-weak); color: #9f1239;
+                border-radius: 12px; padding: 13px 16px; font-size: 13.5px; }
+    .lm-error svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 
-    .lote-scroll table thead th {
-      position: sticky;
-      top: 0;
-      background: var(--surface-2);
-      z-index: 1;
-    }
+    /* ── painéis (preview / resultado) ──────────────────────────────────── */
+    .lm-panel { margin-top: 16px; padding: 0; overflow: hidden; }
+    .lm-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+                     flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    .lm-panel-head b { font-size: 14.5px; }
+    .lm-panel-sub { font-size: 12.5px; color: var(--muted); }
+    .lm-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    .progress {
-      height: 10px;
-      border-radius: 999px;
-      background: var(--surface-2);
-      overflow: hidden;
-      margin: 10px 0;
-    }
+    .lote-scroll { max-height: 420px; overflow: auto; }
+    .lote-scroll table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 1; white-space: nowrap; }
 
-    .progress>span {
-      display: block;
-      height: 100%;
-      width: 0;
-      background: var(--accent);
-      transition: width .2s;
-    }
+    .lm-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+                        flex-wrap: wrap; padding: 14px 18px 0; }
+    .progress { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 10px 18px 14px; }
+    .progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 
-    .lote-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+    @media (max-width: 980px) { .lm-steps { grid-template-columns: 1fr; } }
   </style>
 
   <div class="section-title">Solicitar em Massa</div>
-  <div class="section-sub" style="margin-bottom:16px">Baixe o modelo, preencha e importe uma planilha <b>.xlsx</b> (ou
-    .csv) para criar vários processos de uma vez.</div>
+  <div class="section-sub" style="margin-bottom:16px">Crie vários processos de uma vez a partir de uma planilha
+    <b>.xlsx</b> (ou .csv).</div>
 
-  <div class="card">
-    <div class="lote-actions" style="margin-bottom:14px">
-      <button class="btn btn-light" id="lm-modelo">Baixar modelo (.xlsx)</button>
-      <span class="section-sub" style="margin:0">Mesmas colunas do import_base.xlsx · datas dd/mm/aaaa ou aaaa-mm-dd ·
-        valor 1.000,00</span>
+  <!-- passos 1 e 2 (escondidos quando há pré-visualização) -->
+  <div class="lm-steps" id="lm-upload">
+    <div class="card lm-step">
+      <div class="lm-step-head">
+        <span class="lm-step-num">1</span>
+        <div><b>Baixe o modelo</b><span>Planilha com o cabeçalho correto</span></div>
+      </div>
+      <ul class="lm-hints">
+        <li>A aba <b>Instruções</b> explica o preenchimento de cada coluna e lista os <b>IDs dos tipos de processo</b>.</li>
+        <li>Datas em <b>dd/mm/aaaa</b> ou <b>aaaa-mm-dd</b> · valores como <b>1.000,00</b>.</li>
+        <li>Uma linha por processo; as parcelas mensais são geradas pela quantidade informada.</li>
+      </ul>
+      <button class="btn btn-light" id="lm-modelo">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Baixar modelo (.xlsx)
+      </button>
     </div>
 
-    <!-- upload -->
-    <div id="lm-upload">
+    <div class="card lm-step">
+      <div class="lm-step-head">
+        <span class="lm-step-num">2</span>
+        <div><b>Importe a planilha preenchida</b><span>Os IDs são conferidos nos catálogos e os nomes aparecem na pré-visualização</span></div>
+      </div>
       <label class="dropzone-lote" for="lm-file">
-        <div><b>Clique para enviar</b> ou arraste a planilha .xlsx</div>
-        <div class="section-sub" style="margin-top:6px">Use "Baixar modelo" para obter o cabeçalho correto.</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="M8 17l4-4 4 4"/></svg>
+        <div><b>Clique para enviar</b> ou arraste o arquivo aqui</div>
+        <div class="lm-dz-sub">.xlsx, .xls ou .csv — use o modelo do passo 1.</div>
       </label>
       <input id="lm-file" type="file" accept=".xlsx,.xls,.csv" hidden>
     </div>
+  </div>
 
-    <div class="alert-box" id="lm-erro" hidden
-      style="border:1px solid var(--danger);background:var(--danger-weak);color:#9f1239;border-radius:10px;padding:12px 14px;margin-top:12px">
-      <span id="lm-erro-msg"></span>
-    </div>
+  <!-- erro de leitura/validação -->
+  <div class="lm-error" id="lm-erro" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    <span id="lm-erro-msg"></span>
+  </div>
 
-    <!-- preview -->
-    <div id="lm-preview" hidden style="margin-top:14px">
-      <div
-        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px">
+  <!-- pré-visualização -->
+  <div class="card lm-panel" id="lm-preview" hidden>
+    <div class="lm-panel-head">
+      <div>
         <b id="lm-preview-title"></b>
-        <div class="lote-actions">
-          <button class="btn btn-light" id="lm-limpar">Limpar</button>
-          <button class="btn btn-primary" id="lm-processar">Processar</button>
-        </div>
+        <div class="lm-panel-sub">Nomes resolvidos dos catálogos — itens <b style="color:var(--danger)">não encontrados</b> serão rejeitados pelas regras de visibilidade.</div>
       </div>
-      <div class="lote-scroll">
-        <table>
-          <thead id="lm-head"></thead>
-          <tbody id="lm-body"></tbody>
-        </table>
+      <div class="lm-panel-actions">
+        <button class="btn btn-light" id="lm-limpar">Limpar</button>
+        <button class="btn btn-primary" id="lm-processar">Processar</button>
       </div>
     </div>
+    <div class="lote-scroll">
+      <table>
+        <thead id="lm-head"></thead>
+        <tbody id="lm-body"></tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- progresso + resultados -->
-    <div id="lm-progresso" hidden style="margin-top:16px">
-      <div style="display:flex;justify-content:space-between"><b id="lm-prog-label">Processando…</b><span
-          class="section-sub" id="lm-prog-cont" style="margin:0"></span></div>
-      <div class="progress"><span id="lm-prog-fill"></span></div>
-      <div class="lote-scroll" style="margin-top:8px">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Descrição</th>
-              <th>Status</th>
-              <th>Parcelas</th>
-              <th>Detalhe</th>
-            </tr>
-          </thead>
-          <tbody id="lm-result"></tbody>
-        </table>
-      </div>
+  <!-- progresso + resultados -->
+  <div class="card lm-panel" id="lm-progresso" hidden>
+    <div class="lm-progress-head">
+      <b id="lm-prog-label">Processando…</b>
+      <span class="lm-panel-sub" id="lm-prog-cont"></span>
+    </div>
+    <div class="progress"><span id="lm-prog-fill"></span></div>
+    <div class="lote-scroll" style="border-top:1px solid var(--border)">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descrição</th>
+            <th>Status</th>
+            <th>Parcelas</th>
+            <th>Detalhe</th>
+          </tr>
+        </thead>
+        <tbody id="lm-result"></tbody>
+      </table>
     </div>
   </div>
 </main>

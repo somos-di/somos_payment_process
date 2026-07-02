@@ -27,8 +27,8 @@ export interface AppSettings {
   cookieName: string;
   cookieSecure: boolean;
   attachmentsBucket: string;
-  redisUrl: string | null;   // null => cache só L1 (in-process)
-  cacheTtlMs: number;
+  redisUrl: string | null;   // null => sem cache (todo get vai direto ao banco)
+  cacheTtlMs: number;        // TTL de SEGURANÇA (rede de proteção); invalidação é por evento
   uau: {
     baseUrl: string;
     user: string;
@@ -56,7 +56,7 @@ export function getSettings(): AppSettings {
     cookieSecure: (process.env.COOKIE_SECURE || 'false') === 'true',
     attachmentsBucket: process.env.ATTACHMENTS_BUCKET || 'attachments',
     redisUrl: process.env.REDIS_URL || null,
-    cacheTtlMs: Number(process.env.CACHE_TTL_MS || 600000), // 10 min
+    cacheTtlMs: Number(process.env.CACHE_TTL_MS || 86400000), // 24h (rede de segurança; invalidação por evento)
 
     uau: {
       baseUrl: process.env.UAU_BASE_URL || '',

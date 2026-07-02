@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { CacheManager } from '../../cache/cacheManager.js';
+import type { CacheWarmer } from '../../cache/cacheWarmer.js';
 import { RUNTIME } from '../../config/runtime.js';
 import { NotFoundError } from '../../errors.js';
 import { adminClient } from '../../gateways/supabase.js';
@@ -14,18 +14,18 @@ export class UauSyncService {
   private readonly schema = getSettings().schema;
   private readonly batchSize = RUNTIME.sync.insertBatchSize;
 
-  constructor(private readonly uau: UauGateway, private readonly cache?: CacheManager) { }
+  constructor(private readonly uau: UauGateway, private readonly warmer?: CacheWarmer) { }
 
   async syncById(id: number): Promise<{ message: string; rows: number }> {
     const { data, error } = await this.sb.from('uau_tables').select('*').eq('id_uat', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`uau_tables sem id_uat=${id}. Rode o seed (uau_sync.sql).`);
     const r = await this.sync(uauTableSchema.parse(data));
-    await this.cache?.invalidatePrefix('data:'); // mirrors mudaram -> derruba cache global
+    await this.warmer?.refreshUau(); // espelhos mudaram -> invalida + re-aquece só os recursos UAU
     return r;
   }
 
-  
+
   async syncAll(): Promise<Array<{ table: string; rows: number }>> {
     const { data, error } = await this.sb.from('uau_tables').select('*').order('id_uat');
     if (error) throw error;
@@ -35,7 +35,7 @@ export class UauSyncService {
       const r = await this.sync(t);
       out.push({ table: t.supabase_uau_table_uat, rows: r.rows });
     }
-    await this.cache?.invalidatePrefix('data:'); // mirrors reescritos -> derruba cache global
+    await this.warmer?.refreshUau(); // espelhos reescritos -> invalida + re-aquece só os recursos UAU
     return out;
   }
 

@@ -59,18 +59,15 @@
     mount: async function (host, opts) {
       var paged = typeof opts.fetchPage === 'function';
       var pageSize = opts.pageSize || 50;
-      var dateFilter = !!opts.dateFilter;          // mostra filtro de range de data
-      var dateField = opts.dateField || 'due_date_prc'; // coluna usada no range
+      var dateField = opts.dateField || 'due_date_prc'; // coluna usada no range de data
+      var showApprovers = !!opts.showApprovers;         // coluna "Aprovações" (quem já aprovou)
 
       host.innerHTML = '<div class="card" style="padding:0">'
         + '<div class="pl-toolbar">'
         + '<div class="pl-search">' + SVG_SEARCH + '<input id="pl-search" placeholder="Buscar…"></div>'
-        + (dateFilter
-          ? '<div class="pl-dates">'
-          + '<label>De<input type="date" id="pl-date-from"></label>'
-          + '<label>Até<input type="date" id="pl-date-to"></label></div>'
-          + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
-          : '')
+        + '<div class="pl-filters" id="pl-filters"></div>'
+        + (opts.extraFilter ? '<div class="pl-filters" id="pl-extra"></div>' : '')
+        + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
         + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
         + (paged ? '<div class="pl-pager" id="pl-pager"></div>' : '')
@@ -79,19 +76,44 @@
       var bodyEl = host.querySelector('#pl-body');
       var search = host.querySelector('#pl-search');
       var pagerEl = host.querySelector('#pl-pager');
-      var dFrom = host.querySelector('#pl-date-from');
-      var dTo = host.querySelector('#pl-date-to');
 
       var rows = [];        // linhas atualmente exibidas (página atual no modo paginado)
       var page = 0;         // página 0-indexada (modo paginado)
       var total = null;     // total de registros (count exato) p/ páginas numeradas
       var hasMore = false;  // fallback se o total vier nulo
       var term = '';        // termo de busca corrente
+      var filters = { company: '', building: '', from: '', to: '', status: '', urgent: '' };
+      var extraValue = '';      // valor do filtro extra da tela (ex.: "Aprovar como" grupo)
+      var approversByUuid = {}; // uuid -> [nomes de quem já aprovou] (batch por página)
+
+      // Quem JÁ APROVOU, visível na própria lista (sem abrir o processo): busca em
+      // LOTE os aprovadores das linhas da página em v_process_approvers (RLS vale).
+      async function loadApprovers() {
+        approversByUuid = {};
+        var uuids = rows.map(function (p) { return p.uuid_prc; }).filter(Boolean);
+        if (!uuids.length) return;
+        try {
+          var list = await window.SB.select('v_process_approvers', function (q) {
+            return q.in('process_app', uuids).order('approved_at_app');
+          });
+          (list || []).forEach(function (a) {
+            (approversByUuid[a.process_app] = approversByUuid[a.process_app] || []).push(a.approver_name || '—');
+          });
+        } catch (e) { /* coluna fica vazia; o modal de Aprovadores continua disponível */ }
+      }
+
+      function approversCell(p) {
+        var names = approversByUuid[p.uuid_prc] || [];
+        if (!names.length) return '<span style="color:var(--muted)">—</span>';
+        var joined = names.join(', ');
+        return '<span class="badge ok" title="' + esc(joined) + '">' + names.length + '</span> '
+          + '<span class="pl-approvers" title="' + esc(joined) + '">' + esc(joined) + '</span>';
+      }
 
       function isoDay(v) { return v ? String(v).split('T')[0] : ''; } // 'YYYY-MM-DD'
 
-      // Filtro client-side (apenas no modo simples): busca textual + range de data.
-      // O range é PERSISTENTE — só zera no "Limpar filtros".
+      // Filtro client-side (apenas no modo simples): busca textual + empresa/obra/
+      // status/data. No modo paginado os filtros vão ao servidor (fetchPage/fetchCount).
       function filtered() {
         if (paged) return rows;
         var out = rows;
@@ -101,18 +123,20 @@
             return [p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.tipo_nome, p.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
           });
         }
-        if (dateFilter) {
-          var from = dFrom && dFrom.value, to = dTo && dTo.value;
-          if (from || to) {
-            out = out.filter(function (p) {
-              var d = isoDay(p[dateField]);
-              if (!d) return false;
-              if (from && d < from) return false;
-              if (to && d > to) return false;
-              return true;
-            });
+        out = out.filter(function (p) {
+          if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
+          if (filters.building && String(p.building_prc || '').toUpperCase() !== String(filters.building).toUpperCase()) return false;
+          if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
+          if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
+          if (filters.from || filters.to) {
+            var d = isoDay(p[dateField]);
+            if (!d) return false;
+            if (filters.from && d < filters.from) return false;
+            if (filters.to && d > filters.to) return false;
           }
-        }
+          return true;
+        });
+        if (opts.extraFilter && extraValue) out = opts.extraFilter.apply(out, extraValue);
         return out;
       }
 
@@ -121,7 +145,8 @@
         if (!data.length) {
           bodyEl.innerHTML = '<div class="empty">' + esc(page > 0 ? 'Nada nesta página.' : (opts.emptyText || 'Nenhum processo.')) + '</div>';
         } else {
-          var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead><tbody>';
+          var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th>'
+            + (showApprovers ? '<th>Aprovações</th>' : '') + '<th></th></tr></thead><tbody>';
           data.forEach(function (p, i) {
             html += '<tr data-i="' + i + '" style="cursor:pointer">'
               + '<td><span class="id-cell">' + esc(p.id_prc)
@@ -131,6 +156,7 @@
               + '<td>' + esc(p.tipo_nome) + '</td>'
               + '<td>' + money(p.value_prc) + '</td><td>' + fmtDate(p.due_date_prc) + '</td>'
               + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
+              + (showApprovers ? '<td style="white-space:nowrap">' + approversCell(p) + '</td>' : '')
               + '<td style="white-space:nowrap;text-align:right"></td></tr>';
           });
           html += '</tbody></table></div>';
@@ -216,17 +242,18 @@
         if (paged) pagerEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
         try {
           if (paged) {
-            // META: conta UMA vez por filtro (total === null). Trocar busca zera o
-            // total p/ recontar; navegar entre páginas reusa o total (não reconta).
+            // META: conta UMA vez por filtro (total === null). Trocar busca/filtros
+            // zera o total p/ recontar; navegar entre páginas reusa o total.
             if (opts.fetchCount && total === null) {
-              total = await opts.fetchCount({ term: term });
+              total = await opts.fetchCount({ term: term, filters: filters });
             }
             // LIST: a página traz só as 50 linhas (sem recontar).
-            rows = (await opts.fetchPage({ page: page, pageSize: pageSize, term: term })) || [];
+            rows = (await opts.fetchPage({ page: page, pageSize: pageSize, term: term, filters: filters })) || [];
             hasMore = total != null ? (page + 1) * pageSize < total : rows.length === pageSize;
           } else {
             rows = await opts.load();
           }
+          if (showApprovers) await loadApprovers(); // nomes de quem já aprovou (batch)
           render();
         } catch (e) {
           window.viewError(bodyEl, e);
@@ -242,16 +269,51 @@
         debTimer = setTimeout(function () { term = (search.value || '').trim(); page = 0; total = null; reload(); }, 350);
       });
 
-      // filtro de data (modo simples): re-renderiza ao mudar; persiste até "Limpar"
-      if (dateFilter) {
-        if (dFrom) dFrom.addEventListener('change', render);
-        if (dTo) dTo.addEventListener('change', render);
-        var clearBtn = host.querySelector('#pl-clear');
-        if (clearBtn) clearBtn.addEventListener('click', function () {
-          search.value = ''; if (dFrom) dFrom.value = ''; if (dTo) dTo.value = '';
+      // filtros persistentes (empresa/obra/data/status) — opções do banco; salvos
+      // por tela (storageKey = rota atual) e restaurados na próxima visita.
+      var pf = await window.ProcessFilters.mount(host.querySelector('#pl-filters'), {
+        storageKey: opts.storageKey || (window.location.hash || 'view'),
+        onChange: function (values) {
+          filters = values;
+          if (paged) { page = 0; total = null; reload(); } else render();
+        },
+      });
+      filters = pf.getValues(); // filtros restaurados valem já na carga inicial
+
+      // filtro EXTRA da tela (ex.: "Aprovar como" na tela Aprovar) — select genérico,
+      // persistente, com opções carregadas do banco por opts.extraFilter.load().
+      var extraEl = null, extraStorageKey = null;
+      if (opts.extraFilter) {
+        extraStorageKey = 'filters-extra:' + (opts.storageKey || (window.location.hash || 'view'));
+        var extraHost = host.querySelector('#pl-extra');
+        extraHost.innerHTML = '<label class="pf-field">' + esc(opts.extraFilter.label || 'Filtro')
+          + '<select data-extra><option value="">Todos</option></select></label>';
+        extraEl = extraHost.querySelector('[data-extra]');
+        try {
+          var options = await opts.extraFilter.load();
+          extraEl.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
+            return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
+          }).join('');
+        } catch (e) { /* sem opções, filtro fica só com "Todos" */ }
+        try { extraValue = localStorage.getItem(extraStorageKey) || ''; } catch (e) { extraValue = ''; }
+        extraEl.value = extraValue;
+        if (extraEl.value !== extraValue) { extraValue = ''; } // opção salva não existe mais
+        extraEl.addEventListener('change', function () {
+          extraValue = extraEl.value;
+          try { localStorage.setItem(extraStorageKey, extraValue); } catch (e) { /* ignore */ }
           render();
         });
       }
+
+      host.querySelector('#pl-clear').addEventListener('click', function () {
+        search.value = ''; term = '';
+        if (paged) { page = 0; total = null; }
+        if (extraEl) {
+          extraValue = ''; extraEl.value = '';
+          try { localStorage.removeItem(extraStorageKey); } catch (e) { /* ignore */ }
+        }
+        pf.clear(); // dispara onChange -> reload/render
+      });
 
       await reload();
       return { reload: reload };
@@ -259,8 +321,17 @@
   };
 
   // Filtros compartilhados entre contagem (META) e página (LIST) — mesmos critérios.
-  function applyProcessFilters(s, kind, term) {
+  // `filters` = { company, building, from, to, status } (ProcessFilters); aplicados
+  // no SERVIDOR (eq/gte/lte), então valem para paginação e contagem.
+  function applyProcessFilters(s, kind, term, filters) {
     if (kind) s = s.eq('kind_prc', Number(kind));
+    var f = filters || {};
+    if (f.company) s = s.eq('company_prc', f.company);
+    if (f.building) s = s.eq('building_prc', f.building);
+    if (f.status !== '' && f.status != null) s = s.eq('status_step_prc', Number(f.status));
+    if (f.urgent === '1' || f.urgent === '0') s = s.eq('is_urgent_prc', f.urgent === '1');
+    if (f.from) s = s.gte('due_date_prc', f.from);
+    if (f.to) s = s.lte('due_date_prc', f.to);
     term = (term || '').trim();
     if (term) {
       var safe = term.replace(/[,()*%]/g, ' ').trim();
@@ -279,7 +350,7 @@
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
       return window.SB.select('v_processes', function (s) {
-        s = applyProcessFilters(s, kind, args.term);
+        s = applyProcessFilters(s, kind, args.term, args.filters);
         return s.order('id_prc', { ascending: false }).range(page * pageSize, page * pageSize + pageSize - 1);
       });
     };
@@ -289,7 +360,7 @@
   window.fetchProcessesCount = function (kind) {
     return function (args) {
       return window.SB.count('v_processes', function (s) {
-        return applyProcessFilters(s, kind, args.term);
+        return applyProcessFilters(s, kind, args.term, args.filters);
       });
     };
   };
@@ -297,8 +368,32 @@
   // Lista "Minhas Aprovações": rpc my_pending_approvals (autoridade). Enriquecemos os
   // nomes buscando SÓ os uuids pendentes em v_processes (.in) — nunca todos os processos.
   window.mountPendingApprovals = async function (host) {
+    // "Aprovar como": uuid -> grupos do usuário que o tornam elegível (RPC em lote).
+    // Permite priorizar por nível (ex.: TI N3 primeiro — processos mais caros).
+    var groupsByUuid = {};
     return window.ProcessList.mount(host, {
       emptyText: 'Você não tem aprovações pendentes.',
+      showApprovers: true, // Aprovar: quem já aprovou, visível SEM abrir o processo
+      extraFilter: {
+        label: 'Aprovar como',
+        load: async function () {
+          var rows = await window.SB.rpc('my_pending_approval_groups', {});
+          groupsByUuid = {};
+          var names = {}, levels = {};
+          (rows || []).forEach(function (r) {
+            (groupsByUuid[r.uuid_prc] = groupsByUuid[r.uuid_prc] || []).push(r.group_id);
+            names[r.group_id] = r.group_name; levels[r.group_id] = r.level;
+          });
+          return Object.keys(names)
+            .sort(function (a, b) { return (levels[b] - levels[a]) || String(names[a]).localeCompare(names[b]); })
+            .map(function (id) { return { value: id, label: names[id] + ' (nível ' + levels[id] + ')' }; });
+        },
+        apply: function (rows, groupId) {
+          return rows.filter(function (p) {
+            return (groupsByUuid[p.uuid_prc] || []).indexOf(Number(groupId)) >= 0;
+          });
+        },
+      },
       load: async function () {
         var pend = await window.Store.get('pending_approvals');
         if (!pend.length) return [];

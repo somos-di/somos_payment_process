@@ -1,7 +1,16 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { AppError } from '../errors.js';
 import { getSettings } from '../settings.js';
 
 type Client = SupabaseClient<any, any, any>;
+
+// Desempacota a resposta do supabase-js ({ data, error }): erro -> AppError, senão data.
+// Helper único (antes duplicado em cada service como `run`).
+export async function unwrap<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
+  const { data, error } = await p;
+  if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
+  return data;
+}
 
 // admin: service_role (ignora RLS) — só para operações privilegiadas (ex.: integração UAU).
 

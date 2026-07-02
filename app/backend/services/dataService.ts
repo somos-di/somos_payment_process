@@ -1,6 +1,7 @@
+import { CACHEABLE_RESOURCES, cacheKey } from '../cache/cacheableResources.js';
 import type { CacheManager } from '../cache/cacheManager.js';
 import { AppError, NotFoundError } from '../errors.js';
-import { adminClient, userClient } from '../gateways/supabase.js';
+import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
 
 // Recursos (tabelas/views) que o front pode LER. RLS ainda restringe as linhas.
@@ -8,18 +9,8 @@ const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
   'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
-  'v_process_history', 'v_no_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
+  'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
-]);
-
-// Recursos GLOBAIS (mesmo resultado pra qualquer usuário: mirrors UAU + lookups).
-// Só estes entram no cache de servidor — dados RLS por-usuário (v_processes,
-// v_financeiro, etc.) NUNCA são cacheados globalmente (vazaria entre usuários).
-// Invalidados em bloco no sync UAU (que reescreve as tabelas-espelho).
-const CACHEABLE_RESOURCES = new Set<string>([
-  'v_empresas', 'v_obras', 'v_fornecedores', 'v_compositions', 'compositions',
-  'process_kinds', 'document_kinds', 'status_kind', 'companies', 'cost_centers', 'persons',
-  'departments', 'uau_tables',
 ]);
 
 // Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
@@ -32,7 +23,7 @@ const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'gr
 // completed_approvals/eligible_approvers gateiam can_see_process por dentro.
 // process_levels/current_level saíram: não são usados pelo front e reduzem superfície.
 const READ_RPCS = new Set<string>([
-  'my_pending_approvals', 'completed_approvals', 'eligible_approvers', 'next_levels',
+  'my_pending_approvals', 'my_pending_approval_groups', 'completed_approvals', 'eligible_approvers', 'next_levels',
 ]);
 
 type Op = [string, ...unknown[]];
@@ -40,16 +31,8 @@ type Op = [string, ...unknown[]];
 export class DataService {
   constructor(private readonly cache?: CacheManager) { }
 
-  private run<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
-    return Promise.resolve(p).then(({ data, error }) => {
-      if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
-      return data;
-    });
-  }
-
   // SELECT genérico. Recursos globais (CACHEABLE_RESOURCES) passam pelo cache
-  // de servidor (L1+L2), com chave = resource + flags + ops. Os demais (RLS)
-  // vão direto no Supabase.
+  // do Redis, com chave = resource + flags + ops. Os demais (RLS) vão direto no Supabase.
   // gate de admin: lê is_admin do banco pelo sub do JWT (já validado no requireAuth).
   private async assertAdmin(token: string): Promise<void> {
     let sub = '';
@@ -62,7 +45,7 @@ export class DataService {
     if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
     if (ADMIN_RESOURCES.has(resource)) await this.assertAdmin(token); // 403 se não-admin
     if (this.cache && CACHEABLE_RESOURCES.has(resource)) {
-      const key = `data:${resource}:${withCount ? 'c' : ''}${head ? 'h' : ''}:${JSON.stringify(ops || [])}`;
+      const key = cacheKey(resource, ops, withCount, head);
       return this.cache.wrap(key, () => this.runQuery(token, resource, ops, withCount, head));
     }
     return this.runQuery(token, resource, ops, withCount, head);
@@ -96,12 +79,12 @@ export class DataService {
       if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
       return { data: data ?? [], count };
     }
-    return this.run(q);
+    return unwrap(q);
   }
 
   async rpc(token: string, fn: string, args: Record<string, unknown>) {
     if (!READ_RPCS.has(fn)) throw new NotFoundError(`RPC não permitida: ${fn}`);
-    return this.run(userClient(token).rpc(fn, args || {}));
+    return unwrap(userClient(token).rpc(fn, args || {}));
   }
 
   // upload de anexo (boleto/NF) -> bucket no Storage; devolve URL pública.
