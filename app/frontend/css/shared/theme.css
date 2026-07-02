@@ -371,7 +371,8 @@ table {
 
 thead th {
   text-align: left;
-  color: var(--muted);
+  background: var(--surface-2); /* override do th escuro do base.css (tema legado) */
+  color: var(--text-2);
   font-size: 12.5px;
   font-weight: 600;
   padding: 12px 14px;
