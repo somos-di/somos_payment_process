@@ -19,11 +19,15 @@ const CorrectSchema = z.object({
 });
 
 const ACTIONS: Record<string, string> = {
-  approve: 'approve_process', reject: 'reject_process', close: 'close_process',
-  'financeiro-reject': 'financeiro_reject',
+  approve: 'approve_process', close: 'close_process',
   // 'send-uau' e 'cancel' são tratados à parte (controller.action): send-uau monta o
   // payload + POSTa no webhook; cancel tem guard de autoria/status.
 };
+// Devoluções para correção: exigem MOTIVO (vai para o histórico via RPC).
+const REASON_ACTIONS: Record<string, string> = {
+  reject: 'reject_process', 'financeiro-reject': 'financeiro_reject',
+};
+const ReasonSchema = z.object({ reason: z.string().trim().min(1).max(500) });
 
 export class ProcessesController {
   constructor(
@@ -94,6 +98,13 @@ export class ProcessesController {
     if (req.params.action === 'send-uau') {
       const data = await this.uau.sendToUau(req.accessToken!, uuid);
       return reply.send({ success: true, data });
+    }
+    // devolver para correção (aprovador/financeiro): motivo OBRIGATÓRIO -> histórico
+    const reasonFn = REASON_ACTIONS[req.params.action];
+    if (reasonFn) {
+      const { reason } = ReasonSchema.parse(req.body ?? {});
+      await this.service.actionWithReason(req.accessToken!, reasonFn, uuid, reason);
+      return reply.send({ success: true });
     }
     const fn = ACTIONS[req.params.action];
     if (!fn) throw new NotFoundError('Ação inválida');

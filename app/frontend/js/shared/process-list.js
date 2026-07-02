@@ -55,6 +55,63 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
 
+  // Confirmação COM MOTIVO obrigatório (ações destrutivas de correção): o texto
+  // digitado vai para o histórico do processo. Resolve com a string ou null (cancelou).
+  // Exposto em window p/ telas com tabela própria (ex.: Financeiro).
+  function uiPrompt(message, danger) {
+    return new Promise(function (resolve) {
+      var o = document.createElement('div'); o.className = 'modal-overlay';
+      o.innerHTML = '<div class="modal-box" style="width:480px"><div class="modal-title">Confirmação</div>'
+        + '<div style="font-size:14px;color:var(--text-2);line-height:1.5">' + esc(message) + '</div>'
+        + '<textarea data-reason rows="3" maxlength="500" style="margin-top:12px" '
+        + 'placeholder="Explique o motivo (obrigatório — ficará registrado no histórico do processo)…"></textarea>'
+        + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button>'
+        + '<button class="btn ' + (danger ? 'btn-danger' : 'btn-primary') + '" data-ok disabled>Confirmar</button></div></div>';
+      var ta = o.querySelector('[data-reason]'), ok = o.querySelector('[data-ok]');
+      ta.addEventListener('input', function () { ok.disabled = !ta.value.trim(); });
+      function close(v) { o.remove(); resolve(v); }
+      o.addEventListener('click', function (e) { if (e.target === o) close(null); });
+      o.querySelector('[data-x]').addEventListener('click', function () { close(null); });
+      ok.addEventListener('click', function () { close(ta.value.trim()); });
+      document.body.appendChild(o); ta.focus();
+    });
+  }
+  window.uiPrompt = uiPrompt;
+
+  // Ordenação de tabela estilo Excel (clique no cabeçalho): 1º clique ▲ asc,
+  // 2º ▼ desc, 3º remove. PERSISTENTE por tela (localStorage) até remoção manual.
+  // Compartilhada com telas de tabela própria (ex.: Financeiro).
+  window.TableSort = {
+    cycle: function (sort, col) {
+      if (sort.col !== col) return { col: col, asc: true };
+      if (sort.asc) return { col: col, asc: false };
+      return { col: '', asc: true }; // 3º clique remove a ordenação
+    },
+    indicator: function (sort, col) {
+      var active = sort.col === col;
+      return '<span class="sort-ind' + (active ? ' on' : '') + '">' + (active ? (sort.asc ? '▲' : '▼') : '↕') + '</span>';
+    },
+    sortRows: function (rows, sort, types) {
+      if (!sort.col) return rows;
+      var type = types[sort.col] || 'text', dir = sort.asc ? 1 : -1;
+      return rows.slice().sort(function (a, b) {
+        var x = a[sort.col], y = b[sort.col];
+        var xe = x == null || x === '', ye = y == null || y === '';
+        if (xe && ye) return 0; if (xe) return 1; if (ye) return -1;   // vazios sempre no fim
+        if (type === 'num') return (Number(x) - Number(y)) * dir;
+        if (type === 'date') return String(x).localeCompare(String(y)) * dir; // ISO ordena lexicamente
+        return String(x).localeCompare(String(y), 'pt-BR', { sensitivity: 'base' }) * dir;
+      });
+    },
+    load: function (key) {
+      try { var s = JSON.parse(localStorage.getItem(key) || 'null'); if (s && typeof s.col === 'string') return s; } catch (e) { /* ignore */ }
+      return { col: '', asc: true };
+    },
+    save: function (key, sort) {
+      try { if (sort.col) localStorage.setItem(key, JSON.stringify(sort)); else localStorage.removeItem(key); } catch (e) { /* ignore */ }
+    },
+  };
+
   window.ProcessList = {
     mount: async function (host, opts) {
       var paged = typeof opts.fetchPage === 'function';
@@ -85,6 +142,21 @@
       var filters = { company: '', building: '', from: '', to: '', status: '', urgent: '' };
       var extraValue = '';      // valor do filtro extra da tela (ex.: "Aprovar como" grupo)
       var approversByUuid = {}; // uuid -> [nomes de quem já aprovou] (batch por página)
+
+      // ordenação por coluna (estilo Excel), persistente por tela até remoção manual
+      var SORT_COLS = [
+        { label: '#', col: 'id_prc', type: 'num' },
+        { label: 'Empresa', col: 'empresa_nome', type: 'text' },
+        { label: 'Obra', col: 'obra_nome', type: 'text' },
+        { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
+        { label: 'Tipo', col: 'tipo_nome', type: 'text' },
+        { label: 'Valor', col: 'value_prc', type: 'num' },
+        { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
+        { label: 'Status', col: 'status_nome', type: 'text' },
+      ];
+      var SORT_TYPES = {}; SORT_COLS.forEach(function (c) { SORT_TYPES[c.col] = c.type; });
+      var sortKey = 'sort:' + (opts.storageKey || (window.location.hash || 'view'));
+      var sort = window.TableSort.load(sortKey);
 
       // Quem JÁ APROVOU, visível na própria lista (sem abrir o processo): busca em
       // LOTE os aprovadores das linhas da página em v_process_approvers (RLS vale).
@@ -141,11 +213,15 @@
       }
 
       function render() {
-        var data = filtered();
+        // ordena SEMPRE o objeto já carregado (no paginado, reordena a página visível)
+        var data = window.TableSort.sortRows(filtered(), sort, SORT_TYPES);
         if (!data.length) {
           bodyEl.innerHTML = '<div class="empty">' + esc(page > 0 ? 'Nada nesta página.' : (opts.emptyText || 'Nenhum processo.')) + '</div>';
         } else {
-          var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th>'
+          var head = SORT_COLS.map(function (c) {
+            return '<th data-col="' + c.col + '">' + esc(c.label) + ' ' + window.TableSort.indicator(sort, c.col) + '</th>';
+          }).join('');
+          var html = '<div class="table-scroll"><table><thead><tr>' + head
             + (showApprovers ? '<th>Aprovações</th>' : '') + '<th></th></tr></thead><tbody>';
           data.forEach(function (p, i) {
             html += '<tr data-i="' + i + '" style="cursor:pointer">'
@@ -161,6 +237,15 @@
           });
           html += '</tbody></table></div>';
           bodyEl.innerHTML = html;
+          // ordenação: asc -> desc -> remove; persiste até remoção manual.
+          // Client-side: reordena o que está carregado, sem nova consulta.
+          bodyEl.querySelectorAll('th[data-col]').forEach(function (th) {
+            th.addEventListener('click', function () {
+              sort = window.TableSort.cycle(sort, th.getAttribute('data-col'));
+              window.TableSort.save(sortKey, sort);
+              render();
+            });
+          });
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
             cell.appendChild(iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); }));
@@ -169,8 +254,12 @@
               var handler = async function (e) {
                 e.stopPropagation();
                 var danger = (a.cls || '').indexOf('danger') >= 0;
-                if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
-                try { await a.run(p); await reload(); toast('Feito.', true); } catch (err) { toast('Erro: ' + err.message); }
+                var reason;
+                if (a.prompt) { // confirmação com MOTIVO obrigatório (vai pro histórico)
+                  reason = await uiPrompt(a.prompt, danger);
+                  if (reason == null) return;
+                } else if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
+                try { await a.run(p, reason); await reload(); toast('Feito.', true); } catch (err) { toast('Erro: ' + err.message); }
               };
               var svg = ICONS[a.label];
               cell.appendChild(svg
@@ -346,6 +435,7 @@
   }
 
   // LIST: a página traz só 50 linhas (range), sem contagem. kind opcional.
+  // A ordenação por coluna é CLIENT-SIDE (TableSort, sobre a página carregada).
   window.fetchProcessesPage = function (kind) {
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
@@ -384,9 +474,13 @@
             (groupsByUuid[r.uuid_prc] = groupsByUuid[r.uuid_prc] || []).push(r.group_id);
             names[r.group_id] = r.group_name; levels[r.group_id] = r.level;
           });
+          // level null = aprovador de urgência (CFO/CEO) — vem primeiro na lista
+          var lv = function (id) { return levels[id] == null ? Infinity : levels[id]; };
           return Object.keys(names)
-            .sort(function (a, b) { return (levels[b] - levels[a]) || String(names[a]).localeCompare(names[b]); })
-            .map(function (id) { return { value: id, label: names[id] + ' (nível ' + levels[id] + ')' }; });
+            .sort(function (a, b) { return (lv(b) - lv(a)) || String(names[a]).localeCompare(names[b]); })
+            .map(function (id) {
+              return { value: id, label: names[id] + (levels[id] != null ? ' (nível ' + levels[id] + ')' : ' (urgência)') };
+            });
         },
         apply: function (rows, groupId) {
           return rows.filter(function (p) {
@@ -412,10 +506,11 @@
           }
         },
         {
-          label: 'Corrigir', cls: 'btn-danger', confirm: 'Devolver o processo para correção?',
-          run: function (p) {
+          label: 'Corrigir', cls: 'btn-danger',
+          prompt: 'Devolver o processo para correção?', // motivo obrigatório -> histórico
+          run: function (p, reason) {
             return window.Store.commit(
-              function () { return window.API.post('/processes/' + p.uuid_prc + '/reject'); },
+              function () { return window.API.post('/processes/' + p.uuid_prc + '/reject', { reason: reason }); },
               function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
           }
         },
