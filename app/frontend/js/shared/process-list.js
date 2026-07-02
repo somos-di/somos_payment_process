@@ -148,7 +148,7 @@
         { label: '#', col: 'id_prc', type: 'num' },
         { label: 'Empresa', col: 'empresa_nome', type: 'text' },
         { label: 'Obra', col: 'obra_nome', type: 'text' },
-        { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
+        { label: 'Descrição', col: 'description_prc', type: 'text' }, // o usuário entende o processo sem abrir
         { label: 'Tipo', col: 'tipo_nome', type: 'text' },
         { label: 'Valor', col: 'value_prc', type: 'num' },
         { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
@@ -192,7 +192,7 @@
         var t = (search.value || '').toLowerCase().trim();
         if (t) {
           out = out.filter(function (p) {
-            return [p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.tipo_nome, p.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
+            return [p.empresa_nome, p.obra_nome, p.description_prc, p.fornecedor_nome, p.tipo_nome, p.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
           });
         }
         out = out.filter(function (p) {
@@ -228,7 +228,7 @@
               + '<td><span class="id-cell">' + esc(p.id_prc)
               + (p.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
               + '</span></td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
-              + '<td>' + esc(p.fornecedor_nome) + '</td>'
+              + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
               + '<td>' + esc(p.tipo_nome) + '</td>'
               + '<td>' + money(p.value_prc) + '</td><td>' + fmtDate(p.due_date_prc) + '</td>'
               + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
@@ -431,7 +431,7 @@
       var safe = term.replace(/[,()*%]/g, ' ').trim();
       if (safe) {
         var ors = ['empresa_nome.ilike.%' + safe + '%', 'obra_nome.ilike.%' + safe + '%',
-        'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%'];
+        'description_prc.ilike.%' + safe + '%', 'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%'];
         if (/^\d+$/.test(safe)) ors.push('id_prc.eq.' + safe);
         s = s.or(ors.join(','));
       }
@@ -459,6 +459,14 @@
       });
     };
   };
+
+  // Ações de fluxo mudam o processo de "lugar" (status/minhas aprovações/financeiro):
+  // invalida os caches derivados pra TODAS as telas refletirem sem forced refresh.
+  // Lazy: só re-busca quando a tela for aberta (pending_approvals, quente, refaz sozinha).
+  function invalidateFlowCaches() {
+    ['my_approvals', 'processes', 'financeiro', 'history'].forEach(function (e) { window.Store.invalidate(e); });
+  }
+  window.invalidateFlowCaches = invalidateFlowCaches;
 
   // Lista "Minhas Aprovações": rpc my_pending_approvals (autoridade). Enriquecemos os
   // nomes buscando SÓ os uuids pendentes em v_processes (.in) — nunca todos os processos.
@@ -507,7 +515,10 @@
           label: 'Aprovar', cls: 'btn-primary', confirm: 'Confirmar aprovação deste processo?',
           run: function (p) {
             return window.Store.commit(
-              function () { return window.API.post('/processes/' + p.uuid_prc + '/approve'); },
+              function () {
+                return window.API.post('/processes/' + p.uuid_prc + '/approve')
+                  .then(function (r) { invalidateFlowCaches(); return r; }); // reflete em Minhas Aprovações/Consulta/Financeiro
+              },
               function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
           }
         },
@@ -516,7 +527,10 @@
           prompt: 'Devolver o processo para correção?', // motivo obrigatório -> histórico
           run: function (p, reason) {
             return window.Store.commit(
-              function () { return window.API.post('/processes/' + p.uuid_prc + '/reject', { reason: reason }); },
+              function () {
+                return window.API.post('/processes/' + p.uuid_prc + '/reject', { reason: reason })
+                  .then(function (r) { invalidateFlowCaches(); return r; });
+              },
               function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
           }
         },

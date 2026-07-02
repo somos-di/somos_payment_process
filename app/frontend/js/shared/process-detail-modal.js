@@ -38,6 +38,7 @@
       + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
       + '<div data-pane="dados" class="pane pd-detail">'
       + '<div class="pd-fields"><h3>Dados Gerais</h3>'
+      + fieldBox('Descrição', proc.description_prc)
       + fieldBox('Empresa', proc.empresa_nome || proc.company_prc)
       + fieldBox('Obra', proc.obra_nome || proc.building_prc)
       + fieldBox('Fornecedor', proc.fornecedor_nome || proc.person_prc)
