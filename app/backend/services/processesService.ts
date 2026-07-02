@@ -89,9 +89,9 @@ export class ProcessesService {
   }
 
   // CANCELAR (autor): a função SQL cancel_process valida autor + status ∈ {1,2}
-  // atomicamente (SECURITY DEFINER). Sem guard duplicado no TS.
-  cancel(token: string, uuid: string) {
-    return unwrap(userClient(token).rpc('cancel_process', { p_uuid: uuid }));
+  // atomicamente (SECURITY DEFINER). Motivo OBRIGATÓRIO -> histórico do processo.
+  cancel(token: string, uuid: string, reason: string) {
+    return unwrap(userClient(token).rpc('cancel_process', { p_uuid: uuid, p_reason: reason }));
   }
 
   // registra um evento no histórico (visualizar/etc.) — RPC carrega auth.uid().

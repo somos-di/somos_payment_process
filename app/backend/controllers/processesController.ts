@@ -91,7 +91,8 @@ export class ProcessesController {
     const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
     // cancelar: guard de autoria + status no backend (não confia no front)
     if (req.params.action === 'cancel') {
-      await this.service.cancel(req.accessToken!, uuid);
+      const { reason } = ReasonSchema.parse(req.body ?? {}); // motivo obrigatório -> histórico
+      await this.service.cancel(req.accessToken!, uuid, reason);
       return reply.send({ success: true });
     }
     // integrar (Enviar UAU): monta o payload do payment e POSTa no webhook de integração

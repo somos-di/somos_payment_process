@@ -248,9 +248,13 @@
           });
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
-            cell.appendChild(iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); }));
-            (opts.actions || []).forEach(function (a) {
-              if (typeof a.show === 'function' && !a.show(p)) return; // ação condicional por linha
+            var approversBtn = iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); });
+            // posição do botão Aprovadores entre as ações (opts.approversPosition;
+            // default 0 = antes de todas). Ex.: tela Aprovar usa 1 -> Aprovar · Aprovadores · Reprovar.
+            var visibleActions = (opts.actions || []).filter(function (a) { return typeof a.show !== 'function' || a.show(p); });
+            var approversAt = Math.min(opts.approversPosition != null ? opts.approversPosition : 0, visibleActions.length);
+            visibleActions.forEach(function (a, idx) {
+              if (idx === approversAt) cell.appendChild(approversBtn);
               var handler = async function (e) {
                 e.stopPropagation();
                 var danger = (a.cls || '').indexOf('danger') >= 0;
@@ -266,6 +270,7 @@
                 ? iconBtn(svg, a.cls || 'btn-primary', a.label, handler)
                 : btn(a.label, a.cls || 'btn-primary', handler));
             });
+            if (approversAt >= visibleActions.length) cell.appendChild(approversBtn); // sem ações (ou posição no fim)
             tr.addEventListener('click', function () { window.openProcessDetail(p); });
           });
         }
@@ -464,6 +469,7 @@
     return window.ProcessList.mount(host, {
       emptyText: 'Você não tem aprovações pendentes.',
       showApprovers: true, // Aprovar: quem já aprovou, visível SEM abrir o processo
+      approversPosition: 1, // ordem dos botões: Aprovar · Aprovadores · Reprovar
       extraFilter: {
         label: 'Aprovar como',
         load: async function () {
