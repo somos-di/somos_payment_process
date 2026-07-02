@@ -17,10 +17,10 @@ async function initView_meus_lancamentos() {
     actions: [
       {
         label: 'Cancelar', cls: 'btn-danger',
-        confirm: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.',
+        prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', // motivo obrigatório -> histórico
         // só aparece em Aguardando aprovação ou Em correção
         show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando || p.status_step_prc === window.CONFIG.STATUS.correcao; },
-        run: function (p) { return window.API.post('/processes/' + p.uuid_prc + '/cancel'); },
+        run: function (p, reason) { return window.API.post('/processes/' + p.uuid_prc + '/cancel', { reason: reason }); },
       },
     ],
   });
