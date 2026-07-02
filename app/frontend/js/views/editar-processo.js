@@ -162,12 +162,17 @@ async function initView_editar_processo() {
   pin.addEventListener('input', function () { $('ep-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchPessoas(pin.value.trim()); }, 300); });
   document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
 
-  // anexos
+  // anexos: com documento existente, o box mostra Ver / SUBSTITUIR / Remover
+  // (substituir e adicionar usam o mesmo input; a dropzone também substitui).
   function renderAnexo(key) {
     var box = $('ep-' + key + '-file'), url = anexos[key];
+    var label = key === 'boleto' ? 'Boleto' : 'Documento Fiscal';
     if (!url) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
-    box.innerHTML = '<a href="' + esc(url) + '" target="_blank">' + (key === 'boleto' ? 'Boleto' : 'Documento Fiscal') + ' anexado</a><button title="Remover">×</button>';
+    box.innerHTML = '<a href="' + esc(url) + '" target="_blank">' + label + ' anexado</a>'
+      + '<span style="display:inline-flex;gap:8px;align-items:center">'
+      + '<label class="btn btn-light" for="ep-' + key + '" style="padding:5px 10px;font-size:12px;cursor:pointer">Substituir</label>'
+      + '<button title="Remover anexo" aria-label="Remover anexo">×</button></span>';
     box.querySelector('button').addEventListener('click', function () { anexos[key] = null; renderAnexo(key); scheduleSave(); });
   }
   async function upload(file, key) {
@@ -175,8 +180,9 @@ async function initView_editar_processo() {
     try { var r = await SB.upload(file); anexos[key] = r ? r.url : null; renderAnexo(key); save(false); }
     catch (e) { $('ep-status').textContent = ''; toast('Anexo não enviado: ' + (e.message || 'storage')); }
   }
-  $('ep-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); });
-  $('ep-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); });
+  // this.value = '' após o upload: re-selecionar o MESMO arquivo volta a disparar o change
+  $('ep-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); this.value = ''; });
+  $('ep-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); this.value = ''; });
 
   $('ep-reenviar').addEventListener('click', function () { save(true); });
   showVencErro();
