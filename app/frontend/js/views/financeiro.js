@@ -58,6 +58,20 @@ async function initView_financeiro() {
   $('fin-clear').addEventListener('click', function () { $('fin-search').value = ''; pf.clear(); });
 
   function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
+
+  // ordenação por coluna (estilo Excel), persistente até remoção manual (3º clique)
+  var FIN_SORT_COLS = [
+    { label: '#', col: 'id_prc', type: 'num' },
+    { label: 'Empresa', col: 'empresa_nome', type: 'text' },
+    { label: 'Obra', col: 'obra_nome', type: 'text' },
+    { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
+    { label: 'Nota Fiscal', col: 'fiscal_doc_prc', type: 'text' },
+    { label: 'Status', col: 'status_nome', type: 'text' },
+    { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
+    { label: 'Valor Bruto', col: 'value_prc', type: 'num' },
+  ];
+  var FIN_SORT_TYPES = {}; FIN_SORT_COLS.forEach(function (c) { FIN_SORT_TYPES[c.col] = c.type; });
+  var finSort = window.TableSort.load('sort:financeiro');
   function filtered() {
     var out = rows;
     var t = ($('fin-search').value || '').toLowerCase().trim();
@@ -79,9 +93,12 @@ async function initView_financeiro() {
     });
   }
   function render() {
-    var data = filtered();
+    var data = window.TableSort.sortRows(filtered(), finSort, FIN_SORT_TYPES);
     if (!data.length) { $('fin-body').innerHTML = '<div class="empty">Nenhum processo em análise financeira.</div>'; return; }
-    var html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>Empresa</th><th>Obra</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Status</th><th>Vencimento</th><th>Valor Bruto</th><th>Alertas</th><th></th></tr></thead><tbody>';
+    var head = FIN_SORT_COLS.map(function (c) {
+      return '<th data-col="' + c.col + '">' + esc(c.label) + ' ' + window.TableSort.indicator(finSort, c.col) + '</th>';
+    }).join('');
+    var html = '<div class="table-scroll"><table><thead><tr>' + head + '<th>Alertas</th><th></th></tr></thead><tbody>';
     data.forEach(function (p, i) {
       var al = alertas(p);
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
@@ -94,6 +111,13 @@ async function initView_financeiro() {
     });
     html += '</tbody></table></div>';
     $('fin-body').innerHTML = html;
+    $('fin-body').querySelectorAll('th[data-col]').forEach(function (th) {
+      th.addEventListener('click', function () {
+        finSort = window.TableSort.cycle(finSort, th.getAttribute('data-col'));
+        window.TableSort.save('sort:financeiro', finSort);
+        render();
+      });
+    });
     $('fin-body').querySelectorAll('tr[data-i]').forEach(function (tr) {
       var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
       function iconBtn(svg, cls, title, fn) {
@@ -101,16 +125,18 @@ async function initView_financeiro() {
         b.style.marginLeft = '6px'; b.title = title; b.setAttribute('aria-label', title);
         b.innerHTML = svg; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
       }
-      cell.appendChild(iconBtn(FIN_ICONS.parcelas, 'btn-light', 'Parcelas', function () { window.openInstallments(p, reloadAll); }));
       cell.appendChild(iconBtn(FIN_ICONS.correcao, 'btn-danger', 'Correção', async function () {
-        if (!(await confirmar('Devolver para correção? Isto remove parcelas e aprovações e volta o processo para "Pendente de Correção".'))) return;
+        // motivo OBRIGATÓRIO: vai para o histórico do processo (o autor vê o porquê)
+        var reason = await window.uiPrompt('Devolver para correção? Isto remove parcelas e aprovações e volta o processo para "Pendente de Correção".', true);
+        if (reason == null) return;
         try {
           await window.Store.commit(
-            function () { return window.API.post('/processes/' + p.uuid_prc + '/financeiro-reject'); },
+            function () { return window.API.post('/processes/' + p.uuid_prc + '/financeiro-reject', { reason: reason }); },
             function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
           toast('Devolvido para correção.', true); reloadAll();
         } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
       }));
+      cell.appendChild(iconBtn(FIN_ICONS.parcelas, 'btn-light', 'Parcelas', function () { window.openInstallments(p, reloadAll); }));
       var alRow = alertas(p);
       var uauBtn = iconBtn(FIN_ICONS.uau, 'btn-primary',
         alRow.length ? 'Resolva os ' + alRow.length + ' alerta(s) antes de integrar' : 'Enviar UAU',

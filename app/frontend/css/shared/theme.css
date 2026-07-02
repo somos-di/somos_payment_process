@@ -490,6 +490,12 @@ tbody tr:hover td {
 .pl-filters .pf-field input { width: 122px; padding: 6px 8px; font-size: 10px; }
 .pl-filters .pf-field select:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
 
+/* ---- ordenação por coluna (estilo Excel) nas listas de processos ---- */
+.table-scroll th[data-col] { cursor: pointer; user-select: none; white-space: nowrap; }
+.table-scroll th[data-col]:hover { color: var(--accent); }
+.table-scroll .sort-ind { font-size: 9px; color: var(--muted-2); margin-left: 2px; }
+.table-scroll .sort-ind.on { color: var(--accent); }
+
 /* ---- coluna "Aprovações" (quem já aprovou, na própria lista) ---- */
 .pl-approvers { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
                 white-space: nowrap; vertical-align: middle; font-size: 12px; color: var(--muted); margin-left: 6px; }

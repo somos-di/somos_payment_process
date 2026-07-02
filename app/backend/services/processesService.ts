@@ -76,10 +76,16 @@ export class ProcessesService {
     return unwrap(userClient(token).rpc('my_pending_approvals', {}));
   }
 
-  // Ações de fluxo (approve/reject/close/financeiro-reject): a RPC valida a
-  // autorização no banco (elegibilidade/visibilidade) — ver seção 6 do SQL.
+  // Ações de fluxo (approve/close): a RPC valida a autorização no banco
+  // (elegibilidade/visibilidade) — ver seção 6 do SQL.
   action(token: string, fn: string, uuid: string) {
     return unwrap(userClient(token).rpc(fn, { p_uuid: uuid }));
+  }
+
+  // Ações de DEVOLUÇÃO para correção (reject/financeiro-reject): exigem MOTIVO,
+  // que a RPC grava no histórico do processo junto da ação.
+  actionWithReason(token: string, fn: string, uuid: string, reason: string) {
+    return unwrap(userClient(token).rpc(fn, { p_uuid: uuid, p_reason: reason }));
   }
 
   // CANCELAR (autor): a função SQL cancel_process valida autor + status ∈ {1,2}
