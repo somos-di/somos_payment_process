@@ -7,7 +7,6 @@ async function initView_meus_lancamentos() {
 
   await window.ProcessList.mount(document.getElementById('ml-host'), {
     emptyText: 'Você ainda não criou nenhum lançamento.',
-    dateFilter: true,
     dateField: 'due_date_prc',
     load: function () {
       return window.SB.select('v_processes', function (q) {

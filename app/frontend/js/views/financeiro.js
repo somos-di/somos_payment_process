@@ -48,10 +48,35 @@ async function initView_financeiro() {
   try { rows = await window.Store.get('financeiro'); }
   catch (e) { window.viewError($('fin-body'), e); return; }
 
+  // filtros persistentes (empresa/obra/data/status) — opções do banco (ProcessFilters)
+  var filters = { company: '', building: '', from: '', to: '', status: '' };
+  var pf = await window.ProcessFilters.mount($('fin-filters'), {
+    storageKey: 'financeiro',
+    onChange: function (values) { filters = values; render(); },
+  });
+  filters = pf.getValues();
+  $('fin-clear').addEventListener('click', function () { $('fin-search').value = ''; pf.clear(); });
+
+  function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
   function filtered() {
+    var out = rows;
     var t = ($('fin-search').value || '').toLowerCase().trim();
-    if (!t) return rows;
-    return rows.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+    if (t) {
+      out = out.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+    }
+    return out.filter(function (p) {
+      if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
+      if (filters.building && String(p.building_prc || '').toUpperCase() !== String(filters.building).toUpperCase()) return false;
+      if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
+      if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
+      if (filters.from || filters.to) {
+        var d = isoDay(p.due_date_prc);
+        if (!d) return false;
+        if (filters.from && d < filters.from) return false;
+        if (filters.to && d > filters.to) return false;
+      }
+      return true;
+    });
   }
   function render() {
     var data = filtered();

@@ -43,16 +43,30 @@ async function initView_permissoes() {
   async function renderObras() {
     var emp = $('pm-empresa').value;
     var box = $('pm-obras');
-    if (!emp) { box.innerHTML = '<div class="empty" style="padding:4px">Selecione uma empresa.</div>'; return; }
-    box.innerHTML = '<div class="empty" style="padding:4px">Carregando…</div>';
+    if (!emp) { box.innerHTML = '<div class="pm-hint">Selecione uma empresa.</div>'; updateCounts(); return; }
+    box.innerHTML = '<div class="pm-hint">Carregando…</div>';
     var rows = await obrasOf(emp);
     box.innerHTML = rows.length ? rows.map(function (o) {
       return '<label class="pm-check"><input type="checkbox" class="pm-obra-ck" value="' + esc(o.codigo) + '"> ' + esc(o.nome) + ' (' + esc(o.codigo) + ')</label>';
-    }).join('') : '<div class="empty" style="padding:4px">Nenhuma obra para esta empresa.</div>';
+    }).join('') : '<div class="pm-hint">Nenhuma obra para esta empresa.</div>';
+    updateCounts();
   }
 
   function checked(cls) { return Array.prototype.slice.call(document.querySelectorAll('.' + cls + ':checked')).map(function (c) { return c.value; }); }
-  function setAll(cls, on) { document.querySelectorAll('.' + cls).forEach(function (c) { c.checked = on; }); }
+  function setAll(cls, on) { document.querySelectorAll('.' + cls).forEach(function (c) { c.checked = on; }); updateCounts(); }
+
+  // contadores "N de M selecionadas" das seções de chips
+  function updateCounts() {
+    function fmt(cls) {
+      var all = document.querySelectorAll('.' + cls).length;
+      var on = document.querySelectorAll('.' + cls + ':checked').length;
+      return all ? on + ' de ' + all + ' selecionada(s)' : '';
+    }
+    $('pm-obras-count').textContent = fmt('pm-obra-ck');
+    $('pm-tipos-count').textContent = fmt('pm-tipo');
+  }
+  $('pm-obras').addEventListener('change', updateCounts);
+  $('pm-tipos').addEventListener('change', updateCounts);
 
   // helpers
   $('pm-empresa').addEventListener('change', renderObras);
@@ -62,16 +76,25 @@ async function initView_permissoes() {
   $('pm-tipos-none').addEventListener('click', function () { setAll('pm-tipo', false); });
   $('pm-tipos-nopj').addEventListener('click', function () {
     document.querySelectorAll('.pm-tipo').forEach(function (c) { c.checked = (c.value !== '3'); }); // 3 = Processo PJ
+    updateCounts();
   });
+  updateCounts();
+
+  var SVG_BUILDING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4v18"/><path d="M19 21V11l-7-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>';
+  var SVG_SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+  function emptyState(title, sub) {
+    return '<div class="pm-empty">' + SVG_SHIELD + '<b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div>';
+  }
 
   async function loadList() {
-    var g = $('pm-group').value, host = $('pm-list');
-    if (!g) { host.innerHTML = '<div class="empty">Selecione um grupo.</div>'; return; }
+    var g = $('pm-group').value, host = $('pm-list'), count = $('pm-list-count');
+    count.textContent = '';
+    if (!g) { host.innerHTML = emptyState('Nenhum grupo selecionado', 'Escolha um grupo acima para ver as permissões dele.'); return; }
     host.innerHTML = '<div class="empty">Carregando…</div>';
     var rules;
     try { rules = await window.SB.select('process_kind_rules', function (q) { return q.eq('group_pkr', Number(g)); }); }
     catch (e) { window.viewError(host, e); return; }
-    if (!rules.length) { host.innerHTML = '<div class="empty">Este grupo ainda não tem permissões.</div>'; return; }
+    if (!rules.length) { host.innerHTML = emptyState('Este grupo ainda não tem permissões', 'Use o formulário acima para conceder visibilidade por empresa, obra e tipo.'); return; }
     // garante nomes de obra das empresas presentes
     var emps = {}; rules.forEach(function (r) { emps[String(r.company_pkr)] = 1; });
     await Promise.all(Object.keys(emps).map(function (e) { return obrasOf(e); }));
@@ -82,15 +105,26 @@ async function initView_permissoes() {
       (tree[c] = tree[c] || {});
       (tree[c][b] = tree[c][b] || []).push(r.kind_pkr);
     });
+    count.textContent = rules.length + ' regra(s) em ' + Object.keys(tree).length + ' empresa(s)';
     host.innerHTML = Object.keys(tree).sort().map(function (c) {
+      var nObras = Object.keys(tree[c]).length;
+      var nRegras = Object.keys(tree[c]).reduce(function (s, b) { return s + tree[c][b].length; }, 0);
       var obras = Object.keys(tree[c]).sort().map(function (b) {
         var tags = tree[c][b].sort(function (a, z) { return a - z; }).map(function (kid) {
           return '<span class="pm-tag">' + esc(kindNome[kid] || ('Tipo ' + kid))
             + '<button title="Remover" data-c="' + esc(c) + '" data-b="' + esc(b) + '" data-k="' + kid + '">&times;</button></span>';
         }).join('');
-        return '<div class="pm-obra"><div class="pm-obra-name">' + esc(obraNome[c + '/' + b] || b) + ' <span style="color:var(--muted)">(' + esc(b) + ')</span></div>' + tags + '</div>';
+        return '<div class="pm-obra">'
+          + '<div class="pm-obra-id"><div class="pm-obra-name">' + esc(obraNome[c + '/' + b] || b) + '</div>'
+          + '<div class="pm-obra-code">' + esc(b) + '</div></div>'
+          + '<div class="pm-obra-tags">' + tags + '</div></div>';
       }).join('');
-      return '<div class="pm-list-grp"><div class="pm-emp-title">' + esc(empNome[c] || c) + ' <span style="color:var(--muted);font-weight:400">(' + esc(c) + ')</span></div>' + obras + '</div>';
+      return '<div class="pm-emp">'
+        + '<div class="pm-emp-head"><span class="pm-emp-ic">' + SVG_BUILDING + '</span>'
+        + '<div><div class="pm-emp-name">' + esc(empNome[c] || c) + '</div>'
+        + '<div class="pm-emp-code">Empresa ' + esc(c) + '</div></div>'
+        + '<span class="pm-emp-total badge blue">' + nObras + ' obra(s) · ' + nRegras + ' regra(s)</span></div>'
+        + obras + '</div>';
     }).join('');
     host.querySelectorAll('.pm-tag button').forEach(function (b) {
       b.addEventListener('click', async function () {
@@ -103,6 +137,7 @@ async function initView_permissoes() {
     });
   }
   $('pm-group').addEventListener('change', loadList);
+  loadList();
 
   $('pm-add').addEventListener('click', async function () {
     var g = $('pm-group').value, emp = $('pm-empresa').value;

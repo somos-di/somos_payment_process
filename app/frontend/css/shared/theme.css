@@ -482,6 +482,17 @@ tbody tr:hover td {
 .pl-dates { display: flex; gap: 10px; flex-wrap: wrap; }
 .pl-dates label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .pl-dates input { width: 150px; }
+
+/* ---- filtros persistentes (Empresa/Obra/Data/Status — ProcessFilters) ---- */
+.pl-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.pl-filters .pf-field { display: flex; flex-direction: column; gap: 3px; font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.pl-filters .pf-field select { width: 150px; padding: 6px 8px; font-size: 10px; }
+.pl-filters .pf-field input { width: 122px; padding: 6px 8px; font-size: 10px; }
+.pl-filters .pf-field select:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
+
+/* ---- coluna "Aprovações" (quem já aprovou, na própria lista) ---- */
+.pl-approvers { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
+                white-space: nowrap; vertical-align: middle; font-size: 12px; color: var(--muted); margin-left: 6px; }
 .pl-toolbar-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 
 /* ---- marcador de urgente: bolinha vermelha ao lado do ID (tooltip nativo) ---- */
@@ -491,6 +502,13 @@ tbody tr:hover td {
 /* ---- tabela responsiva: rola na horizontal sem quebrar a página/zoom ---- */
 .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .table-scroll table { min-width: 720px; }
+
+/* fontes compactas nas LISTAS DE PROCESSOS (~30% menores que o padrão de tabela):
+   nomes longos (SPE/fornecedor/obra) param de quebrar em 2–3 linhas */
+.table-scroll thead th { font-size: 10px; padding: 10px 12px; }
+.table-scroll tbody td { font-size: 10.5px; padding: 10px 12px; }
+.table-scroll .badge { font-size: 10px; padding: 3px 7px; }
+.table-scroll .pl-approvers { font-size: 10.5px; max-width: 130px; }
 
 /* ---- paginação numerada ---- */
 .pl-pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--border); }

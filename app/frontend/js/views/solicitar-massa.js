@@ -77,6 +77,39 @@ async function initView_solicitar_massa() {
 
   var linhas = [];
 
+  // aba "Instruções" do modelo: como preencher cada coluna + catálogo de tipos
+  // de processo (processkindproc) vindo do banco (process_kinds).
+  async function buildInstructionsSheet(XLSX) {
+    var kinds = [];
+    try { kinds = await window.Store.get('process_kinds'); } catch (e) { /* modelo segue sem o catálogo */ }
+    var rows = [
+      ['COMO PREENCHER — LANÇAMENTO EM MASSA'],
+      ['Preencha a aba "Processos" (uma linha por processo) e importe o arquivo nesta tela.'],
+      ['Não renomeie as colunas do cabeçalho. Datas: AAAA-MM-DD ou DD/MM/AAAA. Valores: 1000,00.'],
+      [],
+      ['Coluna', 'Obrigatória', 'Como preencher'],
+      ['descr', 'não', 'Descrição do processo (texto livre).'],
+      ['companyidproc', 'SIM', 'Código da empresa (o mesmo exibido na tela Solicitar).'],
+      ['buildingidproc', 'SIM', 'Código da obra dentro da empresa.'],
+      ['compositionidproc', 'não', 'Código da composição (apropriação).'],
+      ['supplyidproc', 'não', 'Código do insumo (apropriação).'],
+      ['personidproc', 'não', 'Código do fornecedor.'],
+      ['isurgentproc', 'não', 'Urgente? 1 = sim · 0 = não.'],
+      ['issuedateproc', 'não', 'Data de emissão do documento.'],
+      ['duedateproc', 'SIM', 'Vencimento da 1ª parcela.'],
+      ['processvalueproc', 'SIM', 'Valor TOTAL do processo (ex.: 1000,00).'],
+      ['fiscaldocumentproc', 'não', 'Número do documento fiscal (apenas números).'],
+      ['installmentQuantityproc', 'não', 'Qtd. de parcelas mensais a partir do vencimento (vazio = 1); o valor total é dividido igualmente.'],
+      ['processkindproc', 'SIM', 'ID do tipo de processo — consulte a tabela abaixo.'],
+      [],
+      ['TIPOS DE PROCESSO (processkindproc)'],
+      ['ID', 'Tipo'],
+    ].concat((kinds || []).map(function (k) { return [k.id_pkn, k.name_pkn]; }));
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 26 }, { wch: 12 }, { wch: 95 }];
+    return ws;
+  }
+
   async function baixarModelo() {
     try {
       var XLSX = await loadXLSX();
@@ -85,6 +118,7 @@ async function initView_solicitar_massa() {
       ws['!cols'] = COLS.map(function (h) { return { wch: Math.max(14, h.length + 2) }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Processos');
+      XLSX.utils.book_append_sheet(wb, await buildInstructionsSheet(XLSX), 'Instruções');
       XLSX.writeFile(wb, 'import_base.xlsx');
     } catch (e) { erro(e.message); }
   }
@@ -100,6 +134,48 @@ async function initView_solicitar_massa() {
     }).filter(function (r) { return Object.keys(r).some(function (k) { return String(r[k]).trim() !== ''; }); });
   }
 
+  function mapByKey(key) { for (var i = 0; i < MAPA.length; i++) if (MAPA[i].key === key) return MAPA[i]; return null; }
+
+  // "LEFT JOIN" nos catálogos: resolve em LOTE (1 query por tabela, via in()) os
+  // nomes referentes aos ids da planilha — empresa, obra, fornecedor, tipo e
+  // composição/insumo. Id sem correspondência fica sem nome e a pré-visualização
+  // marca "não encontrado" (null do left join).
+  var names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
+  async function resolveNames() {
+    names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
+    var companyMap = mapByKey('company_prc'), personMap = mapByKey('person_prc'), compositionMap = mapByKey('composition_prc');
+    var companyIds = {}, personIds = {}, compositionIds = {};
+    linhas.forEach(function (l) {
+      var e = cell(companyMap, l); if (e) companyIds[String(e)] = 1;
+      var p = cell(personMap, l); if (p != null) personIds[String(p)] = 1;
+      var c = cell(compositionMap, l); if (c) compositionIds[String(c)] = 1;
+    });
+    try {
+      var res = await Promise.all([
+        window.Store.get('empresas'),
+        window.Store.get('process_kinds'),
+        Object.keys(companyIds).length ? window.SB.select('v_obras', function (q) { return q.in('empresa', Object.keys(companyIds)); }) : [],
+        Object.keys(personIds).length ? window.SB.select('v_fornecedores', function (q) { return q.in('id', Object.keys(personIds).map(Number)); }) : [],
+        Object.keys(compositionIds).length ? window.SB.select('v_compositions', function (q) { return q.in('composicao', Object.keys(compositionIds)); }) : [],
+      ]);
+      (res[0] || []).forEach(function (e) { names.company[String(e.codigo)] = e.nome; });
+      (res[1] || []).forEach(function (k) { names.kind[String(k.id_pkn)] = k.name_pkn; });
+      (res[2] || []).forEach(function (o) { names.building[String(o.empresa) + '/' + String(o.codigo).toUpperCase()] = o.nome; });
+      (res[3] || []).forEach(function (p) { names.person[String(p.id)] = p.nome; });
+      (res[4] || []).forEach(function (c) { names.composition[String(c.composicao) + '/' + String(c.insumo)] = { composition: c.desc_composicao, supply: c.desc_insumo }; });
+    } catch (e) { /* sem os catálogos, a pré-visualização segue só com os ids */ }
+  }
+
+  // nome resolvido por coluna da planilha (valor convertido + linha, p/ chaves compostas)
+  var NAME_RESOLVERS = {
+    companyidproc: function (v) { return names.company[String(v)]; },
+    buildingidproc: function (v, l) { var e = cell(mapByKey('company_prc'), l); return names.building[String(e) + '/' + String(v).toUpperCase()]; },
+    personidproc: function (v) { return names.person[String(v)]; },
+    processkindproc: function (v) { return names.kind[String(v)]; },
+    compositionidproc: function (v, l) { var s = cell(mapByKey('supply_prc'), l); var x = names.composition[String(v) + '/' + String(s)]; return x && x.composition; },
+    supplyidproc: function (v, l) { var c = cell(mapByKey('composition_prc'), l); var x = names.composition[String(c) + '/' + String(v)]; return x && x.supply; },
+  };
+
   function erro(msg) { $('lm-erro-msg').textContent = msg; $('lm-erro').hidden = false; }
   function limpar() {
     linhas = []; $('lm-file').value = '';
@@ -114,7 +190,17 @@ async function initView_solicitar_massa() {
     var max = 50;
     $('lm-body').innerHTML = linhas.slice(0, max).map(function (l) {
       return '<tr>' + MAPA.map(function (m) {
-        var v = cell(m, l); return '<td>' + (v === null || v === '' ? '<span style="color:var(--muted)">—</span>' : esc(v)) + '</td>';
+        var v = cell(m, l);
+        if (v === null || v === '') return '<td><span style="color:var(--muted)">—</span></td>';
+        // left join: mostra o nome resolvido sob o id; sem correspondência -> alerta
+        var extra = '';
+        if (NAME_RESOLVERS[m.col]) {
+          var resolved = NAME_RESOLVERS[m.col](v, l);
+          extra = resolved
+            ? '<div style="font-size:11.5px;color:var(--muted)">' + esc(resolved) + '</div>'
+            : '<div style="font-size:11.5px;color:var(--danger);font-weight:600">não encontrado</div>';
+        }
+        return '<td>' + esc(v) + extra + '</td>';
       }).join('') + '</tr>';
     }).join('') + (linhas.length > max ? '<tr><td colspan="' + COLS.length + '" style="text-align:center;color:var(--muted)">… e mais ' + (linhas.length - max) + ' linha(s)</td></tr>' : '');
   }
@@ -161,16 +247,35 @@ async function initView_solicitar_massa() {
   $('lm-modelo').addEventListener('click', baixarModelo);
   $('lm-limpar').addEventListener('click', limpar);
   $('lm-processar').addEventListener('click', processar);
-  $('lm-file').addEventListener('change', async function (e) {
-    var file = e.target.files[0]; if (!file) return;
+  // importação (usada pelo input E pelo drag & drop da dropzone)
+  async function importFile(file) {
+    if (!file) return;
     $('lm-erro').hidden = true;
+    if (!/\.(xlsx|xls|csv)$/i.test(file.name)) { erro('Formato não suportado: envie um arquivo .xlsx, .xls ou .csv.'); return; }
     try {
       linhas = await lerArquivo(file);
       if (!linhas.length) { erro('O arquivo não tem linhas de dados.'); return; }
       var header = Object.keys(linhas[0]);
       var faltando = REQ.filter(function (c) { return header.indexOf(c) < 0; });
       if (faltando.length) { erro('Colunas obrigatórias ausentes: ' + faltando.join(', ') + '. Baixe o modelo e use o cabeçalho correto.'); return; }
+      await resolveNames(); // left join nos catálogos -> nomes na pré-visualização
       preview();
     } catch (err) { erro('Não foi possível ler o arquivo: ' + err.message); }
-  });
+  }
+  $('lm-file').addEventListener('change', function (e) { importFile(e.target.files[0]); });
+
+  // drag & drop: soltar a planilha sobre a dropzone importa direto
+  var dropzone = document.querySelector('.dropzone-lote');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dropzone.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dropzone.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', function (e) {
+      var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      importFile(file);
+    });
+  }
 }

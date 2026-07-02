@@ -9,7 +9,7 @@ const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
   'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
-  'v_process_history', 'v_no_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
+  'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
 ]);
 
@@ -23,7 +23,7 @@ const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'gr
 // completed_approvals/eligible_approvers gateiam can_see_process por dentro.
 // process_levels/current_level saíram: não são usados pelo front e reduzem superfície.
 const READ_RPCS = new Set<string>([
-  'my_pending_approvals', 'completed_approvals', 'eligible_approvers', 'next_levels',
+  'my_pending_approvals', 'my_pending_approval_groups', 'completed_approvals', 'eligible_approvers', 'next_levels',
 ]);
 
 type Op = [string, ...unknown[]];

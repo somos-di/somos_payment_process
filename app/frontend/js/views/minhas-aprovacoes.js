@@ -3,8 +3,7 @@ async function initView_minhas_aprovacoes() {
   await window.ProcessList.mount(document.getElementById('ma-host'), {
     emptyText: 'Você ainda não aprovou nenhum processo.',
     load: function () { return window.Store.get('my_approvals'); },
-    dateFilter: true,            // range de data persistente (limpa só no "Limpar filtros")
-    dateField: 'due_date_prc',   // filtra por vencimento do pagamento
+    dateField: 'due_date_prc',   // filtro de data usa o vencimento do pagamento
     // sem actions => somente leitura (linha abre Detalhes; botão Aprovadores)
   });
 }
