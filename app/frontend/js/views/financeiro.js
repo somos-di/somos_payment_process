@@ -64,7 +64,7 @@ async function initView_financeiro() {
     { label: '#', col: 'id_prc', type: 'num' },
     { label: 'Empresa', col: 'empresa_nome', type: 'text' },
     { label: 'Obra', col: 'obra_nome', type: 'text' },
-    { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
+    { label: 'Descrição', col: 'description_prc', type: 'text' },
     { label: 'Nota Fiscal', col: 'fiscal_doc_prc', type: 'text' },
     { label: 'Status', col: 'status_nome', type: 'text' },
     { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
@@ -76,7 +76,7 @@ async function initView_financeiro() {
     var out = rows;
     var t = ($('fin-search').value || '').toLowerCase().trim();
     if (t) {
-      out = out.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+      out = out.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.description_prc, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
     }
     return out.filter(function (p) {
       if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
@@ -103,7 +103,8 @@ async function initView_financeiro() {
       var al = alertas(p);
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
         + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
-        + '<td>' + esc(p.fornecedor_nome) + '</td><td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
+        + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
+        + '<td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
         + '<td><span class="badge ' + (p.status_step_prc === window.CONFIG.STATUS.erro ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
         + '<td>' + (al.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + al.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
@@ -131,7 +132,10 @@ async function initView_financeiro() {
         if (reason == null) return;
         try {
           await window.Store.commit(
-            function () { return window.API.post('/processes/' + p.uuid_prc + '/financeiro-reject', { reason: reason }); },
+            function () {
+              return window.API.post('/processes/' + p.uuid_prc + '/financeiro-reject', { reason: reason })
+                .then(function (r) { window.invalidateFlowCaches(); return r; });
+            },
             function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
           toast('Devolvido para correção.', true); reloadAll();
         } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
@@ -145,7 +149,10 @@ async function initView_financeiro() {
           if (!(await confirmar('Enviar este processo para integração com o UAU?'))) return;
           try {
             await window.Store.commit(
-              function () { return window.API.post('/processes/' + p.uuid_prc + '/send-uau'); },
+              function () {
+                return window.API.post('/processes/' + p.uuid_prc + '/send-uau')
+                  .then(function (r) { window.invalidateFlowCaches(); return r; });
+              },
               function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
             toast('Enviado ao UAU.', true); reloadAll();
           } catch (e) { toast('Erro: ' + e.message); reloadAll(); }

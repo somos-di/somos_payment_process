@@ -20,7 +20,10 @@ async function initView_meus_lancamentos() {
         prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', // motivo obrigatório -> histórico
         // só aparece em Aguardando aprovação ou Em correção
         show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando || p.status_step_prc === window.CONFIG.STATUS.correcao; },
-        run: function (p, reason) { return window.API.post('/processes/' + p.uuid_prc + '/cancel', { reason: reason }); },
+        run: function (p, reason) {
+          return window.API.post('/processes/' + p.uuid_prc + '/cancel', { reason: reason })
+            .then(function (r) { window.invalidateFlowCaches(); return r; }); // reflete nas outras telas sem F5
+        },
       },
     ],
   });
