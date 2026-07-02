@@ -62,7 +62,7 @@ async function initView_financeiro() {
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
         + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
         + '<td>' + esc(p.fornecedor_nome) + '</td><td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
-        + '<td><span class="badge ' + (p.status_step_prc === 8 ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
+        + '<td><span class="badge ' + (p.status_step_prc === window.CONFIG.STATUS.erro ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
         + '<td>' + (al.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + al.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';

@@ -8,7 +8,7 @@ async function initView_com_aprovador() {
     var cls = ({ 0: 'red', 1: 'blue', 2: 'red', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
     return '<span class="badge ' + cls + '">' + esc(name || ('Status ' + step)) + '</span>';
   }
-  var SLOW_DAYS = 5;                          // aguardando há mais que isso = "lento" (vermelho)
+  var SLOW_DAYS = ((window.CONFIG.PARAMS || {}).comAprovador || {}).slowDays || 5; // config: PARAMS.comAprovador.slowDays
   var SVG_PEOPLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 
   var pageSize = 50, page = 0, total = null, rows = [], term = '';
@@ -46,7 +46,7 @@ async function initView_com_aprovador() {
         + '<th>#</th><th>Empresa</th><th>Obra</th><th>Tipo</th><th>Valor</th><th>Status</th>'
         + '<th>Progresso</th><th>Parado há</th><th>Aprovadores</th><th></th></tr></thead><tbody>';
       rows.forEach(function (p, i) {
-        var slow = p.status_step_prc === 1 && (p.dias_desde_criacao || 0) > SLOW_DAYS;
+        var slow = p.status_step_prc === window.CONFIG.STATUS.aguardando && (p.dias_desde_criacao || 0) > SLOW_DAYS;
         var qtd = p.qtd_aprovadores || 0, niv = p.nivel_exigido || 1;
         var done = qtd >= niv;
         var aprovs = (p.aprovadores || []).map(function (a) { return a.nome; }).join(', ');

@@ -1,8 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { NotFoundError } from '../errors.js';
-import { ProcessInsertSchema } from '../models/process.js';
 import type { ProcessesService } from '../services/processesService.js';
+import type { UauIntegrationService } from '../services/uauIntegrationService.js';
 import { UuidParamSchema } from '../validators/common.js';
 
 const InstallmentSchema = z.object({ due_date_ins: z.string(), value_ins: z.number() });
@@ -26,10 +26,12 @@ const ACTIONS: Record<string, string> = {
 };
 
 export class ProcessesController {
-  constructor(private readonly service: ProcessesService) {
+  constructor(
+    private readonly service: ProcessesService,
+    private readonly uau: UauIntegrationService,
+  ) {
     this.list = this.list.bind(this);
     this.get = this.get.bind(this);
-    this.create = this.create.bind(this);
     this.createFull = this.createFull.bind(this);
     this.createBulk = this.createBulk.bind(this);
     this.pending = this.pending.bind(this);
@@ -42,14 +44,14 @@ export class ProcessesController {
   async setInstallments(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
     const { installments } = z.object({ installments: z.array(InstallmentSchema).default([]) }).parse(req.body);
-    const data = await this.service.setInstallments(req.accessToken!, req.user!.id, uuid, installments);
+    const data = await this.service.setInstallments(req.accessToken!, uuid, installments);
     return reply.send({ success: true, data });
   }
 
   async correct(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
     const { process, installments, resend } = CorrectSchema.parse(req.body);
-    const data = await this.service.correct(req.accessToken!, req.user!.id, uuid, process, installments, resend);
+    const data = await this.service.correct(req.accessToken!, uuid, process, installments, resend);
     return reply.send({ success: true, data });
   }
 
@@ -71,31 +73,26 @@ export class ProcessesController {
     const { uuid } = UuidParamSchema.parse(req.params);
     return reply.send({ success: true, data: await this.service.getByUuid(req.accessToken!, uuid) });
   }
-  async create(req: FastifyRequest, reply: FastifyReply) {
-    const body = ProcessInsertSchema.parse(req.body);
-    const data = await this.service.create(req.accessToken!, req.user!.id, body);
-    return reply.status(201).send({ success: true, data });
-  }
   async createFull(req: FastifyRequest, reply: FastifyReply) {
     const { process, installments } = SolicitationSchema.parse(req.body);
-    const data = await this.service.createWithInstallments(req.accessToken!, req.user!.id, process, installments);
+    const data = await this.service.createWithInstallments(req.accessToken!, process, installments);
     return reply.status(201).send({ success: true, data });
   }
   async createBulk(req: FastifyRequest, reply: FastifyReply) {
     const { items } = BulkSchema.parse(req.body);
-    const data = await this.service.createBulk(req.accessToken!, req.user!.id, items);
+    const data = await this.service.createBulk(req.accessToken!, items);
     return reply.send({ success: true, data });
   }
   async action(req: FastifyRequest<{ Params: { uuid: string; action: string } }>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
     // cancelar: guard de autoria + status no backend (não confia no front)
     if (req.params.action === 'cancel') {
-      await this.service.cancel(req.accessToken!, req.user!.id, uuid);
+      await this.service.cancel(req.accessToken!, uuid);
       return reply.send({ success: true });
     }
     // integrar (Enviar UAU): monta o payload do payment e POSTa no webhook de integração
     if (req.params.action === 'send-uau') {
-      const data = await this.service.sendToUau(req.accessToken!, req.user!.id, uuid);
+      const data = await this.uau.sendToUau(req.accessToken!, uuid);
       return reply.send({ success: true, data });
     }
     const fn = ACTIONS[req.params.action];

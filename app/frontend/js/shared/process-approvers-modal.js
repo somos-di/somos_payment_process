@@ -61,7 +61,7 @@
     document.body.appendChild(o);
 
     var data = { done: [], elig: [] };
-    var pendente = proc.status_step_prc === 1;
+    var pendente = proc.status_step_prc === window.CONFIG.STATUS.aguardando;
 
     function renderCol(key) {
       var body = o.querySelector('[data-col="' + key + '"]'); if (!body) return;

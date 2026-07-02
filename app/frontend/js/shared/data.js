@@ -36,8 +36,8 @@
   S.register('persons', function () { return SB.select('persons'); });
   S.register('process_kinds', function () { return SB.select('process_kinds', function (q) { return q.order('name_pkn'); }); });
   S.register('document_kinds', function () { return SB.select('document_kinds', function (q) { return q.order('name_dck'); }); });
-  // catálogo de status (id_skn = status_step_prc) — vira o mapa de labels em CONFIG.STEPS no boot.
-  S.register('status_kind', function () { return SB.select('status_kind', function (q) { return q.order('id_skn'); }); });
+  // status_kind não é registrado aqui: o catálogo de status vem normalizado do backend
+  // (GET /catalog/status -> CONFIG.STEPS + CONFIG.STATUS no boot).
 
   // tabelas de ESCOLHA (cascatas) — cacheadas até ação destrutiva (ex.: sync UAU).
   S.register('empresas', function () { return SB.select('v_empresas', function (q) { return q.order('nome'); }); });
@@ -55,8 +55,9 @@
 
   S.register('dashboard', async function () {
     var all = await SB.select('processes', function (q) { return q.eq('active_prc', true); });
-    var pend = all.filter(function (p) { return p.status_step_prc === 1; }).length;
-    var aguard = all.filter(function (p) { return p.status_step_prc === 1 && p.approving_status_prc === 1; }).length;
+    var S = window.CONFIG.STATUS;
+    var pend = all.filter(function (p) { return p.status_step_prc === S.aguardando; }).length;
+    var aguard = all.filter(function (p) { return p.status_step_prc === S.aguardando && p.approving_status_prc === 1; }).length;
     return { total: all.length, pendentes: pend, aguardando: aguard, rows: all };
   });
 })();

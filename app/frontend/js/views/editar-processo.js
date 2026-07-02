@@ -89,8 +89,8 @@ async function initView_editar_processo() {
   $('ep-loading').hidden = true; $('ep-grid').hidden = false;
 
   // se não está em correção, bloqueia edição/reenvio
-  if (proc.status_step_prc !== 2) {
-    $('ep-status').textContent = 'Somente processos em correção (status 2) podem ser editados.';
+  if (proc.status_step_prc !== window.CONFIG.STATUS.correcao) {
+    $('ep-status').textContent = 'Somente processos em correção podem ser editados.';
     $('ep-reenviar').disabled = true;
     return; // ready continua false -> sem auto-save
   }

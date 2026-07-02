@@ -4,7 +4,7 @@ async function initView_correcao() {
     emptyText: 'Você não tem processos em correção.',
     load: function () {
       return window.SB.select('v_processes', function (q) {
-        return q.eq('status_step_prc', 2).order('id_prc', { ascending: false });
+        return q.eq('status_step_prc', window.CONFIG.STATUS.correcao).order('id_prc', { ascending: false });
       });
     },
     actions: [

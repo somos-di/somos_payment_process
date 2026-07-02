@@ -9,7 +9,7 @@ import { registerProtectedRoutes, registerPublicRoutes } from './routes/index.js
 import { getSettings } from './settings.js';
 
 const s = getSettings();
-const { controllers } = createContainer();
+const { controllers, warmer } = createContainer();
 
 // bodyLimit alto p/ upload de anexo em base64 (boleto/NF)
 const app = Fastify({ logger: { level: 'info' }, trustProxy: s.trustProxy, bodyLimit: 20 * 1024 * 1024 });
@@ -55,5 +55,11 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
 app.listen({ port: s.port, host: s.host })
-  .then(() => app.log.info(`backend on http://${s.host}:${s.port}`))
+  .then(() => {
+    app.log.info(`backend on http://${s.host}:${s.port}`);
+    // aquece o cache global no boot (não-bloqueante; falha não derruba o serviço)
+    warmer.warmAll()
+      .then(() => app.log.info('cache aquecido no boot'))
+      .catch((e) => app.log.warn({ err: e }, 'falha ao aquecer o cache no boot'));
+  })
   .catch((e) => { app.log.error(e); process.exit(1); });

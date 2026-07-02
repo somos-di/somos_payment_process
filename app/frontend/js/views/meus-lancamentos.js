@@ -19,8 +19,8 @@ async function initView_meus_lancamentos() {
       {
         label: 'Cancelar', cls: 'btn-danger',
         confirm: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.',
-        // só aparece em Aguardando aprovação (1) ou Em correção (2)
-        show: function (p) { return p.status_step_prc === 1 || p.status_step_prc === 2; },
+        // só aparece em Aguardando aprovação ou Em correção
+        show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando || p.status_step_prc === window.CONFIG.STATUS.correcao; },
         run: function (p) { return window.API.post('/processes/' + p.uuid_prc + '/cancel'); },
       },
     ],

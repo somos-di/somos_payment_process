@@ -121,7 +121,7 @@ async function initView_solicitar_massa() {
   function buildItem(l) {
     var process = {};
     MAPA.forEach(function (m) { if (m.key !== '__qtd') process[m.key] = cell(m, l); });
-    process.status_step_prc = 1; process.approving_status_prc = 1;
+    // status_step_prc/approving_status_prc: o RPC ignora colunas de controle; o banco aplica o default.
     var total = process.value_prc || 0;
     var qtd = toInt(l[lc('installmentQuantityproc')]) || 1;
     var installments = gerarParcelas(total, qtd, process.due_date_prc);

@@ -1,11 +1,10 @@
 import Redis from 'ioredis';
 import { getSettings } from '../settings.js';
 
-// Cliente Redis OPCIONAL se REDIS_URL não estiver setado, devolve
-// null (o CacheManager opera só com L1 in-process). Se estiver setado mas o Redis
-// cair, os comandos rejeitam rápido (enableOfflineQueue:false) e o CacheManager
-// degrada pra L1 — nunca derruba o request. Talvez eu substitua por um pub/sub de cache
-// cross-process, mas não sei se vale a pena ainda
+// Cliente Redis OPCIONAL: se REDIS_URL não estiver setado, devolve null (sem cache —
+// o CacheManager vai direto ao banco em todo get). Se estiver setado mas o Redis cair,
+// os comandos rejeitam rápido (enableOfflineQueue:false) e o CacheManager degrada pro
+// banco — nunca derruba o request.
 export function createRedisClient(): Redis | null {
   const { redisUrl } = getSettings();
   if (!redisUrl) return null;
