@@ -9,7 +9,12 @@
     var resp = await fetch(window.CONFIG.API_BASE + path, opts);
     var json = null;
     try { json = await resp.json(); } catch (e) { }
-    if (resp.status === 401) { var e = new Error('Sua sessão expirou. Entre novamente para continuar.'); e.code = 401; throw e; }
+    if (resp.status === 401) {
+      // sessão morta no SERVIDOR: derruba o estado local de auth — sem isso o guard
+      // do router acha que ainda está logado e devolve o "Entrar novamente" pro dashboard
+      if (window.Auth && window.Auth.expireLocal) window.Auth.expireLocal();
+      var e = new Error('Sua sessão expirou. Entre novamente para continuar.'); e.code = 401; throw e;
+    }
     if (!resp.ok || (json && json.success === false)) {
       throw new Error((json && json.error && json.error.message) || ('HTTP ' + resp.status));
     }

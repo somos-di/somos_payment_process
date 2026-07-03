@@ -28,6 +28,16 @@
       emit();
       window.location.hash = window.CONFIG.HASH(window.CONFIG.ROUTES.LOGIN);
     },
+    // Sessão morreu no SERVIDOR (401): derruba só o estado LOCAL (sem chamar
+    // /auth/logout). O onChange do router redireciona pro login e o guard
+    // "login + autenticado -> dashboard" deixa de quicar de volta.
+    expireLocal: function () {
+      if (user === null) return; // já expirado localmente — não re-emite
+      user = null;
+      if (window.SB) window.SB.setUserId(null);
+      if (window.Store) window.Store.clear();
+      emit();
+    },
     getUser: function () { return user; },
     isAuthenticated: function () { return user !== null; },
     onChange: function (cb) { listeners.add(cb); return function () { listeners.delete(cb); }; },
