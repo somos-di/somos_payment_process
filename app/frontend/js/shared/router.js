@@ -222,9 +222,9 @@ function warmState() {
 
 async function loadStatusCatalog() {
     try {
-        const cat = await window.API.get('/catalog/status')
-        if (cat && cat.byId) window.CONFIG.STEPS = cat.byId
-        if (cat && cat.byKey) window.CONFIG.STATUS = cat.byKey
+        const catalog = await window.API.get('/catalog/status')
+        if (catalog && catalog.byId) window.CONFIG.STEPS = catalog.byId
+        if (catalog && catalog.byKey) window.CONFIG.STATUS = catalog.byKey
     } catch (e) {  }
 }
 

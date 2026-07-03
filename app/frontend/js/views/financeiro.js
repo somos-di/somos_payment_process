@@ -9,7 +9,7 @@ async function initView_financeiro() {
       + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
-  function confirmar(message) {
+  function confirmDialog(message) {
     return new Promise(function (resolve) {
       var o = document.createElement('div'); o.className = 'modal-overlay';
       o.innerHTML = '<div class="modal-box" style="width:440px"><div class="modal-title">Confirmação</div>'
@@ -23,11 +23,11 @@ async function initView_financeiro() {
     });
   }
 
-  function alertas(p) {
+  function buildAlerts(p) {
     var out = [];
-    var soma = Number(p.soma_parcelas) || 0, total = Number(p.value_prc) || 0, diff = Math.round((soma - total) * 100) / 100;
+    var sum = Number(p.soma_parcelas) || 0, total = Number(p.value_prc) || 0, diff = Math.round((sum - total) * 100) / 100;
     if (p.qtd_parcelas > 0 && Math.abs(diff) >= 0.01) {
-      out.push('A soma das parcelas (' + money(soma) + ') está ' + (diff > 0 ? 'ACIMA' : 'ABAIXO')
+      out.push('A soma das parcelas (' + money(sum) + ') está ' + (diff > 0 ? 'ACIMA' : 'ABAIXO')
         + ' do valor do processo (' + money(total) + '). Diferença: ' + money(Math.abs(diff)) + '.');
     }
     if (p.parcelas_fora_ordem) out.push('Há parcelas com vencimento fora de ordem (uma parcela posterior vence antes de uma anterior).');
@@ -95,14 +95,14 @@ async function initView_financeiro() {
     }).join('');
     var html = '<div class="table-scroll"><table><thead><tr>' + head + '<th>Alertas</th><th></th></tr></thead><tbody>';
     data.forEach(function (p, i) {
-      var al = alertas(p);
+      var alerts = buildAlerts(p);
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
         + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
         + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
         + '<td><span class="badge ' + (p.status_step_prc === window.CONFIG.STATUS.erro ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
-        + '<td>' + (al.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + al.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
+        + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';
     });
     html += '</tbody></table></div>';
@@ -136,12 +136,12 @@ async function initView_financeiro() {
         } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
       }));
       cell.appendChild(iconBtn(FIN_ICONS.parcelas, 'btn-light', 'Parcelas', function () { window.openInstallments(p, reloadAll); }));
-      var alRow = alertas(p);
+      var rowAlerts = buildAlerts(p);
       var uauBtn = iconBtn(FIN_ICONS.uau, 'btn-primary',
-        alRow.length ? 'Resolva os ' + alRow.length + ' alerta(s) antes de integrar' : 'Enviar UAU',
+        rowAlerts.length ? 'Resolva os ' + rowAlerts.length + ' alerta(s) antes de integrar' : 'Enviar UAU',
         async function () {
-          if (alRow.length) { toast('Processo com ' + alRow.length + ' alerta(s). Resolva antes de integrar.'); return; }
-          if (!(await confirmar('Enviar este processo para integração com o UAU?'))) return;
+          if (rowAlerts.length) { toast('Processo com ' + rowAlerts.length + ' alerta(s). Resolva antes de integrar.'); return; }
+          if (!(await confirmDialog('Enviar este processo para integração com o UAU?'))) return;
           try {
             await window.Store.commit(
               function () {
@@ -152,7 +152,7 @@ async function initView_financeiro() {
             toast('Enviado ao UAU.', true); reloadAll();
           } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
         });
-      if (alRow.length) { uauBtn.disabled = true; uauBtn.style.opacity = '0.45'; uauBtn.style.cursor = 'not-allowed'; }
+      if (rowAlerts.length) { uauBtn.disabled = true; uauBtn.style.opacity = '0.45'; uauBtn.style.cursor = 'not-allowed'; }
       cell.appendChild(uauBtn);
       tr.addEventListener('click', function () { window.openProcessDetail(p); });
     });
@@ -161,9 +161,9 @@ async function initView_financeiro() {
       b.addEventListener('click', function (e) {
         e.stopPropagation();
         document.querySelectorAll('.fin-alert-pop').forEach(function (x) { x.remove(); });
-        var p = data[+b.getAttribute('data-i')], al = alertas(p);
+        var p = data[+b.getAttribute('data-i')], alerts = buildAlerts(p);
         var pop = document.createElement('div'); pop.className = 'fin-alert-pop';
-        pop.innerHTML = '<b>Alertas do processo #' + esc(p.id_prc) + '</b><ul>' + al.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
+        pop.innerHTML = '<b>Alertas do processo #' + esc(p.id_prc) + '</b><ul>' + alerts.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
         document.body.appendChild(pop);
         var r = b.getBoundingClientRect();
         pop.style.top = (r.bottom + 6) + 'px'; pop.style.left = Math.max(8, r.right - 380) + 'px';

@@ -17,7 +17,7 @@ async function initView_solicitar() {
     { n: 3, t: 'Parcelamento', d: 'Definição dos vencimentos.' },
     { n: 4, t: 'Anexos', d: 'Upload de documentos.' },
   ];
-  var step = 1, parcelas = [], apropMap = {}, anexos = { boleto: null, nf: null }, userId = null, deptId = null;
+  var step = 1, installments = [], appropriationMap = {}, attachments = { boleto: null, nf: null }, userId = null, deptId = null;
 
   function renderStepper() {
     $('sol-stepper').innerHTML = STEPS.map(function (s) {
@@ -41,7 +41,7 @@ async function initView_solicitar() {
     if (n === 1) return !!($('sol-empresa').value && $('sol-obra').value);
     if (n === 2) return !!($('sol-pessoa').value && $('sol-apropriacao').value && $('sol-tipo').value
       && $('sol-urgente').value !== '' && $('sol-tipodoc').value && parseVal($('sol-valor').value) > 0);
-    if (n === 3) return parcelas.length > 0 && parseInt($('sol-qtd').value, 10) === parcelas.length && somaOk().ok;
+    if (n === 3) return installments.length > 0 && parseInt($('sol-qtd').value, 10) === installments.length && sumCheck().ok;
     return true;
   }
   function allValid() { return validStep(1) && validStep(2) && validStep(3); }
@@ -66,29 +66,29 @@ async function initView_solicitar() {
   } catch (e) { toast('Falha ao carregar listas: ' + e.message); }
 
   $('sol-empresa').addEventListener('change', async function () {
-    var emp = this.value;
-    var obra = $('sol-obra'); obra.disabled = true; obra.innerHTML = '<option value="">Carregando…</option>';
+    var company = this.value;
+    var building = $('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
     $('sol-apropriacao').disabled = true; $('sol-apropriacao').innerHTML = '<option value="">Selecione uma obra</option>';
-    apropMap = {};
-    if (emp) {
+    appropriationMap = {};
+    if (company) {
       try {
-        var obras = await window.Store.get('obras', emp);
-        fill(obra, obras, 'codigo', 'nome', 'Selecione uma obra'); obra.disabled = false;
-      } catch (e) { obra.innerHTML = '<option value="">Erro</option>'; obra.disabled = false; }
+        var buildings = await window.Store.get('obras', company);
+        fill(building, buildings, 'codigo', 'nome', 'Selecione uma obra'); building.disabled = false;
+      } catch (e) { building.innerHTML = '<option value="">Erro</option>'; building.disabled = false; }
     }
     show();
   });
   $('sol-obra').addEventListener('change', async function () {
-    var emp = $('sol-empresa').value, obra = this.value;
-    var ap = $('sol-apropriacao'); ap.disabled = true; ap.innerHTML = '<option value="">Carregando…</option>'; apropMap = {};
-    if (obra) {
+    var company = $('sol-empresa').value, building = this.value;
+    var ap = $('sol-apropriacao'); ap.disabled = true; ap.innerHTML = '<option value="">Carregando…</option>'; appropriationMap = {};
+    if (building) {
       try {
-        var rows = await window.Store.get('compositions_lk', emp + '|' + obra);
+        var rows = await window.Store.get('compositions_lk', company + '|' + building);
         var seen = {}; var opts = [];
         rows.forEach(function (r) {
           var key = r.codigo_composicao + '|' + r.codigo_insumo;
           if (seen[key] || !r.codigo_composicao || !r.codigo_insumo) return; seen[key] = 1;
-          apropMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
+          appropriationMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
           opts.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
         });
         ap.innerHTML = '<option value="">Selecione uma apropriação</option>' + opts.map(function (o) { return '<option value="' + esc(o.k) + '">' + esc(o.t) + '</option>'; }).join('');
@@ -99,7 +99,7 @@ async function initView_solicitar() {
   });
 
   var pin = $('sol-pessoa-input'), pres = $('sol-pessoa-results'), tmr = null;
-  async function searchPessoas(term) {
+  async function searchSuppliers(term) {
     pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
     try {
       var rows = await window.Store.get('fornecedores', term || '');
@@ -111,10 +111,10 @@ async function initView_solicitar() {
       });
     } catch (e) { pres.innerHTML = '<div class="it">' + esc(e.message) + '</div>'; }
   }
-  pin.addEventListener('focus', function () { if (!$('sol-pessoa').value) searchPessoas(pin.value.trim()); });
+  pin.addEventListener('focus', function () { if (!$('sol-pessoa').value) searchSuppliers(pin.value.trim()); });
   pin.addEventListener('input', function () {
     var term = pin.value.trim(); $('sol-pessoa').value = '';
-    clearTimeout(tmr); tmr = setTimeout(function () { searchPessoas(term); }, 300); show();
+    clearTimeout(tmr); tmr = setTimeout(function () { searchSuppliers(term); }, 300); show();
   });
   document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
 
@@ -123,32 +123,32 @@ async function initView_solicitar() {
     $(id).addEventListener('input', show); $(id).addEventListener('change', show);
   });
 
-  function gerar() {
+  function generateInstallments() {
     var total = parseVal($('sol-valor').value), count = parseInt($('sol-qtd').value, 10), first = $('sol-venc1').value;
     var box = $('sol-parcelas');
-    if (!total || total <= 0 || !count || count < 1 || !first) { box.innerHTML = '<p class="empty">Preencha valor, quantidade e 1º vencimento.</p>'; parcelas = []; show(); return; }
-    parcelas = []; var base = Math.floor((total / count) * 100) / 100, acc = 0, fd = new Date(first + 'T12:00:00Z'), html = '';
+    if (!total || total <= 0 || !count || count < 1 || !first) { box.innerHTML = '<p class="empty">Preencha valor, quantidade e 1º vencimento.</p>'; installments = []; show(); return; }
+    installments = []; var base = Math.floor((total / count) * 100) / 100, acc = 0, fd = new Date(first + 'T12:00:00Z'), html = '';
     for (var i = 0; i < count; i++) {
       var val = (i === count - 1) ? (total - acc).toFixed(2) : base.toFixed(2); acc += parseFloat(val);
-      var d = new Date(fd); d.setUTCMonth(d.getUTCMonth() + i); var venc = d.toISOString().split('T')[0];
-      parcelas.push({ vencimento: venc, valor: val });
+      var d = new Date(fd); d.setUTCMonth(d.getUTCMonth() + i); var dueDate = d.toISOString().split('T')[0];
+      installments.push({ vencimento: dueDate, valor: val });
       html += '<div class="parc-row"><span class="pl">Parcela ' + (i + 1) + '</span>'
-        + '<input type="date" value="' + venc + '" data-i="' + i + '" data-f="vencimento">'
+        + '<input type="date" value="' + dueDate + '" data-i="' + i + '" data-f="vencimento">'
         + '<input type="number" step="0.01" value="' + val + '" data-i="' + i + '" data-f="valor"></div>';
     }
     box.innerHTML = html;
     box.querySelectorAll('input').forEach(function (inp) {
-      inp.addEventListener('input', function () { var i = +inp.getAttribute('data-i'); parcelas[i][inp.getAttribute('data-f')] = inp.value; });
+      inp.addEventListener('input', function () { var i = +inp.getAttribute('data-i'); installments[i][inp.getAttribute('data-f')] = inp.value; });
     });
     show();
   }
-  $('sol-gerar').addEventListener('click', gerar);
-  function somaOk() { var bruto = parseVal($('sol-valor').value) || 0, s = parcelas.reduce(function (a, p) { return a + (parseFloat(p.valor) || 0); }, 0); return { soma: Math.round(s * 100) / 100, bruto: bruto, ok: Math.abs(Math.round(s * 100) / 100 - bruto) < 0.01 }; }
+  $('sol-gerar').addEventListener('click', generateInstallments);
+  function sumCheck() { var gross = parseVal($('sol-valor').value) || 0, s = installments.reduce(function (a, p) { return a + (parseFloat(p.valor) || 0); }, 0); return { soma: Math.round(s * 100) / 100, bruto: gross, ok: Math.abs(Math.round(s * 100) / 100 - gross) < 0.01 }; }
 
   async function upload(file, key) {
     try {
       var res = await SB.upload(file);
-      anexos[key] = res ? res.url : null;
+      attachments[key] = res ? res.url : null;
       $('sol-' + (key === 'boleto' ? 'boleto' : 'nf') + '-name').textContent = file.name;
     } catch (e) { toast('Anexo não enviado (' + (e.message || 'storage') + ') — verifique o bucket "attachments".'); }
   }
@@ -159,27 +159,27 @@ async function initView_solicitar() {
   $('sol-next').addEventListener('click', function () {
     if (!validStep(step)) return;
     if (step === 3) {
-      var urgente = $('sol-urgente').value === '1';
-      if (!urgente && $('sol-venc1').value) {
-        var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-        var diff = (new Date($('sol-venc1').value + 'T00:00:00').getTime() - hoje.getTime()) / 86400000;
+      var isUrgent = $('sol-urgente').value === '1';
+      if (!isUrgent && $('sol-venc1').value) {
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var diff = (new Date($('sol-venc1').value + 'T00:00:00').getTime() - today.getTime()) / 86400000;
         if (diff < 10) { $('sol-parc-erro-msg').textContent = 'Prazo mínimo de 10 dias a partir de hoje para o 1º vencimento. Ajuste a data.'; $('sol-parc-erro').hidden = false; return; }
       }
-      var s = somaOk();
+      var s = sumCheck();
       if (!s.ok) { $('sol-parc-erro-msg').textContent = 'A soma das parcelas (R$ ' + fmtBR(s.soma) + ') difere do valor bruto (R$ ' + fmtBR(s.bruto) + '). Ajuste.'; $('sol-parc-erro').hidden = false; return; }
       $('sol-parc-erro').hidden = true;
     }
     if (step < 4) { step++; show(); }
   });
 
-  function txt(sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : '—'; }
+  function optionText(sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : '—'; }
   $('sol-save').addEventListener('click', function () {
     var rows = [
-      ['Empresa', txt($('sol-empresa'))], ['Obra', txt($('sol-obra'))], ['Fornecedor', pin.value || '—'],
-      ['Apropriação', txt($('sol-apropriacao'))], ['Tipo de Processo', txt($('sol-tipo'))],
-      ['Urgente', $('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', txt($('sol-tipodoc'))],
+      ['Empresa', optionText($('sol-empresa'))], ['Obra', optionText($('sol-obra'))], ['Fornecedor', pin.value || '—'],
+      ['Apropriação', optionText($('sol-apropriacao'))], ['Tipo de Processo', optionText($('sol-tipo'))],
+      ['Urgente', $('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText($('sol-tipodoc'))],
       ['Nº Documento', $('sol-numdoc').value || '—'], ['Data de Emissão', $('sol-emissao').value || '—'],
-      ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal($('sol-valor').value) || 0)], ['Parcelas', String(parcelas.length)],
+      ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal($('sol-valor').value) || 0)], ['Parcelas', String(installments.length)],
     ];
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box"><div class="modal-title">Valide os dados do processo</div>'
@@ -195,7 +195,7 @@ async function initView_solicitar() {
   });
 
   async function save() {
-    var ap = apropMap[$('sol-apropriacao').value] || {};
+    var ap = appropriationMap[$('sol-apropriacao').value] || {};
 
     await window.Store.mutate('processes', function () {
       var process = {
@@ -207,12 +207,12 @@ async function initView_solicitar() {
         doc_kind_prc: $('sol-tipodoc').value ? Number($('sol-tipodoc').value) : null,
         is_urgent_prc: $('sol-urgente').value === '1',
         issue_date_prc: $('sol-emissao').value || null,
-        due_date_prc: parcelas[0] ? parcelas[0].vencimento : null,
+        due_date_prc: installments[0] ? installments[0].vencimento : null,
         value_prc: parseVal($('sol-valor').value), fiscal_doc_prc: $('sol-numdoc').value || null,
-        attachment_url_prc: anexos.boleto, attachment_url2_prc: anexos.nf,
+        attachment_url_prc: attachments.boleto, attachment_url2_prc: attachments.nf,
 
       };
-      var installments = parcelas.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
+      var installments = installments.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
       return window.API.post('/processes/full', { process: process, installments: installments });
     });
   }

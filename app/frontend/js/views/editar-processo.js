@@ -19,10 +19,10 @@ async function initView_editar_processo() {
   var uuid = params && params.get ? params.get('uuid') : null;
   if (!uuid) { $('ep-loading').textContent = 'Processo não informado.'; return; }
 
-  var minD = new Date(); minD.setDate(minD.getDate() + 10);
-  var MIN_VENC = minD.toISOString().split('T')[0];
+  var minDate = new Date(); minDate.setDate(minDate.getDate() + 10);
+  var MIN_DUE_DATE = minDate.toISOString().split('T')[0];
 
-  var ready = false, apropMap = {}, anexos = { boleto: null, nf: null }, tmr = null;
+  var ready = false, appropriationMap = {}, attachments = { boleto: null, nf: null }, tmr = null;
 
   var proc;
   try {
@@ -32,8 +32,8 @@ async function initView_editar_processo() {
   } catch (e) { $('ep-loading').textContent = 'Erro: ' + e.message; return; }
 
   $('ep-title').textContent = 'Editar Processo #' + proc.id_prc;
-  anexos.boleto = proc.attachment_url_prc || null;
-  anexos.nf = proc.attachment_url2_prc || null;
+  attachments.boleto = proc.attachment_url_prc || null;
+  attachments.nf = proc.attachment_url2_prc || null;
 
   try {
     fill($('ep-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione');
@@ -41,46 +41,46 @@ async function initView_editar_processo() {
     fill($('ep-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
   } catch (e) { $('ep-loading').textContent = 'Erro ao carregar listas: ' + e.message; return; }
 
-  async function loadObras(emp, keep) {
+  async function loadBuildings(company, keep) {
     var o = $('ep-obra'); o.innerHTML = '<option value="">Carregando…</option>';
-    try { fill(o, await window.Store.get('obras', emp), 'codigo', 'nome', 'Selecione'); }
+    try { fill(o, await window.Store.get('obras', company), 'codigo', 'nome', 'Selecione'); }
     catch (e) { o.innerHTML = '<option value="">Erro</option>'; }
     if (keep) o.value = keep;
   }
-  async function loadAprop(emp, obra, keepComp, keepSup) {
-    var ap = $('ep-apropriacao'); ap.innerHTML = '<option value="">Carregando…</option>'; apropMap = {};
+  async function loadAppropriations(company, obra, keepComp, keepSup) {
+    var ap = $('ep-apropriacao'); ap.innerHTML = '<option value="">Carregando…</option>'; appropriationMap = {};
     try {
-      var rs = await window.Store.get('compositions_lk', emp + '|' + obra);
+      var rs = await window.Store.get('compositions_lk', company + '|' + obra);
       var seen = {}, opts = [];
       rs.forEach(function (r) {
         var key = r.codigo_composicao + '|' + r.codigo_insumo;
         if (seen[key] || !r.codigo_composicao || !r.codigo_insumo) return; seen[key] = 1;
-        apropMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
+        appropriationMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
         opts.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
       });
       var cur = keepComp ? (keepComp + '|' + keepSup) : '';
 
-      if (cur && !apropMap[cur]) { apropMap[cur] = { comp: keepComp, insumo: keepSup }; opts.unshift({ k: cur, t: keepComp + ' / ' + keepSup }); }
+      if (cur && !appropriationMap[cur]) { appropriationMap[cur] = { comp: keepComp, insumo: keepSup }; opts.unshift({ k: cur, t: keepComp + ' / ' + keepSup }); }
       ap.innerHTML = '<option value="">Selecione</option>' + opts.map(function (o) { return '<option value="' + esc(o.k) + '">' + esc(o.t) + '</option>'; }).join('');
       if (cur) ap.value = cur;
     } catch (e) { ap.innerHTML = '<option value="">Erro</option>'; }
   }
 
   $('ep-empresa').value = proc.company_prc || '';
-  await loadObras(proc.company_prc, proc.building_prc);
-  await loadAprop(proc.company_prc, proc.building_prc, proc.composition_prc, proc.supply_prc);
+  await loadBuildings(proc.company_prc, proc.building_prc);
+  await loadAppropriations(proc.company_prc, proc.building_prc, proc.composition_prc, proc.supply_prc);
   $('ep-tipo').value = proc.kind_prc != null ? String(proc.kind_prc) : '';
   $('ep-tipodoc').value = proc.doc_kind_prc != null ? String(proc.doc_kind_prc) : '';
   $('ep-urgente').value = proc.is_urgent_prc ? '1' : '0';
   $('ep-numdoc').value = proc.fiscal_doc_prc || '';
   $('ep-emissao').value = proc.issue_date_prc || '';
-  $('ep-venc').min = MIN_VENC;
+  $('ep-venc').min = MIN_DUE_DATE;
   $('ep-venc').value = proc.due_date_prc || '';
   $('ep-valor').value = proc.value_prc != null ? 'R$ ' + fmtBR(proc.value_prc) : '';
   $('ep-historico').value = proc.description_prc || '';
   $('ep-pessoa').value = proc.person_prc != null ? String(proc.person_prc) : '';
   $('ep-pessoa-input').value = proc.fornecedor_nome || '';
-  renderAnexo('boleto'); renderAnexo('nf');
+  renderAttachment('boleto'); renderAttachment('nf');
 
   $('ep-loading').hidden = true; $('ep-grid').hidden = false;
 
@@ -91,11 +91,11 @@ async function initView_editar_processo() {
   }
   ready = true;
 
-  function vencOk() { var v = $('ep-venc').value; return !!v && v >= MIN_VENC; }
-  function showVencErro() { $('ep-venc-erro').style.display = vencOk() || !$('ep-venc').value ? 'none' : 'block'; }
+  function dueDateValid() { var v = $('ep-venc').value; return !!v && v >= MIN_DUE_DATE; }
+  function toggleDueDateError() { $('ep-venc-erro').style.display = dueDateValid() || !$('ep-venc').value ? 'none' : 'block'; }
 
   function collect() {
-    var ap = apropMap[$('ep-apropriacao').value] || {};
+    var ap = appropriationMap[$('ep-apropriacao').value] || {};
     return {
       description_prc: $('ep-historico').value || null,
       company_prc: $('ep-empresa').value || null,
@@ -109,13 +109,13 @@ async function initView_editar_processo() {
       due_date_prc: $('ep-venc').value || null,
       value_prc: parseVal($('ep-valor').value),
       fiscal_doc_prc: $('ep-numdoc').value || null,
-      attachment_url_prc: anexos.boleto, attachment_url2_prc: anexos.nf,
+      attachment_url_prc: attachments.boleto, attachment_url2_prc: attachments.nf,
     };
   }
   async function save(resend) {
     if (!ready) return;
-    showVencErro();
-    if (!vencOk()) { $('ep-status').textContent = 'Ajuste o vencimento (≥ 10 dias) para salvar.'; if (resend) toast('Vencimento deve ser pelo menos 10 dias a partir de hoje.'); return; }
+    toggleDueDateError();
+    if (!dueDateValid()) { $('ep-status').textContent = 'Ajuste o vencimento (≥ 10 dias) para salvar.'; if (resend) toast('Vencimento deve ser pelo menos 10 dias a partir de hoje.'); return; }
     $('ep-status').textContent = resend ? 'Reenviando…' : 'Salvando…';
     try {
       await window.API.post('/processes/' + uuid + '/correct', { process: collect(), resend: !!resend });
@@ -128,20 +128,20 @@ async function initView_editar_processo() {
   function scheduleSave() { if (!ready) return; $('ep-status').textContent = 'Editando…'; clearTimeout(tmr); tmr = setTimeout(function () { save(false); }, 700); }
 
   $('ep-empresa').addEventListener('change', async function () {
-    await loadObras(this.value); await loadAprop(this.value, $('ep-obra').value); scheduleSave();
+    await loadBuildings(this.value); await loadAppropriations(this.value, $('ep-obra').value); scheduleSave();
   });
   $('ep-obra').addEventListener('change', async function () {
-    await loadAprop($('ep-empresa').value, this.value); scheduleSave();
+    await loadAppropriations($('ep-empresa').value, this.value); scheduleSave();
   });
   ['ep-apropriacao', 'ep-tipo', 'ep-tipodoc', 'ep-urgente', 'ep-numdoc', 'ep-emissao', 'ep-historico'].forEach(function (id) {
     $(id).addEventListener('change', scheduleSave); $(id).addEventListener('input', scheduleSave);
   });
-  $('ep-venc').addEventListener('change', function () { showVencErro(); scheduleSave(); });
+  $('ep-venc').addEventListener('change', function () { toggleDueDateError(); scheduleSave(); });
   $('ep-valor').addEventListener('input', scheduleSave);
   $('ep-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); });
 
   var pin = $('ep-pessoa-input'), pres = $('ep-pessoa-results'), ptmr = null;
-  async function searchPessoas(term) {
+  async function searchSuppliers(term) {
     pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
     try {
       var rs = await window.Store.get('fornecedores', term || '');
@@ -151,12 +151,12 @@ async function initView_editar_processo() {
       });
     } catch (e) { pres.innerHTML = '<div class="it">' + esc(e.message) + '</div>'; }
   }
-  pin.addEventListener('focus', function () { searchPessoas(pin.value.trim()); });
-  pin.addEventListener('input', function () { $('ep-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchPessoas(pin.value.trim()); }, 300); });
+  pin.addEventListener('focus', function () { searchSuppliers(pin.value.trim()); });
+  pin.addEventListener('input', function () { $('ep-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchSuppliers(pin.value.trim()); }, 300); });
   document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
 
-  function renderAnexo(key) {
-    var box = $('ep-' + key + '-file'), url = anexos[key];
+  function renderAttachment(key) {
+    var box = $('ep-' + key + '-file'), url = attachments[key];
     var label = key === 'boleto' ? 'Boleto' : 'Documento Fiscal';
     if (!url) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
@@ -164,11 +164,11 @@ async function initView_editar_processo() {
       + '<span style="display:inline-flex;gap:8px;align-items:center">'
       + '<label class="btn btn-light" for="ep-' + key + '" style="padding:5px 10px;font-size:12px;cursor:pointer">Substituir</label>'
       + '<button title="Remover anexo" aria-label="Remover anexo">×</button></span>';
-    box.querySelector('button').addEventListener('click', function () { anexos[key] = null; renderAnexo(key); scheduleSave(); });
+    box.querySelector('button').addEventListener('click', function () { attachments[key] = null; renderAttachment(key); scheduleSave(); });
   }
   async function upload(file, key) {
     $('ep-status').textContent = 'Enviando anexo…';
-    try { var r = await SB.upload(file); anexos[key] = r ? r.url : null; renderAnexo(key); save(false); }
+    try { var r = await SB.upload(file); attachments[key] = r ? r.url : null; renderAttachment(key); save(false); }
     catch (e) { $('ep-status').textContent = ''; toast('Anexo não enviado: ' + (e.message || 'storage')); }
   }
 
@@ -176,5 +176,5 @@ async function initView_editar_processo() {
   $('ep-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); this.value = ''; });
 
   $('ep-reenviar').addEventListener('click', function () { save(true); });
-  showVencErro();
+  toggleDueDateError();
 }

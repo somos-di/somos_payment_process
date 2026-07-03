@@ -10,7 +10,7 @@ async function initView_sem_aprovador() {
   $('na-count').textContent = rows.length + ' processo(s) sem aprovador';
   if (!rows.length) { $('na-list').innerHTML = '<div class="empty">Nenhum processo sem aprovador. </div>'; return; }
 
-  function diagSemRegra(p) {
+  function renderNoRuleDiagnosis(p) {
     return '<div class="na-diag"><h4>Ainda não existe uma regra de aprovação. Crie uma com:</h4><pre>'
       + 'Empresa: ' + esc(p.empresa_nome) + '\n'
       + 'Obra: ' + esc(p.obra_nome) + '\n'
@@ -20,13 +20,13 @@ async function initView_sem_aprovador() {
       + 'Grupo aprovador: escolha o grupo</pre>'
       + '<div class="na-note">Depois, garanta que o grupo escolhido tenha permissão por empresa, por obra, por tipo de processo e pelo menos um usuário vinculado.</div></div>';
   }
-  function miss(label, falta) { return falta ? '<span class="na-miss">falta ' + label + '</span>' : ''; }
-  function diagComRegra(p) {
-    var cand = p.candidatos || [];
-    var groups = cand.map(function (g) {
-      var faltas = miss('empresa', g.falta_empresa) + miss('obra', g.falta_obra) + miss('tipo', g.falta_tipo) + miss('usuário no grupo', g.falta_usuario);
+  function missingTag(label, isMissing) { return isMissing ? '<span class="na-miss">falta ' + label + '</span>' : ''; }
+  function renderRuleDiagnosis(p) {
+    var candidates = p.candidatos || [];
+    var groups = candidates.map(function (g) {
+      var missingTags = missingTag('empresa', g.falta_empresa) + missingTag('obra', g.falta_obra) + missingTag('tipo', g.falta_tipo) + missingTag('usuário no grupo', g.falta_usuario);
       return '<div class="na-grp"><b>' + esc(g.grupo) + '</b> <span style="color:var(--muted)">(nível ' + esc(g.nivel) + ')</span><br>'
-        + (faltas || '<span class="na-ok">tudo ok — recarregue</span>') + '</div>';
+        + (missingTags || '<span class="na-ok">tudo ok — recarregue</span>') + '</div>';
     }).join('');
     return '<div class="na-diag"><h4>Existe regra, mas o(s) grupo(s) não estão completos:</h4>' + groups
       + '<div class="na-note">Cadastre o que falta em <b>Grupos &amp; Usuários</b> (permissões por empresa/obra/tipo e vínculo de usuário).</div></div>';
@@ -38,7 +38,7 @@ async function initView_sem_aprovador() {
       + '<div class="na-sub">' + esc(p.empresa_nome) + ' (' + esc(p.company_prc) + ') · ' + esc(p.obra_nome) + ' (' + esc(p.building_prc) + ') · '
       + esc(p.tipo_nome) + ' · ' + money(p.value_prc) + (p.is_urgent_prc ? ' · <span class="badge red">Urgente</span>' : '') + '</div></div>'
       + '<span class="badge red">● Sem aprovador</span></div>'
-      + (p.tem_regra ? diagComRegra(p) : diagSemRegra(p))
+      + (p.tem_regra ? renderRuleDiagnosis(p) : renderNoRuleDiagnosis(p))
       + '</div>';
   }).join('');
 }
