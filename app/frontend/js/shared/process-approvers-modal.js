@@ -57,14 +57,14 @@
     document.body.appendChild(o);
 
     var data = { done: [], elig: [] };
-    var pendente = proc.status_step_prc === window.CONFIG.STATUS.aguardando;
+    var isPending = proc.status_step_prc === window.CONFIG.STATUS.aguardando;
 
     function renderCol(key) {
       var body = o.querySelector('[data-col="' + key + '"]'); if (!body) return;
       var input = o.querySelector('[data-search="' + key + '"]');
       var term = (input && input.value || '').toLowerCase().trim();
       if (key === 'next') {
-        body.innerHTML = pendente
+        body.innerHTML = isPending
           ? '<div class="apv-next"><span class="apv-next-ic">' + SVG_WAIT + '</span>'
           + '<div><b>Aguardando aprovação</b><span>Todos os aprovadores</span></div></div>'
           : emptyState();

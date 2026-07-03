@@ -44,17 +44,17 @@ async function initView_com_aprovador() {
         + '<th>Progresso</th><th>Parado há</th><th>Aprovadores</th><th></th></tr></thead><tbody>';
       rows.forEach(function (p, i) {
         var slow = p.status_step_prc === window.CONFIG.STATUS.aguardando && (p.dias_desde_criacao || 0) > SLOW_DAYS;
-        var qtd = p.qtd_aprovadores || 0, niv = p.nivel_exigido || 1;
-        var done = qtd >= niv;
-        var aprovs = (p.aprovadores || []).map(function (a) { return a.nome; }).join(', ');
+        var approverTotal = p.qtd_aprovadores || 0, requiredLevel = p.nivel_exigido || 1;
+        var done = approverTotal >= requiredLevel;
+        var approverNames = (p.aprovadores || []).map(function (a) { return a.nome; }).join(', ');
         html += '<tr data-i="' + i + '" class="' + (slow ? 'ca-slow' : '') + '" style="cursor:pointer">'
           + '<td><span class="id-cell">' + esc(p.id_prc) + (p.is_urgent_prc ? '<span class="urgent-dot" title="Urgente"></span>' : '') + '</span></td>'
           + '<td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
           + '<td>' + esc(p.tipo_nome) + '</td><td>' + money(p.value_prc) + '</td>'
           + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
-          + '<td><span class="ca-prog ' + (done ? 'done' : 'wait') + '">' + qtd + '/' + niv + '</span></td>'
+          + '<td><span class="ca-prog ' + (done ? 'done' : 'wait') + '">' + approverTotal + '/' + requiredLevel + '</span></td>'
           + '<td class="ca-dias">' + (p.dias_desde_criacao != null ? p.dias_desde_criacao + 'd' : '—') + '</td>'
-          + '<td class="ca-aprovs" title="' + esc(aprovs) + '">' + esc(aprovs || '—') + '</td>'
+          + '<td class="ca-aprovs" title="' + esc(approverNames) + '">' + esc(approverNames || '—') + '</td>'
           + '<td style="text-align:right;white-space:nowrap"></td></tr>';
       });
       html += '</tbody></table></div>';

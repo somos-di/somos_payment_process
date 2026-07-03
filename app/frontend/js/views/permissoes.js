@@ -9,9 +9,9 @@ async function initView_permissoes() {
   }
 
   var groups = [], empresas = [], kinds = [];
-  var empNome = {}, kindNome = {};
-  var obrasByEmp = {};     
-  var obraNome = {};       
+  var companyNames = {}, kindNames = {};
+  var buildingsByCompany = {};     
+  var buildingNames = {};       
 
   try {
     groups = await window.SB.select('groups', function (q) { return q.order('name_grp'); });
@@ -19,8 +19,8 @@ async function initView_permissoes() {
     kinds = await window.SB.select('process_kinds', function (q) { return q.order('name_pkn'); });
   } catch (e) { window.viewError($('pm-list'), e); return; }
 
-  empresas.forEach(function (e) { empNome[String(e.codigo)] = e.nome; });
-  kinds.forEach(function (k) { kindNome[k.id_pkn] = k.name_pkn; });
+  empresas.forEach(function (e) { companyNames[String(e.codigo)] = e.nome; });
+  kinds.forEach(function (k) { kindNames[k.id_pkn] = k.name_pkn; });
 
   $('pm-group').innerHTML = '<option value="">Selecione…</option>' +
     groups.map(function (g) { return '<option value="' + g.id_grp + '">' + esc(g.name_grp) + '</option>'; }).join('');
@@ -30,20 +30,20 @@ async function initView_permissoes() {
     return '<label class="pm-check"><input type="checkbox" class="pm-tipo" value="' + k.id_pkn + '"> ' + esc(k.name_pkn) + '</label>';
   }).join('');
 
-  async function obrasOf(emp) {
-    if (obrasByEmp[emp]) return obrasByEmp[emp];
-    var rows = await window.SB.select('v_obras', function (q) { return q.eq('empresa', emp).order('nome'); });
-    obrasByEmp[emp] = rows;
-    rows.forEach(function (o) { obraNome[emp + '/' + o.codigo] = o.nome; });
+  async function buildingsOf(company) {
+    if (buildingsByCompany[company]) return buildingsByCompany[company];
+    var rows = await window.SB.select('v_obras', function (q) { return q.eq('empresa', company).order('nome'); });
+    buildingsByCompany[company] = rows;
+    rows.forEach(function (o) { buildingNames[company + '/' + o.codigo] = o.nome; });
     return rows;
   }
 
-  async function renderObras() {
-    var emp = $('pm-empresa').value;
+  async function renderBuildings() {
+    var company = $('pm-empresa').value;
     var box = $('pm-obras');
-    if (!emp) { box.innerHTML = '<div class="pm-hint">Selecione uma empresa.</div>'; updateCounts(); return; }
+    if (!company) { box.innerHTML = '<div class="pm-hint">Selecione uma empresa.</div>'; updateCounts(); return; }
     box.innerHTML = '<div class="pm-hint">Carregando…</div>';
-    var rows = await obrasOf(emp);
+    var rows = await buildingsOf(company);
     box.innerHTML = rows.length ? rows.map(function (o) {
       return '<label class="pm-check"><input type="checkbox" class="pm-obra-ck" value="' + esc(o.codigo) + '"> ' + esc(o.nome) + ' (' + esc(o.codigo) + ')</label>';
     }).join('') : '<div class="pm-hint">Nenhuma obra para esta empresa.</div>';
@@ -65,7 +65,7 @@ async function initView_permissoes() {
   $('pm-obras').addEventListener('change', updateCounts);
   $('pm-tipos').addEventListener('change', updateCounts);
 
-  $('pm-empresa').addEventListener('change', renderObras);
+  $('pm-empresa').addEventListener('change', renderBuildings);
   $('pm-obras-all').addEventListener('click', function () { setAll('pm-obra-ck', true); });
   $('pm-obras-none').addEventListener('click', function () { setAll('pm-obra-ck', false); });
   $('pm-tipos-all').addEventListener('click', function () { setAll('pm-tipo', true); });
@@ -92,8 +92,8 @@ async function initView_permissoes() {
     catch (e) { window.viewError(host, e); return; }
     if (!rules.length) { host.innerHTML = emptyState('Este grupo ainda não tem permissões', 'Use o formulário acima para conceder visibilidade por empresa, obra e tipo.'); return; }
     
-    var emps = {}; rules.forEach(function (r) { emps[String(r.company_pkr)] = 1; });
-    await Promise.all(Object.keys(emps).map(function (e) { return obrasOf(e); }));
+    var companyCodes = {}; rules.forEach(function (r) { companyCodes[String(r.company_pkr)] = 1; });
+    await Promise.all(Object.keys(companyCodes).map(function (e) { return buildingsOf(e); }));
     
     var tree = {};
     rules.forEach(function (r) {
@@ -103,24 +103,24 @@ async function initView_permissoes() {
     });
     count.textContent = rules.length + ' regra(s) em ' + Object.keys(tree).length + ' empresa(s)';
     host.innerHTML = Object.keys(tree).sort().map(function (c) {
-      var nObras = Object.keys(tree[c]).length;
-      var nRegras = Object.keys(tree[c]).reduce(function (s, b) { return s + tree[c][b].length; }, 0);
-      var obras = Object.keys(tree[c]).sort().map(function (b) {
+      var buildingCount = Object.keys(tree[c]).length;
+      var ruleCount = Object.keys(tree[c]).reduce(function (s, b) { return s + tree[c][b].length; }, 0);
+      var buildingsHtml = Object.keys(tree[c]).sort().map(function (b) {
         var tags = tree[c][b].sort(function (a, z) { return a - z; }).map(function (kid) {
-          return '<span class="pm-tag">' + esc(kindNome[kid] || ('Tipo ' + kid))
+          return '<span class="pm-tag">' + esc(kindNames[kid] || ('Tipo ' + kid))
             + '<button title="Remover" data-c="' + esc(c) + '" data-b="' + esc(b) + '" data-k="' + kid + '">&times;</button></span>';
         }).join('');
         return '<div class="pm-obra">'
-          + '<div class="pm-obra-id"><div class="pm-obra-name">' + esc(obraNome[c + '/' + b] || b) + '</div>'
+          + '<div class="pm-obra-id"><div class="pm-obra-name">' + esc(buildingNames[c + '/' + b] || b) + '</div>'
           + '<div class="pm-obra-code">' + esc(b) + '</div></div>'
           + '<div class="pm-obra-tags">' + tags + '</div></div>';
       }).join('');
       return '<div class="pm-emp">'
         + '<div class="pm-emp-head"><span class="pm-emp-ic">' + SVG_BUILDING + '</span>'
-        + '<div><div class="pm-emp-name">' + esc(empNome[c] || c) + '</div>'
+        + '<div><div class="pm-emp-name">' + esc(companyNames[c] || c) + '</div>'
         + '<div class="pm-emp-code">Empresa ' + esc(c) + '</div></div>'
-        + '<span class="pm-emp-total badge blue">' + nObras + ' obra(s) · ' + nRegras + ' regra(s)</span></div>'
-        + obras + '</div>';
+        + '<span class="pm-emp-total badge blue">' + buildingCount + ' obra(s) · ' + ruleCount + ' regra(s)</span></div>'
+        + buildingsHtml + '</div>';
     }).join('');
     host.querySelectorAll('.pm-tag button').forEach(function (b) {
       b.addEventListener('click', async function () {
@@ -136,13 +136,13 @@ async function initView_permissoes() {
   loadList();
 
   $('pm-add').addEventListener('click', async function () {
-    var g = $('pm-group').value, emp = $('pm-empresa').value;
-    var obras = checked('pm-obra-ck'), tipos = checked('pm-tipo');
+    var g = $('pm-group').value, company = $('pm-empresa').value;
+    var buildingsHtml = checked('pm-obra-ck'), tipos = checked('pm-tipo');
     var msg = $('pm-msg');
     if (!g) return toast('Escolha um grupo.');
-    if (!emp || !obras.length || !tipos.length) return toast('Escolha empresa, ao menos 1 obra e 1 tipo.');
+    if (!company || !buildingsHtml.length || !tipos.length) return toast('Escolha empresa, ao menos 1 obra e 1 tipo.');
     var combos = [];
-    obras.forEach(function (b) { tipos.forEach(function (k) { combos.push({ group: Number(g), company: emp, building: b, kind: Number(k) }); }); });
+    buildingsHtml.forEach(function (b) { tipos.forEach(function (k) { combos.push({ group: Number(g), company: company, building: b, kind: Number(k) }); }); });
     $('pm-add').disabled = true; msg.textContent = 'Adicionando ' + combos.length + '…'; msg.style.color = 'var(--muted)';
     var ok = 0, err = 0;
     for (var i = 0; i < combos.length; i++) {

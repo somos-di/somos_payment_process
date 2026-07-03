@@ -4,13 +4,13 @@ async function initView_sync() {
   var msgEl = document.getElementById('sync-msg');
   var allBtn = document.getElementById('sync-all');
 
-  var cat;
-  try { cat = await window.Store.get('uau_tables'); }
+  var catalog;
+  try { catalog = await window.Store.get('uau_tables'); }
   catch (e) { rowsEl.innerHTML = '<tr><td colspan="5" class="view-error">' + esc(e.message) + '</td></tr>'; return; }
-  cat = (cat || []).filter(function (r) { return r.id_uat !== -999; });
-  if (!cat.length) { rowsEl.innerHTML = '<tr><td colspan="5" class="empty">Catálogo vazio. Rode o uau_sync.sql.</td></tr>'; return; }
+  catalog = (catalog || []).filter(function (r) { return r.id_uat !== -999; });
+  if (!catalog.length) { rowsEl.innerHTML = '<tr><td colspan="5" class="empty">Catálogo vazio. Rode o uau_sync.sql.</td></tr>'; return; }
 
-  rowsEl.innerHTML = cat.map(function (r) {
+  rowsEl.innerHTML = catalog.map(function (r) {
     return '<tr data-id="' + r.id_uat + '" data-table="' + esc(r.supabase_uau_table_uat) + '">'
       + '<td>' + esc(r.uau_table_uat) + '</td>'
       + '<td>' + esc(r.supabase_uau_table_uat) + '</td>'
@@ -19,8 +19,8 @@ async function initView_sync() {
       + '<td style="text-align:right"><button class="btn btn-light sync-one" data-id="' + r.id_uat + '">Sincronizar</button></td></tr>';
   }).join('');
 
-  function setStatus(sel, txt, cls) {
-    var el = rowsEl.querySelector(sel + ' .st');
+  function setStatus(selector, txt, cls) {
+    var el = rowsEl.querySelector(selector + ' .st');
     if (el) el.innerHTML = cls ? '<span class="badge ' + cls + '">' + esc(txt) + '</span>' : esc(txt);
   }
   async function syncOne(id, btn) {
@@ -41,12 +41,12 @@ async function initView_sync() {
   allBtn.addEventListener('click', async function () {
     allBtn.disabled = true;
     msgEl.textContent = 'Sincronizando tudo… (insumos/composições são grandes, pode levar minutos)';
-    cat.forEach(function (r) { setStatus('tr[data-id="' + r.id_uat + '"]', 'Na fila…'); });
+    catalog.forEach(function (r) { setStatus('tr[data-id="' + r.id_uat + '"]', 'Na fila…'); });
     try {
       var res = await window.API.post('/sync');
       (res || []).forEach(function (x) {
-        var sel = 'tr[data-table="' + x.table + '"]';
-        setStatus(sel, 'OK · ' + x.rows + ' linhas', 'ok');
+        var selector = 'tr[data-table="' + x.table + '"]';
+        setStatus(selector, 'OK · ' + x.rows + ' linhas', 'ok');
       });
       msgEl.textContent = 'Sincronização concluída.';
       window.Store.clear(); 

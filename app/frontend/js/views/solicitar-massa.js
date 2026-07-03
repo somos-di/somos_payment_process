@@ -2,7 +2,7 @@ async function initView_solicitar_massa() {
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
-  var MAPA = [
+  var COLUMN_MAP = [
     { col: 'Descrição', alias: 'descr', key: 'description_prc' },
     { col: 'Empresa (código)', alias: 'companyidproc', key: 'company_prc', req: true },
     { col: 'Obra (código)', alias: 'buildingidproc', key: 'building_prc', req: true },
@@ -17,7 +17,7 @@ async function initView_solicitar_massa() {
     { col: 'Qtd. Parcelas', alias: 'installmentQuantityproc', key: '__qtd', tipo: 'int' },
     { col: 'Tipo de Processo (ID)', alias: 'processkindproc', key: 'kind_prc', tipo: 'int', req: true },
   ];
-  var COLS = MAPA.map(function (m) { return m.col; });
+  var COLS = COLUMN_MAP.map(function (m) { return m.col; });
   var lc = function (s) { return String(s).trim().toLowerCase(); };
   var pad2 = function (n) { return String(n).padStart(2, '0'); };
 
@@ -29,7 +29,7 @@ async function initView_solicitar_massa() {
     m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if (m) return m[3] + '-' + m[2] + '-' + m[1];
     return s;
   }
-  function toValor(v) {
+  function parseMoney(v) {
     if (v == null || v === '') return NaN;
     if (typeof v === 'number') return v;
     var s = String(v).trim().replace(/[R$\s]/g, '');
@@ -38,14 +38,14 @@ async function initView_solicitar_massa() {
   }
   function toBool(v) { var s = lc(v == null ? '' : v); return s === '1' || s === 'sim' || s === 's' || s === 'true' || s === 'urgente'; }
   function toInt(v) { var n = parseInt(String(v).trim(), 10); return isNaN(n) ? null : n; }
-  function conv(m, raw) {
-    if (m.tipo === 'data') return toYMD(raw) || null;
-    if (m.tipo === 'valor') { var n = toValor(raw); return isNaN(n) ? null : n; }
+  function convert(m, raw) {
+    if (m.tipo === 'date') return toYMD(raw) || null;
+    if (m.tipo === 'money') { var n = parseMoney(raw); return isNaN(n) ? null : n; }
     if (m.tipo === 'bool') return toBool(raw);
     if (m.tipo === 'int') return raw === '' || raw == null ? null : toInt(raw);
     var s = raw == null ? '' : String(raw).trim(); return s === '' ? null : s;
   }
-  function gerarParcelas(total, count, firstYMD) {
+  function buildMonthlyInstallments(total, count, firstYMD) {
     var out = [];
     if (!total || total <= 0 || !count || count < 1 || !firstYMD) return out;
     var base = Math.floor((total / count) * 100) / 100, acc = 0, first = new Date(firstYMD + 'T12:00:00Z');
@@ -68,11 +68,11 @@ async function initView_solicitar_massa() {
     });
   }
 
-  var linhas = [];
+  var importedRows = [];
 
   async function buildInstructionsSheet(XLSX) {
     var kinds = [];
-    try { kinds = await window.Store.get('process_kinds'); } catch (e) {  }
+    try { kinds = await window.Store.get('process_kinds'); } catch (e) { }
     var rows = [
       ['COMO PREENCHER — LANÇAMENTO EM MASSA'],
       ['Preencha a aba "Processos" (uma linha por processo) e importe o arquivo nesta tela.'],
@@ -101,20 +101,20 @@ async function initView_solicitar_massa() {
     return ws;
   }
 
-  async function baixarModelo() {
+  async function downloadTemplate() {
     try {
       var XLSX = await loadXLSX();
-      var exemplo = ['Teste de lançamento em lote', 'CO146', 'RET28', 'C000013', 'I000168', '7907', '0', '2026-07-01', '2026-08-01', '1000,00', '12345', '1', '1'];
-      var ws = XLSX.utils.aoa_to_sheet([COLS, exemplo]);
+      var sampleRow = ['Teste de lançamento em lote', '36', 'RERV3', 'C000013', 'I000168', '7907', '0', '2026-07-01', '2026-08-01', '1000,00', '12345', '1', '4'];
+      var ws = XLSX.utils.aoa_to_sheet([COLS, sampleRow]);
       ws['!cols'] = COLS.map(function (h) { return { wch: Math.max(14, h.length + 2) }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Processos');
       XLSX.utils.book_append_sheet(wb, await buildInstructionsSheet(XLSX), 'Instruções');
       XLSX.writeFile(wb, 'modelo_lancamento_massa.xlsx');
-    } catch (e) { erro(e.message); }
+    } catch (e) { showError(e.message); }
   }
 
-  async function lerArquivo(file) {
+  async function readSpreadsheet(file) {
     var XLSX = await loadXLSX();
     var buf = await file.arrayBuffer();
     var wb = XLSX.read(buf, { cellDates: true });
@@ -125,14 +125,14 @@ async function initView_solicitar_massa() {
     }).filter(function (r) { return Object.keys(r).some(function (k) { return String(r[k]).trim() !== ''; }); });
   }
 
-  function mapByKey(key) { for (var i = 0; i < MAPA.length; i++) if (MAPA[i].key === key) return MAPA[i]; return null; }
+  function mapByKey(key) { for (var i = 0; i < COLUMN_MAP.length; i++) if (COLUMN_MAP[i].key === key) return COLUMN_MAP[i]; return null; }
 
   var names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
   async function resolveNames() {
     names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
     var companyMap = mapByKey('company_prc'), personMap = mapByKey('person_prc'), compositionMap = mapByKey('composition_prc');
     var companyIds = {}, personIds = {}, compositionIds = {};
-    linhas.forEach(function (l) {
+    importedRows.forEach(function (l) {
       var e = cell(companyMap, l); if (e) companyIds[String(e)] = 1;
       var p = cell(personMap, l); if (p != null) personIds[String(p)] = 1;
       var c = cell(compositionMap, l); if (c) compositionIds[String(c)] = 1;
@@ -150,7 +150,7 @@ async function initView_solicitar_massa() {
       (res[2] || []).forEach(function (o) { names.building[String(o.empresa) + '/' + String(o.codigo).toUpperCase()] = o.nome; });
       (res[3] || []).forEach(function (p) { names.person[String(p.id)] = p.nome; });
       (res[4] || []).forEach(function (c) { names.composition[String(c.composicao) + '/' + String(c.insumo)] = { composition: c.desc_composicao, supply: c.desc_insumo }; });
-    } catch (e) {  }
+    } catch (e) { }
   }
 
   var NAME_RESOLVERS = {
@@ -162,9 +162,9 @@ async function initView_solicitar_massa() {
     supply_prc: function (v, l) { var c = cell(mapByKey('composition_prc'), l); var x = names.composition[String(c) + '/' + String(v)]; return x && x.supply; },
   };
 
-  function erro(msg) { $('lm-erro-msg').textContent = msg; $('lm-erro').hidden = false; }
-  function limpar() {
-    linhas = []; $('lm-file').value = '';
+  function showError(msg) { $('lm-erro-msg').textContent = msg; $('lm-erro').hidden = false; }
+  function resetView() {
+    importedRows = []; $('lm-file').value = '';
     $('lm-preview').hidden = true; $('lm-progresso').hidden = true; $('lm-erro').hidden = true;
     $('lm-result').innerHTML = ''; $('lm-upload').hidden = false;
   }
@@ -173,14 +173,14 @@ async function initView_solicitar_massa() {
     if (v === undefined && m.alias) v = l[lc(m.alias)];
     return v;
   }
-  function cell(m, l) { return conv(m, rawCell(m, l)); }
+  function cell(m, l) { return convert(m, rawCell(m, l)); }
   function preview() {
     $('lm-upload').hidden = true; $('lm-preview').hidden = false;
-    $('lm-preview-title').textContent = linhas.length + ' linha(s) lida(s)';
+    $('lm-preview-title').textContent = importedRows.length + ' linha(s) lida(s)';
     $('lm-head').innerHTML = '<tr>' + COLS.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>';
     var max = 50;
-    $('lm-body').innerHTML = linhas.slice(0, max).map(function (l) {
-      return '<tr>' + MAPA.map(function (m) {
+    $('lm-body').innerHTML = importedRows.slice(0, max).map(function (l) {
+      return '<tr>' + COLUMN_MAP.map(function (m) {
         var v = cell(m, l);
         if (v === null || v === '') return '<td><span style="color:var(--muted)">—</span></td>';
 
@@ -193,24 +193,24 @@ async function initView_solicitar_massa() {
         }
         return '<td>' + esc(v) + extra + '</td>';
       }).join('') + '</tr>';
-    }).join('') + (linhas.length > max ? '<tr><td colspan="' + COLS.length + '" style="text-align:center;color:var(--muted)">… e mais ' + (linhas.length - max) + ' linha(s)</td></tr>' : '');
+    }).join('') + (importedRows.length > max ? '<tr><td colspan="' + COLS.length + '" style="text-align:center;color:var(--muted)">… e mais ' + (importedRows.length - max) + ' linha(s)</td></tr>' : '');
   }
   function buildItem(l) {
     var process = {};
-    MAPA.forEach(function (m) { if (m.key !== '__qtd') process[m.key] = cell(m, l); });
+    COLUMN_MAP.forEach(function (m) { if (m.key !== '__qtd') process[m.key] = cell(m, l); });
 
     var total = process.value_prc || 0;
-    var qtd = cell(mapByKey('__qtd'), l) || 1;
-    var installments = gerarParcelas(total, qtd, process.due_date_prc);
+    var count = cell(mapByKey('__qtd'), l) || 1;
+    var installments = buildMonthlyInstallments(total, count, process.due_date_prc);
     if (installments.length) process.due_date_prc = installments[0].due_date_ins;
     return { process: process, installments: installments };
   }
 
-  async function processar() {
-    if (!linhas.length) return;
+  async function submitAll() {
+    if (!importedRows.length) return;
     var btn = $('lm-processar'); btn.disabled = true; $('lm-limpar').disabled = true;
     $('lm-progresso').hidden = false;
-    var items = linhas.map(buildItem);
+    var items = importedRows.map(buildItem);
     $('lm-prog-label').textContent = 'Enviando ' + items.length + ' processo(s)…';
     $('lm-prog-fill').style.width = '30%';
     try {
@@ -222,7 +222,7 @@ async function initView_solicitar_massa() {
       $('lm-prog-fill').style.width = '100%';
       var ok = 0, fail = 0;
       $('lm-result').innerHTML = results.map(function (r, i) {
-        var l = linhas[i] || {}, desc = cell(MAPA[0], l) || ('(linha ' + (i + 1) + ')');
+        var l = importedRows[i] || {}, desc = cell(COLUMN_MAP[0], l) || ('(linha ' + (i + 1) + ')');
         var parc = (items[i].installments || []).length;
         if (r.ok) { ok++; return '<tr><td>' + (i + 1) + '</td><td>' + esc(desc) + '</td><td><span class="badge ok">✓ criado</span></td><td>' + parc + '</td><td><span style="color:var(--muted)">' + esc(r.uuid_prc || '') + '</span></td></tr>'; }
         fail++; return '<tr><td>' + (i + 1) + '</td><td>' + esc(desc) + '</td><td><span class="badge red">✗ erro</span></td><td>' + parc + '</td><td>' + esc(r.error || '') + '</td></tr>';
@@ -235,25 +235,25 @@ async function initView_solicitar_massa() {
     } finally { btn.disabled = false; $('lm-limpar').disabled = false; }
   }
 
-  $('lm-modelo').addEventListener('click', baixarModelo);
-  $('lm-limpar').addEventListener('click', limpar);
-  $('lm-processar').addEventListener('click', processar);
+  $('lm-modelo').addEventListener('click', downloadTemplate);
+  $('lm-limpar').addEventListener('click', resetView);
+  $('lm-processar').addEventListener('click', submitAll);
 
   async function importFile(file) {
     if (!file) return;
     $('lm-erro').hidden = true;
-    if (!/\.(xlsx|xls|csv)$/i.test(file.name)) { erro('Formato não suportado: envie um arquivo .xlsx, .xls ou .csv.'); return; }
+    if (!/\.(xlsx|xls|csv)$/i.test(file.name)) { showError('Formato não suportado: envie um arquivo .xlsx, .xls ou .csv.'); return; }
     try {
-      linhas = await lerArquivo(file);
-      if (!linhas.length) { erro('O arquivo não tem linhas de dados.'); return; }
-      var header = Object.keys(linhas[0]);
-      var faltando = MAPA.filter(function (m) {
+      importedRows = await readSpreadsheet(file);
+      if (!importedRows.length) { showError('O arquivo não tem linhas de dados.'); return; }
+      var header = Object.keys(importedRows[0]);
+      var faltando = COLUMN_MAP.filter(function (m) {
         return m.req && header.indexOf(lc(m.col)) < 0 && header.indexOf(lc(m.alias)) < 0;
       }).map(function (m) { return m.col; });
-      if (faltando.length) { erro('Colunas obrigatórias ausentes: ' + faltando.join(', ') + '. Baixe o modelo e use o cabeçalho correto.'); return; }
+      if (faltando.length) { showError('Colunas obrigatórias ausentes: ' + faltando.join(', ') + '. Baixe o modelo e use o cabeçalho correto.'); return; }
       await resolveNames();
       preview();
-    } catch (err) { erro('Não foi possível ler o arquivo: ' + err.message); }
+    } catch (err) { showError('Não foi possível ler o arquivo: ' + err.message); }
   }
   $('lm-file').addEventListener('change', function (e) { importFile(e.target.files[0]); });
 
