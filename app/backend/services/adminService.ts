@@ -11,6 +11,14 @@ export class AdminService {
     return unwrap(adminClient().from('users')
       .update({ uau_user_usr: uau && uau.trim() ? uau.trim() : null }).eq('id_usr', user));
   }
+  // cria um grupo (a tela de admin usa; membros/permissões são atribuídos depois).
+  // restrictLaunch: grupo LANÇADOR — membros só lançam os tipos concedidos ao grupo.
+  createGroup(name: string, description: string | null, restrictLaunch: boolean) {
+    return unwrap(adminClient().from('groups')
+      .insert({ name_grp: name, description_grp: description, restrict_launch_kinds_grp: restrictLaunch })
+      .select('id_grp,name_grp,description_grp,restrict_launch_kinds_grp').single());
+  }
+
   addMembership(user: string, group: number) {
     return unwrap(adminClient().from('users_group')
       .upsert({ user_usg: user, group_usg: group }, { onConflict: 'user_usg,group_usg', ignoreDuplicates: true }));

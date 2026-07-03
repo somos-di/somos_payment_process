@@ -13,7 +13,8 @@
     var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
     // usa o nome resolvido da view; se vier vazio/numérico (ex.: status 0), cai no rótulo do config
     var label = (name && name !== String(step)) ? name : (steps[step] || name || ('Status ' + step));
-    var cls = ({ 0: 'red', 1: 'blue', 2: 'red', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
+    // 2 (Pendente de Correção) = violeta — distinto do vermelho de Cancelado (0/3) e Erro (8)
+    var cls = ({ 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
     return '<span class="badge ' + cls + '">' + esc(label) + '</span>';
   }
   function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.style.marginLeft = '6px'; b.textContent = label; b.addEventListener('click', fn); return b; }
