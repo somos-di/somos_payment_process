@@ -23,7 +23,7 @@ const ROUTES = {
 const loadedScripts = new Set()
 
 function setupSidebar() {
-    // A sidebar "sanfona" (recolher/flyout/popup/drawer) vive em shell.js.
+
     if (typeof window.setupShell === 'function') window.setupShell()
 }
 
@@ -97,7 +97,7 @@ function colorForGroup(idx) {
 
 function escapeText(s) {
     if (s === null || s === undefined) return ''
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 function updateActiveLink(route) {
@@ -142,8 +142,8 @@ async function loadScriptOnce(src) {
 async function loadView(route, params) {
     const meta = ROUTES[route]
     const content = document.getElementById('app-content')
-    // navegação atual: se outra começar durante os awaits, abandonamos esta carga
-    // (evita "Cannot read properties of null" ao trocar de tela rapidamente).
+
+
     const navId = window.__currentNavId
     const stale = function () { return navId !== window.__currentNavId }
 
@@ -161,7 +161,7 @@ async function loadView(route, params) {
         window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
         return
     }
-    // rota de admin: só pra is_admin (o backend também barra via requireAdmin)
+
     if (meta.admin) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || !u.is_admin) {
@@ -180,14 +180,14 @@ async function loadView(route, params) {
             if (!r.ok) throw new Error('HTTP ' + r.status)
             return r.text()
         })
-        if (stale()) return // outra navegação assumiu — não toca no DOM
+        if (stale()) return
         const parsed = new DOMParser().parseFromString(html, 'text/html')
         const partial = parsed.querySelector('main')
         if (!partial) throw new Error('A página legada não tem <main>')
         content.innerHTML = partial.innerHTML
 
         await loadScriptOnce('js/views/' + route + '.js')
-        if (stale()) return // o DOM já é de outra view; não inicializar esta
+        if (stale()) return
 
         const initFnName = 'initView_' + route.replace(/-/g, '_')
         const initFn = window[initFnName]
@@ -196,7 +196,7 @@ async function loadView(route, params) {
         }
         await initFn()
     } catch (err) {
-        if (stale()) return // erro de uma carga abandonada — ignora
+        if (stale()) return
         content.innerHTML = '<div class="view-error">Falha ao carregar a view: ' + escapeText(err.message) + '</div>'
     }
 }
@@ -208,27 +208,27 @@ async function handleRoute() {
     await loadView(parsed.route, parsed.params)
 }
 
-// Pré-aquece no estado as entidades caras/críticas (my_pending_approvals é a mais
-// lenta). Ficam prontas pra abrir as telas instantâneo e se mantêm frescas sozinhas
-// (Store.warm refaz em background a cada invalidação destrutiva).
+
+
+
 function warmState() {
     if (!window.Store || !window.Auth || !window.Auth.isAuthenticated()) return
     window.Store.warm('pending_approvals')
 }
 
-// Carrega os catálogos de domínio (fonte da verdade = tabelas do banco), que viram
-// derivados e não mais hardcoded. Os mapas de config.js ficam só como fallback.
-// Status: o backend desserializa/normaliza e cacheia (GET /catalog/status) — o front
-// só consome { byId -> STEPS, byKey -> STATUS }, sem parse.
+
+
+
+
 async function loadStatusCatalog() {
     try {
         const cat = await window.API.get('/catalog/status')
         if (cat && cat.byId) window.CONFIG.STEPS = cat.byId
         if (cat && cat.byKey) window.CONFIG.STATUS = cat.byKey
-    } catch (e) { /* mantém o fallback de config.js */ }
+    } catch (e) {  }
 }
 
-// process_kinds: só rótulos (sem lógica), montado direto das linhas.
+
 async function loadProcessKinds() {
     try {
         const rows = await window.Store.get('process_kinds')
@@ -237,7 +237,7 @@ async function loadProcessKinds() {
             rows.forEach(function (r) { m[r.id_pkn] = r.name_pkn })
             window.CONFIG.PROCESS_KINDS = m
         }
-    } catch (e) { /* mantém o fallback de config.js */ }
+    } catch (e) {  }
 }
 
 async function loadCatalogs() {
@@ -248,13 +248,13 @@ async function loadCatalogs() {
 async function bootstrapAuth() {
     if (!window.Auth) return
     await window.Auth.init()
-    await loadCatalogs() // status_kind/process_kinds -> CONFIG (antes de renderizar qualquer view)
-    warmState() // aquece logo após confirmar a sessão
+    await loadCatalogs()
+    warmState()
     window.Auth.onChange(function (session) {
         if (!session && (window.location.hash || '').indexOf(LOGIN_ROUTE) === -1) {
             window.location.hash = window.CONFIG.HASH(LOGIN_ROUTE)
         }
-        if (session) { loadCatalogs(); warmState() } // novo login: carrega catálogos + aquece
+        if (session) { loadCatalogs(); warmState() }
     })
 }
 

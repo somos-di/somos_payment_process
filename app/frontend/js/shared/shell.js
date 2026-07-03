@@ -1,6 +1,3 @@
-// shell.js — interações da sidebar "sanfona" (modelo home.html):
-// recolher/expandir, acordeão exclusivo, flyout no modo recolhido, popup de
-// usuário e drawer mobile. Sem nada em localStorage (estado só em memória).
 (function () {
     var collapsed = false;
     var activeFlyout = null;
@@ -9,19 +6,16 @@
     function $(sel, root) { return (root || document).querySelector(sel); }
     function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
-    // Rota atual a partir do hash (#/rota?qs -> "rota")
     function currentRoute() {
         var h = (window.location.hash || '').replace(/^#\/?/, '');
         return (h.split('?')[0] || (window.CONFIG && window.CONFIG.ROUTES.DEFAULT) || 'dashboard');
     }
 
-    // href de um menu-item -> rota ("#/consulta?kind=1" -> "consulta")
     function routeOfHref(href) {
         if (!href) return '';
         return href.replace(/^#\/?/, '').split('?')[0];
     }
 
-    // ── Acordeão ────────────────────────────────────────────
     function openGroup(group, exclusive) {
         if (!group) return;
         if (exclusive) {
@@ -37,7 +31,6 @@
         if (!isOpen) group.classList.add('open');
     }
 
-    // Abre o grupo do item ativo e marca has-active-child
     function syncActiveGroup() {
         var route = currentRoute();
         $all('.menu-group').forEach(function (g) { g.classList.remove('has-active-child'); });
@@ -57,7 +50,6 @@
         }
     }
 
-    // ── Flyout (modo recolhido) ─────────────────────────────
     function closeFlyout() {
         if (activeFlyout) { activeFlyout.remove(); activeFlyout = null; }
         if (activeFlyoutHeader) { activeFlyoutHeader.classList.remove('flyout-open'); activeFlyoutHeader = null; }
@@ -113,10 +105,9 @@
 
     function escapeText(s) {
         if (s === null || s === undefined) return '';
-        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // ── Recolher / expandir ─────────────────────────────────
     function setCollapsed(next) {
         collapsed = next;
         var sidebar = $('#sidebar');
@@ -126,13 +117,11 @@
         if (!collapsed) syncActiveGroup();
     }
 
-    // ── Popup de usuário ────────────────────────────────────
     function closeUserPopup() {
         var p = $('#user-menu-popup');
         if (p) p.classList.remove('visible');
     }
 
-    // ── Drawer mobile ───────────────────────────────────────
     function setupMobile() {
         var menuBtn = $('#mobile-menu-btn');
         var sidebar = $('#sidebar');
@@ -148,7 +137,6 @@
         });
     }
 
-    // ── Setup geral (chamado pelo router) ───────────────────
     window.setupShell = function () {
         var sidebar = $('#sidebar');
         var nav = $('#nav');
@@ -157,7 +145,6 @@
         var collapseBtn = $('#collapse-btn');
         if (collapseBtn) collapseBtn.addEventListener('click', function () { setCollapsed(!collapsed); });
 
-        // Cliques no nav: cabeçalho (acordeão/flyout) + navegação fecha o drawer
         nav.addEventListener('click', function (e) {
             var header = e.target.closest('.accordion-header');
             if (header) {
@@ -170,7 +157,7 @@
                 }
                 return;
             }
-            // navegação por link: fecha drawer mobile
+
             if (e.target.closest('a')) {
                 sidebar.classList.remove('show');
                 var bd = $('#sidebar-backdrop');
@@ -178,7 +165,6 @@
             }
         });
 
-        // Popup de usuário
         var trigger = $('#user-profile-trigger');
         var popup = $('#user-menu-popup');
         if (trigger && popup) {
@@ -188,7 +174,6 @@
             });
         }
 
-        // Fecha popup/flyout ao clicar fora ou Esc
         document.addEventListener('click', function (e) {
             if (trigger && popup && !trigger.contains(e.target) && !popup.contains(e.target)) {
                 popup.classList.remove('visible');
@@ -201,7 +186,6 @@
             if (e.key === 'Escape') { closeUserPopup(); closeFlyout(); }
         });
 
-        // Reposiciona/fecha flyout em scroll/resize
         window.addEventListener('resize', closeFlyout);
 
         setupMobile();

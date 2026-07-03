@@ -1,8 +1,6 @@
-// Admin — Permissões por Empresa/Obra/Tipo: concede visibilidade a um grupo
-// (company_rules + building_permission + process_kind_rules). Não torna aprovador.
 async function initView_permissoes() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
@@ -12,8 +10,8 @@ async function initView_permissoes() {
 
   var groups = [], empresas = [], kinds = [];
   var empNome = {}, kindNome = {};
-  var obrasByEmp = {};     // codigo empresa -> [obras]
-  var obraNome = {};       // 'emp/obra' -> nome
+  var obrasByEmp = {};     
+  var obraNome = {};       
 
   try {
     groups = await window.SB.select('groups', function (q) { return q.order('name_grp'); });
@@ -55,7 +53,6 @@ async function initView_permissoes() {
   function checked(cls) { return Array.prototype.slice.call(document.querySelectorAll('.' + cls + ':checked')).map(function (c) { return c.value; }); }
   function setAll(cls, on) { document.querySelectorAll('.' + cls).forEach(function (c) { c.checked = on; }); updateCounts(); }
 
-  // contadores "N de M selecionadas" das seções de chips
   function updateCounts() {
     function fmt(cls) {
       var all = document.querySelectorAll('.' + cls).length;
@@ -68,14 +65,13 @@ async function initView_permissoes() {
   $('pm-obras').addEventListener('change', updateCounts);
   $('pm-tipos').addEventListener('change', updateCounts);
 
-  // helpers
   $('pm-empresa').addEventListener('change', renderObras);
   $('pm-obras-all').addEventListener('click', function () { setAll('pm-obra-ck', true); });
   $('pm-obras-none').addEventListener('click', function () { setAll('pm-obra-ck', false); });
   $('pm-tipos-all').addEventListener('click', function () { setAll('pm-tipo', true); });
   $('pm-tipos-none').addEventListener('click', function () { setAll('pm-tipo', false); });
   $('pm-tipos-nopj').addEventListener('click', function () {
-    document.querySelectorAll('.pm-tipo').forEach(function (c) { c.checked = (c.value !== '3'); }); // 3 = Processo PJ
+    document.querySelectorAll('.pm-tipo').forEach(function (c) { c.checked = (c.value !== '3'); }); 
     updateCounts();
   });
   updateCounts();
@@ -95,10 +91,10 @@ async function initView_permissoes() {
     try { rules = await window.SB.select('process_kind_rules', function (q) { return q.eq('group_pkr', Number(g)); }); }
     catch (e) { window.viewError(host, e); return; }
     if (!rules.length) { host.innerHTML = emptyState('Este grupo ainda não tem permissões', 'Use o formulário acima para conceder visibilidade por empresa, obra e tipo.'); return; }
-    // garante nomes de obra das empresas presentes
+    
     var emps = {}; rules.forEach(function (r) { emps[String(r.company_pkr)] = 1; });
     await Promise.all(Object.keys(emps).map(function (e) { return obrasOf(e); }));
-    // agrupa empresa -> obra -> [kinds]
+    
     var tree = {};
     rules.forEach(function (r) {
       var c = String(r.company_pkr), b = String(r.building_pkr);

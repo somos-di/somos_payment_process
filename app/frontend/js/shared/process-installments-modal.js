@@ -1,7 +1,5 @@
-// Modal de Parcelas — visualizar / adicionar / editar / deletar. window.openInstallments(proc, onSaved)
-// Salva a lista inteira via POST /processes/:uuid/installments. Mostra soma x valor do processo.
 (function () {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
@@ -69,7 +67,7 @@
         await window.Store.commit(
           function () { return window.API.post('/processes/' + uuid + '/installments', { installments: payload }); },
           function () {
-            window.Store.invalidateKey('installments', uuid); // só as parcelas deste processo
+            window.Store.invalidateKey('installments', uuid); 
             window.Store.patch('financeiro', 'uuid_prc', uuid, { soma_parcelas: somaP, qtd_parcelas: payload.length, parcelas_fora_ordem: fora });
             return ['installments'];
           });

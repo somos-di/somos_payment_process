@@ -1,14 +1,12 @@
-// Processos com aprovador (admin) — monitorar a fila: progresso (aprovações/nível),
-// há quanto tempo está parado, e quem já aprovou. Lê v_with_approver (paginado).
 async function initView_com_aprovador() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function statusBadge(step, name) {
     var cls = ({ 0: 'red', 1: 'blue', 2: 'red', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
     return '<span class="badge ' + cls + '">' + esc(name || ('Status ' + step)) + '</span>';
   }
-  var SLOW_DAYS = ((window.CONFIG.PARAMS || {}).comAprovador || {}).slowDays || 5; // config: PARAMS.comAprovador.slowDays
+  var SLOW_DAYS = ((window.CONFIG.PARAMS || {}).comAprovador || {}).slowDays || 5;
   var SVG_PEOPLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 
   var pageSize = 50, page = 0, total = null, rows = [], term = '';
@@ -16,8 +14,7 @@ async function initView_com_aprovador() {
   var search = $('ca-search');
 
   function applyFilters(s) {
-    // status_step_prc=1 ("Aguardando aprovação") é enforçado NA VIEW v_with_approver
-    // (server-side, não-burlável) — não filtramos status aqui.
+
     var t = (term || '').trim().replace(/[,()*%]/g, ' ').trim();
     if (t) {
       var ors = ['empresa_nome.ilike.%' + t + '%', 'obra_nome.ilike.%' + t + '%', 'fornecedor_nome.ilike.%' + t + '%'];
@@ -92,7 +89,6 @@ async function initView_com_aprovador() {
     render();
   }
 
-  // troca de filtro reinicia a paginação e reconta
   var t;
   function refilter() { clearTimeout(t); t = setTimeout(function () { page = 0; loadCount(); loadPage(); }, 300); }
   search.addEventListener('input', function () { term = search.value; refilter(); });

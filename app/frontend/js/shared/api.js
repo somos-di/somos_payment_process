@@ -1,8 +1,5 @@
-// api.js — único canal do front: fala SÓ com o backend Fastify.
-// Sessão vai em cookie httpOnly (credentials:'include'); nada de token/chave no JS.
 (function () {
-  // full=true devolve o envelope inteiro ({ success, data, count, ... });
-  // por padrão devolve só json.data (interface antiga).
+
   async function call(method, path, body, full) {
     var opts = { method: method, credentials: 'include', headers: {} };
     if (body != null) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
@@ -10,8 +7,7 @@
     var json = null;
     try { json = await resp.json(); } catch (e) { }
     if (resp.status === 401) {
-      // sessão morta no SERVIDOR: derruba o estado local de auth — sem isso o guard
-      // do router acha que ainda está logado e devolve o "Entrar novamente" pro dashboard
+
       if (window.Auth && window.Auth.expireLocal) window.Auth.expireLocal();
       var e = new Error('Sua sessão expirou. Entre novamente para continuar.'); e.code = 401; throw e;
     }
@@ -27,7 +23,6 @@
     postFull: function (path, body) { return call('POST', path, body, true); },
   };
 
-  // Render amigável de erro num container. Caso de sessão (401): card com botão "Entrar".
   window.viewError = function (el, err) {
     if (!el) return;
     var msg = (err && err.message) || 'Algo deu errado.';

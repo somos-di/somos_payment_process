@@ -1,12 +1,7 @@
-// Solicitar em Massa — mesma lógica do lote do solicitar.html, com as MESMAS colunas
-// do import_base.xlsx. Lê/gera .xlsx (e .csv) via SheetJS hospedado localmente
-// (js/vendor/xlsx.full.min.js, sem CDN em runtime). Envia tudo ao backend (/processes/bulk).
 async function initView_solicitar_massa() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
-  // colunas EXATAS do import_base.xlsx (esquerda) -> campo do processo (direita).
-  // installmentQuantityproc (qtd de parcelas) não é campo do processo (__qtd).
   var MAPA = [
     { col: 'descr', key: 'description_prc' },
     { col: 'companyidproc', key: 'company_prc', req: true },
@@ -22,7 +17,7 @@ async function initView_solicitar_massa() {
     { col: 'installmentQuantityproc', key: '__qtd', tipo: 'int' },
     { col: 'processkindproc', key: 'kind_prc', tipo: 'int', req: true },
   ];
-  var COLS = MAPA.map(function (m) { return m.col; });               // cabeçalho do modelo (exato)
+  var COLS = MAPA.map(function (m) { return m.col; });
   var REQ = MAPA.filter(function (m) { return m.req; }).map(function (m) { return m.col.toLowerCase(); });
   var lc = function (s) { return String(s).trim().toLowerCase(); };
   var pad2 = function (n) { return String(n).padStart(2, '0'); };
@@ -63,7 +58,6 @@ async function initView_solicitar_massa() {
     return out;
   }
 
-  // carrega o SheetJS local sob demanda (uma vez)
   function loadXLSX() {
     return new Promise(function (res, rej) {
       if (window.XLSX) return res(window.XLSX);
@@ -77,11 +71,9 @@ async function initView_solicitar_massa() {
 
   var linhas = [];
 
-  // aba "Instruções" do modelo: como preencher cada coluna + catálogo de tipos
-  // de processo (processkindproc) vindo do banco (process_kinds).
   async function buildInstructionsSheet(XLSX) {
     var kinds = [];
-    try { kinds = await window.Store.get('process_kinds'); } catch (e) { /* modelo segue sem o catálogo */ }
+    try { kinds = await window.Store.get('process_kinds'); } catch (e) {  }
     var rows = [
       ['COMO PREENCHER — LANÇAMENTO EM MASSA'],
       ['Preencha a aba "Processos" (uma linha por processo) e importe o arquivo nesta tela.'],
@@ -136,10 +128,6 @@ async function initView_solicitar_massa() {
 
   function mapByKey(key) { for (var i = 0; i < MAPA.length; i++) if (MAPA[i].key === key) return MAPA[i]; return null; }
 
-  // "LEFT JOIN" nos catálogos: resolve em LOTE (1 query por tabela, via in()) os
-  // nomes referentes aos ids da planilha — empresa, obra, fornecedor, tipo e
-  // composição/insumo. Id sem correspondência fica sem nome e a pré-visualização
-  // marca "não encontrado" (null do left join).
   var names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
   async function resolveNames() {
     names = { company: {}, building: {}, person: {}, kind: {}, composition: {} };
@@ -163,10 +151,9 @@ async function initView_solicitar_massa() {
       (res[2] || []).forEach(function (o) { names.building[String(o.empresa) + '/' + String(o.codigo).toUpperCase()] = o.nome; });
       (res[3] || []).forEach(function (p) { names.person[String(p.id)] = p.nome; });
       (res[4] || []).forEach(function (c) { names.composition[String(c.composicao) + '/' + String(c.insumo)] = { composition: c.desc_composicao, supply: c.desc_insumo }; });
-    } catch (e) { /* sem os catálogos, a pré-visualização segue só com os ids */ }
+    } catch (e) {  }
   }
 
-  // nome resolvido por coluna da planilha (valor convertido + linha, p/ chaves compostas)
   var NAME_RESOLVERS = {
     companyidproc: function (v) { return names.company[String(v)]; },
     buildingidproc: function (v, l) { var e = cell(mapByKey('company_prc'), l); return names.building[String(e) + '/' + String(v).toUpperCase()]; },
@@ -192,7 +179,7 @@ async function initView_solicitar_massa() {
       return '<tr>' + MAPA.map(function (m) {
         var v = cell(m, l);
         if (v === null || v === '') return '<td><span style="color:var(--muted)">—</span></td>';
-        // left join: mostra o nome resolvido sob o id; sem correspondência -> alerta
+
         var extra = '';
         if (NAME_RESOLVERS[m.col]) {
           var resolved = NAME_RESOLVERS[m.col](v, l);
@@ -207,7 +194,7 @@ async function initView_solicitar_massa() {
   function buildItem(l) {
     var process = {};
     MAPA.forEach(function (m) { if (m.key !== '__qtd') process[m.key] = cell(m, l); });
-    // status_step_prc/approving_status_prc: o RPC ignora colunas de controle; o banco aplica o default.
+
     var total = process.value_prc || 0;
     var qtd = toInt(l[lc('installmentQuantityproc')]) || 1;
     var installments = gerarParcelas(total, qtd, process.due_date_prc);
@@ -247,7 +234,7 @@ async function initView_solicitar_massa() {
   $('lm-modelo').addEventListener('click', baixarModelo);
   $('lm-limpar').addEventListener('click', limpar);
   $('lm-processar').addEventListener('click', processar);
-  // importação (usada pelo input E pelo drag & drop da dropzone)
+
   async function importFile(file) {
     if (!file) return;
     $('lm-erro').hidden = true;
@@ -258,13 +245,12 @@ async function initView_solicitar_massa() {
       var header = Object.keys(linhas[0]);
       var faltando = REQ.filter(function (c) { return header.indexOf(c) < 0; });
       if (faltando.length) { erro('Colunas obrigatórias ausentes: ' + faltando.join(', ') + '. Baixe o modelo e use o cabeçalho correto.'); return; }
-      await resolveNames(); // left join nos catálogos -> nomes na pré-visualização
+      await resolveNames();
       preview();
     } catch (err) { erro('Não foi possível ler o arquivo: ' + err.message); }
   }
   $('lm-file').addEventListener('change', function (e) { importFile(e.target.files[0]); });
 
-  // drag & drop: soltar a planilha sobre a dropzone importa direto
   var dropzone = document.querySelector('.dropzone-lote');
   if (dropzone) {
     ['dragenter', 'dragover'].forEach(function (ev) {

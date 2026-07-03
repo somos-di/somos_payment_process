@@ -1,10 +1,7 @@
-// Solicitar — wizard de 4 passos (segue o fluxo do solicitar.html do Mitra,
-// adaptado: supabase + design system + Store.mutate no save). Sem condicional de
-// reembolso: tudo é "Tipo de Processo" (process_kinds). Departamento = do usuário.
 async function initView_solicitar() {
   var SB = window.SB;
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
@@ -22,7 +19,6 @@ async function initView_solicitar() {
   ];
   var step = 1, parcelas = [], apropMap = {}, anexos = { boleto: null, nf: null }, userId = null, deptId = null;
 
-  // --- stepper ---
   function renderStepper() {
     $('sol-stepper').innerHTML = STEPS.map(function (s) {
       var cls = step > s.n ? 'done' : (step === s.n ? 'current' : '');
@@ -34,13 +30,13 @@ async function initView_solicitar() {
     renderStepper();
     document.querySelectorAll('.sol-step').forEach(function (el) { el.hidden = Number(el.getAttribute('data-step')) !== step; });
     $('sol-back').disabled = step === 1;
-    // "Salvar Processo" só aparece no último passo e só habilita com tudo preenchido.
+
     $('sol-next').hidden = step === 4;
     $('sol-save').hidden = step !== 4;
     $('sol-save').disabled = !allValid();
     $('sol-next').disabled = !validStep(step);
   }
-  // numdoc (fiscal) e histórico/descrição NÃO são obrigatórios; o resto é.
+
   function validStep(n) {
     if (n === 1) return !!($('sol-empresa').value && $('sol-obra').value);
     if (n === 2) return !!($('sol-pessoa').value && $('sol-apropriacao').value && $('sol-tipo').value
@@ -50,7 +46,6 @@ async function initView_solicitar() {
   }
   function allValid() { return validStep(1) && validStep(2) && validStep(3); }
 
-  // --- carrega usuário + lookups (do backend: /auth/me traz id + departamento) ---
   try {
     var me = (window.Auth && window.Auth.getUser()) || null;
     if (!me) { try { me = await window.API.get('/auth/me'); } catch (e) { } }
@@ -65,12 +60,11 @@ async function initView_solicitar() {
   }
   try {
     fill($('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
-    // só os tipos que o usuário pode LANÇAR (grupo lançador restringe; o banco valida de novo)
+
     fill($('sol-tipo'), await window.Store.get('launchable_kinds'), 'id_pkn', 'name_pkn', 'Selecione o tipo');
     fill($('sol-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
   } catch (e) { toast('Falha ao carregar listas: ' + e.message); }
 
-  // --- cascatas ---
   $('sol-empresa').addEventListener('change', async function () {
     var emp = this.value;
     var obra = $('sol-obra'); obra.disabled = true; obra.innerHTML = '<option value="">Carregando…</option>';
@@ -104,8 +98,6 @@ async function initView_solicitar() {
     show();
   });
 
-  // --- pessoa (busca paginada): mostra 100 por padrão; ao digitar, busca no banco
-  //     por nome OU cpf/cnpj (coluna cpf_pes, exposta como cpf_cnpj na v_fornecedores).
   var pin = $('sol-pessoa-input'), pres = $('sol-pessoa-results'), tmr = null;
   async function searchPessoas(term) {
     pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
@@ -126,13 +118,11 @@ async function initView_solicitar() {
   });
   document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
 
-  // valor format
   $('sol-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (!isNaN(n) && n > 0) this.value = 'R$ ' + fmtBR(n); show(); });
   ['sol-tipo', 'sol-urgente', 'sol-tipodoc', 'sol-apropriacao', 'sol-numdoc', 'sol-emissao', 'sol-valor', 'sol-historico'].forEach(function (id) {
     $(id).addEventListener('input', show); $(id).addEventListener('change', show);
   });
 
-  // --- parcelas ---
   function gerar() {
     var total = parseVal($('sol-valor').value), count = parseInt($('sol-qtd').value, 10), first = $('sol-venc1').value;
     var box = $('sol-parcelas');
@@ -155,10 +145,9 @@ async function initView_solicitar() {
   $('sol-gerar').addEventListener('click', gerar);
   function somaOk() { var bruto = parseVal($('sol-valor').value) || 0, s = parcelas.reduce(function (a, p) { return a + (parseFloat(p.valor) || 0); }, 0); return { soma: Math.round(s * 100) / 100, bruto: bruto, ok: Math.abs(Math.round(s * 100) / 100 - bruto) < 0.01 }; }
 
-  // --- anexos (upload via backend -> Storage; opcional) ---
   async function upload(file, key) {
     try {
-      var res = await SB.upload(file); // { url }
+      var res = await SB.upload(file);
       anexos[key] = res ? res.url : null;
       $('sol-' + (key === 'boleto' ? 'boleto' : 'nf') + '-name').textContent = file.name;
     } catch (e) { toast('Anexo não enviado (' + (e.message || 'storage') + ') — verifique o bucket "attachments".'); }
@@ -166,7 +155,6 @@ async function initView_solicitar() {
   $('sol-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); });
   $('sol-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); });
 
-  // --- navegação ---
   $('sol-back').addEventListener('click', function () { if (step > 1) { step--; show(); } });
   $('sol-next').addEventListener('click', function () {
     if (!validStep(step)) return;
@@ -184,7 +172,6 @@ async function initView_solicitar() {
     if (step < 4) { step++; show(); }
   });
 
-  // --- modal de validação + save ---
   function txt(sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : '—'; }
   $('sol-save').addEventListener('click', function () {
     var rows = [
@@ -209,7 +196,7 @@ async function initView_solicitar() {
 
   async function save() {
     var ap = apropMap[$('sol-apropriacao').value] || {};
-    // author_prc e uuid são definidos no backend (JWT + default do banco).
+
     await window.Store.mutate('processes', function () {
       var process = {
         description_prc: $('sol-historico').value || null,
@@ -223,8 +210,7 @@ async function initView_solicitar() {
         due_date_prc: parcelas[0] ? parcelas[0].vencimento : null,
         value_prc: parseVal($('sol-valor').value), fiscal_doc_prc: $('sol-numdoc').value || null,
         attachment_url_prc: anexos.boleto, attachment_url2_prc: anexos.nf,
-        // status_step_prc/approving_status_prc não são enviados: o RPC ignora colunas
-        // de controle e o banco aplica o default (1 = Aguardando aprovação).
+
       };
       var installments = parcelas.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
       return window.API.post('/processes/full', { process: process, installments: installments });

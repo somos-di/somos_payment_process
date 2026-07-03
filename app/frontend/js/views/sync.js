@@ -1,6 +1,5 @@
-// Sync manual UAU — lista o catálogo (uau_tables) e dispara o sync via backend.
 async function initView_sync() {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   var rowsEl = document.getElementById('sync-rows');
   var msgEl = document.getElementById('sync-msg');
   var allBtn = document.getElementById('sync-all');
@@ -30,7 +29,7 @@ async function initView_sync() {
     try {
       var d = await window.API.post('/sync/' + id);
       setStatus('tr[data-id="' + id + '"]', 'OK · ' + d.rows + ' linhas', 'ok');
-      window.Store.clear(); // sync troca os espelhos UAU -> derruba todo o cache (lookups/processos)
+      window.Store.clear(); 
     } catch (e) {
       setStatus('tr[data-id="' + id + '"]', e.message, 'red');
     } finally { if (btn) btn.disabled = false; }
@@ -50,7 +49,7 @@ async function initView_sync() {
         setStatus(sel, 'OK · ' + x.rows + ' linhas', 'ok');
       });
       msgEl.textContent = 'Sincronização concluída.';
-      window.Store.clear(); // sync troca os espelhos UAU -> derruba todo o cache (lookups/processos)
+      window.Store.clear(); 
     } catch (e) {
       msgEl.textContent = 'Erro: ' + e.message;
     } finally { allBtn.disabled = false; }

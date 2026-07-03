@@ -1,4 +1,3 @@
-// Consulta — lista por Tipo de Processo (?kind=N) ou "Minhas Aprovações" (?view=aprovacoes).
 async function initView_consulta() {
   var p = window.routeParams;
   var get = function (k) { return p && typeof p.get === 'function' ? p.get(k) : (p ? p[k] : null); };

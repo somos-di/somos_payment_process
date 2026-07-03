@@ -1,13 +1,7 @@
-// process-filters.js — barra de filtros compartilhada (Empresa / Obra / Data / Status),
-// PERSISTENTE por tela (localStorage). Opções SEMPRE do banco, nada chumbado:
-//   empresa -> v_empresas (Store 'empresas', espelho UAU)
-//   obra    -> v_obras (dependente da empresa selecionada)
-//   status  -> CONFIG.STEPS (payment.status_kind, carregado no boot via /catalog/status)
-// window.ProcessFilters.mount(container, { storageKey, onChange }) -> { getValues, clear }
 (function () {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
-  var buildingsCache = {}; // empresa -> linhas de v_obras (evita re-consultar ao alternar)
+  var buildingsCache = {};
 
   async function loadBuildings(company) {
     if (!company) return [];
@@ -36,7 +30,6 @@
       var el = {};
       container.querySelectorAll('[data-pf]').forEach(function (c) { el[c.getAttribute('data-pf')] = c; });
 
-      // opções: empresas do espelho + status do catálogo (ambos vindos do banco)
       var companies = [];
       try { companies = await window.Store.get('empresas'); } catch (e) { companies = []; }
       el.company.innerHTML = '<option value="">Todas</option>' + (companies || []).map(function (c) {
@@ -54,21 +47,19 @@
         el.building.innerHTML = '<option value="">Todas</option>' + rows.map(function (o) {
           return '<option value="' + esc(o.codigo) + '">' + esc(o.nome) + '</option>';
         }).join('');
-        el.building.value = keepValue || ''; // se a obra salva não existir mais, cai em "Todas"
+        el.building.value = keepValue || '';
       }
 
       function getValues() {
         return {
           company: el.company.value, building: el.building.value,
           from: el.from.value, to: el.to.value, status: el.status.value,
-          urgent: el.urgent.value, // '' = todos · '1' = urgentes · '0' = não urgentes
+          urgent: el.urgent.value,
         };
       }
-      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) { /* storage cheio/indisponível */ } }
+      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) {  } }
       function emit() { persist(); if (opts.onChange) opts.onChange(getValues()); }
 
-      // restaura os filtros salvos ANTES de ligar os listeners (não dispara onChange;
-      // o chamador lê getValues() para a carga inicial)
       el.company.value = saved.company || '';
       await refreshBuildings(saved.building || '');
       el.from.value = saved.from || '';
@@ -85,7 +76,7 @@
           el.company.value = ''; el.building.value = ''; el.building.disabled = true;
           el.building.innerHTML = '<option value="">Todas</option>';
           el.from.value = ''; el.to.value = ''; el.status.value = ''; el.urgent.value = '';
-          try { localStorage.removeItem(storageKey); } catch (e) { /* ignore */ }
+          try { localStorage.removeItem(storageKey); } catch (e) {  }
           if (opts.onChange) opts.onChange(getValues());
         },
       };

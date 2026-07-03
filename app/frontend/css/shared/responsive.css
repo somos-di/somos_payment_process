@@ -1,14 +1,6 @@
-/* ============================================================================
- * Responsive — quebras adicionais por componente.
- *
- * O grosso do mobile mora em layout.css (sidebar vira drawer < 900px).
- * Este arquivo é só pra ajustes específicos por componente (tabelas, modais)
- * quando precisar.
- * ============================================================================ */
-
 @media (max-width: 760px) {
 
-    /* Tabelas: scroll horizontal pra evitar quebra brutal */
+    
     #data-table {
         display: block;
         overflow-x: auto;

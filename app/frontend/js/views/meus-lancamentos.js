@@ -1,6 +1,3 @@
-// Meus Lançamentos — processos criados pelo usuário (author = eu). View-only +
-// CANCELAR (irreversível): só permitido enquanto status_step_prc ∈ (1,2)
-// (Aguardando aprovação / Em correção). Cancelar zera o processo (status 0).
 async function initView_meus_lancamentos() {
   var me = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || null;
   var myId = me && me.id;
@@ -17,12 +14,12 @@ async function initView_meus_lancamentos() {
     actions: [
       {
         label: 'Cancelar', cls: 'btn-danger',
-        prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', // motivo obrigatório -> histórico
-        // só aparece em Aguardando aprovação ou Em correção
+        prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', 
+        
         show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando || p.status_step_prc === window.CONFIG.STATUS.correcao; },
         run: function (p, reason) {
           return window.API.post('/processes/' + p.uuid_prc + '/cancel', { reason: reason })
-            .then(function (r) { window.invalidateFlowCaches(); return r; }); // reflete nas outras telas sem F5
+            .then(function (r) { window.invalidateFlowCaches(); return r; }); 
         },
       },
     ],

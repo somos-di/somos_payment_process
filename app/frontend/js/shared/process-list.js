@@ -1,25 +1,17 @@
-// Tabela de processos reaproveitável (Consulta / Aprovar / Financeiro / Contabilidade).
-// window.ProcessList.mount(hostEl, opts)
-//   Modo PAGINADO (recomendado p/ v_processes — busca 50 por vez, página a página):
-//     opts.fetchPage = async ({page,pageSize,term}) => { rows, count }  (count = total p/ páginas numeradas)
-//   Modo simples (listas pequenas, ex.: minhas aprovações):
-//     opts.load = async () => rows   (filtro/“busca” client-side)
-//   opts.actions:[{label,cls,confirm,run(proc)}], opts.emptyText, opts.pageSize(=50)
 (function () {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
   function statusBadge(step, name) {
     var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
-    // usa o nome resolvido da view; se vier vazio/numérico (ex.: status 0), cai no rótulo do config
+
     var label = (name && name !== String(step)) ? name : (steps[step] || name || ('Status ' + step));
-    // 2 (Pendente de Correção) = violeta — distinto do vermelho de Cancelado (0/3) e Erro (8)
+
     var cls = ({ 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
     return '<span class="badge ' + cls + '">' + esc(label) + '</span>';
   }
   function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.style.marginLeft = '6px'; b.textContent = label; b.addEventListener('click', fn); return b; }
 
-  // ícones (stroke currentColor) p/ as ações da linha
   var ICONS = {
     aprovadores: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     Aprovar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>',
@@ -27,7 +19,7 @@
     Cancelar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>',
   };
   var SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
-  // botão só-ícone (title/aria-label preservam o significado textual)
+
   function iconBtn(svg, cls, title, fn) {
     var b = document.createElement('button');
     b.className = 'btn btn-icon ' + cls; b.style.marginLeft = '6px';
@@ -56,8 +48,6 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
 
-  // "Telinha" de aviso (ex.: guard da máquina de estados no banco — "o processo foi
-  // devolvido para correção por outro aprovador"). Modal com OK; resolve ao fechar.
   function uiAlert(message, title) {
     return new Promise(function (resolve) {
       var o = document.createElement('div'); o.className = 'modal-overlay';
@@ -72,9 +62,6 @@
   }
   window.uiAlert = uiAlert;
 
-  // Confirmação COM MOTIVO obrigatório (ações destrutivas de correção): o texto
-  // digitado vai para o histórico do processo. Resolve com a string ou null (cancelou).
-  // Exposto em window p/ telas com tabela própria (ex.: Financeiro).
   function uiPrompt(message, danger) {
     return new Promise(function (resolve) {
       var o = document.createElement('div'); o.className = 'modal-overlay';
@@ -95,14 +82,11 @@
   }
   window.uiPrompt = uiPrompt;
 
-  // Ordenação de tabela estilo Excel (clique no cabeçalho): 1º clique ▲ asc,
-  // 2º ▼ desc, 3º remove. PERSISTENTE por tela (localStorage) até remoção manual.
-  // Compartilhada com telas de tabela própria (ex.: Financeiro).
   window.TableSort = {
     cycle: function (sort, col) {
       if (sort.col !== col) return { col: col, asc: true };
       if (sort.asc) return { col: col, asc: false };
-      return { col: '', asc: true }; // 3º clique remove a ordenação
+      return { col: '', asc: true };
     },
     indicator: function (sort, col) {
       var active = sort.col === col;
@@ -114,18 +98,18 @@
       return rows.slice().sort(function (a, b) {
         var x = a[sort.col], y = b[sort.col];
         var xe = x == null || x === '', ye = y == null || y === '';
-        if (xe && ye) return 0; if (xe) return 1; if (ye) return -1;   // vazios sempre no fim
+        if (xe && ye) return 0; if (xe) return 1; if (ye) return -1;
         if (type === 'num') return (Number(x) - Number(y)) * dir;
-        if (type === 'date') return String(x).localeCompare(String(y)) * dir; // ISO ordena lexicamente
+        if (type === 'date') return String(x).localeCompare(String(y)) * dir;
         return String(x).localeCompare(String(y), 'pt-BR', { sensitivity: 'base' }) * dir;
       });
     },
     load: function (key) {
-      try { var s = JSON.parse(localStorage.getItem(key) || 'null'); if (s && typeof s.col === 'string') return s; } catch (e) { /* ignore */ }
+      try { var s = JSON.parse(localStorage.getItem(key) || 'null'); if (s && typeof s.col === 'string') return s; } catch (e) {  }
       return { col: '', asc: true };
     },
     save: function (key, sort) {
-      try { if (sort.col) localStorage.setItem(key, JSON.stringify(sort)); else localStorage.removeItem(key); } catch (e) { /* ignore */ }
+      try { if (sort.col) localStorage.setItem(key, JSON.stringify(sort)); else localStorage.removeItem(key); } catch (e) {  }
     },
   };
 
@@ -133,8 +117,8 @@
     mount: async function (host, opts) {
       var paged = typeof opts.fetchPage === 'function';
       var pageSize = opts.pageSize || 50;
-      var dateField = opts.dateField || 'due_date_prc'; // coluna usada no range de data
-      var showApprovers = !!opts.showApprovers;         // coluna "Aprovações" (quem já aprovou)
+      var dateField = opts.dateField || 'due_date_prc';
+      var showApprovers = !!opts.showApprovers;
 
       host.innerHTML = '<div class="card" style="padding:0">'
         + '<div class="pl-toolbar">'
@@ -151,21 +135,20 @@
       var search = host.querySelector('#pl-search');
       var pagerEl = host.querySelector('#pl-pager');
 
-      var rows = [];        // linhas atualmente exibidas (página atual no modo paginado)
-      var page = 0;         // página 0-indexada (modo paginado)
-      var total = null;     // total de registros (count exato) p/ páginas numeradas
-      var hasMore = false;  // fallback se o total vier nulo
-      var term = '';        // termo de busca corrente
+      var rows = [];
+      var page = 0;
+      var total = null;
+      var hasMore = false;
+      var term = '';
       var filters = { company: '', building: '', from: '', to: '', status: '', urgent: '' };
-      var extraValue = '';      // valor do filtro extra da tela (ex.: "Aprovar como" grupo)
-      var approversByUuid = {}; // uuid -> [nomes de quem já aprovou] (batch por página)
+      var extraValue = '';
+      var approversByUuid = {};
 
-      // ordenação por coluna (estilo Excel), persistente por tela até remoção manual
       var SORT_COLS = [
         { label: '#', col: 'id_prc', type: 'num' },
         { label: 'Empresa', col: 'empresa_nome', type: 'text' },
         { label: 'Obra', col: 'obra_nome', type: 'text' },
-        { label: 'Descrição', col: 'description_prc', type: 'text' }, // o usuário entende o processo sem abrir
+        { label: 'Descrição', col: 'description_prc', type: 'text' },
         { label: 'Tipo', col: 'tipo_nome', type: 'text' },
         { label: 'Valor', col: 'value_prc', type: 'num' },
         { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
@@ -175,8 +158,6 @@
       var sortKey = 'sort:' + (opts.storageKey || (window.location.hash || 'view'));
       var sort = window.TableSort.load(sortKey);
 
-      // Quem JÁ APROVOU, visível na própria lista (sem abrir o processo): busca em
-      // LOTE os aprovadores das linhas da página em v_process_approvers (RLS vale).
       async function loadApprovers() {
         approversByUuid = {};
         var uuids = rows.map(function (p) { return p.uuid_prc; }).filter(Boolean);
@@ -188,7 +169,7 @@
           (list || []).forEach(function (a) {
             (approversByUuid[a.process_app] = approversByUuid[a.process_app] || []).push(a.approver_name || '—');
           });
-        } catch (e) { /* coluna fica vazia; o modal de Aprovadores continua disponível */ }
+        } catch (e) {  }
       }
 
       function approversCell(p) {
@@ -199,10 +180,8 @@
           + '<span class="pl-approvers" title="' + esc(joined) + '">' + esc(joined) + '</span>';
       }
 
-      function isoDay(v) { return v ? String(v).split('T')[0] : ''; } // 'YYYY-MM-DD'
+      function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
 
-      // Filtro client-side (apenas no modo simples): busca textual + empresa/obra/
-      // status/data. No modo paginado os filtros vão ao servidor (fetchPage/fetchCount).
       function filtered() {
         if (paged) return rows;
         var out = rows;
@@ -230,7 +209,7 @@
       }
 
       function render() {
-        // ordena SEMPRE o objeto já carregado (no paginado, reordena a página visível)
+
         var data = window.TableSort.sortRows(filtered(), sort, SORT_TYPES);
         if (!data.length) {
           bodyEl.innerHTML = '<div class="empty">' + esc(page > 0 ? 'Nada nesta página.' : (opts.emptyText || 'Nenhum processo.')) + '</div>';
@@ -254,8 +233,7 @@
           });
           html += '</tbody></table></div>';
           bodyEl.innerHTML = html;
-          // ordenação: asc -> desc -> remove; persiste até remoção manual.
-          // Client-side: reordena o que está carregado, sem nova consulta.
+
           bodyEl.querySelectorAll('th[data-col]').forEach(function (th) {
             th.addEventListener('click', function () {
               sort = window.TableSort.cycle(sort, th.getAttribute('data-col'));
@@ -266,8 +244,7 @@
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
             var approversBtn = iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); });
-            // posição do botão Aprovadores entre as ações (opts.approversPosition;
-            // default 0 = antes de todas). Ex.: tela Aprovar usa 1 -> Aprovar · Aprovadores · Reprovar.
+
             var visibleActions = (opts.actions || []).filter(function (a) { return typeof a.show !== 'function' || a.show(p); });
             var approversAt = Math.min(opts.approversPosition != null ? opts.approversPosition : 0, visibleActions.length);
             visibleActions.forEach(function (a, idx) {
@@ -276,31 +253,29 @@
                 e.stopPropagation();
                 var danger = (a.cls || '').indexOf('danger') >= 0;
                 var reason;
-                if (a.prompt) { // confirmação com MOTIVO obrigatório (vai pro histórico)
+                if (a.prompt) {
                   reason = await uiPrompt(a.prompt, danger);
                   if (reason == null) return;
                 } else if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
                 try { await a.run(p, reason); await reload(); toast('Feito.', true); }
                 catch (err) {
-                  // guard da máquina de estados (ex.: outro aprovador devolveu enquanto a
-                  // tela estava aberta): telinha com o motivo + recarrega a lista fresca
+
                   await uiAlert(err.message);
                   await reload();
                 }
               };
-              var svg = a.icon || ICONS[a.label]; // a.icon: override por tela (ex.: lápis no Corrigir das Correções)
+              var svg = a.icon || ICONS[a.label];
               cell.appendChild(svg
                 ? iconBtn(svg, a.cls || 'btn-primary', a.label, handler)
                 : btn(a.label, a.cls || 'btn-primary', handler));
             });
-            if (approversAt >= visibleActions.length) cell.appendChild(approversBtn); // sem ações (ou posição no fim)
+            if (approversAt >= visibleActions.length) cell.appendChild(approversBtn);
             tr.addEventListener('click', function () { window.openProcessDetail(p); });
           });
         }
         updatePager();
       }
 
-      // sequência de páginas a exibir (1-indexada) com reticências p/ listas longas
       function pageSequence(cur, totalPages) {
         var delta = 2, range = [], out = [], last;
         for (var i = 1; i <= totalPages; i++) {
@@ -324,7 +299,6 @@
         var to = page * pageSize + rows.length;
         var totalPages = total != null ? Math.max(1, Math.ceil(total / pageSize)) : null;
 
-        // info à esquerda
         var info = total != null
           ? 'Mostrando ' + from + '–' + to + ' de ' + total
           : 'Página ' + (page + 1);
@@ -332,7 +306,6 @@
         var h = '<span style="font-size:13px;color:var(--muted)">' + info + '</span>'
           + '<span style="flex:1"></span>';
 
-        // botão anterior
         h += '<button class="btn btn-light" data-pg="' + (page - 1) + '"' + (page === 0 ? ' disabled' : '') + '>‹</button>';
 
         if (totalPages != null) {
@@ -344,7 +317,6 @@
           });
         }
 
-        // botão próxima
         var noNext = totalPages != null ? (page + 1 >= totalPages) : !hasMore;
         h += '<button class="btn btn-light" data-pg="' + (page + 1) + '"' + (noNext ? ' disabled' : '') + '>›</button>';
 
@@ -359,18 +331,17 @@
         if (paged) pagerEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
         try {
           if (paged) {
-            // META: conta UMA vez por filtro (total === null). Trocar busca/filtros
-            // zera o total p/ recontar; navegar entre páginas reusa o total.
+
             if (opts.fetchCount && total === null) {
               total = await opts.fetchCount({ term: term, filters: filters });
             }
-            // LIST: a página traz só as 50 linhas (sem recontar).
+
             rows = (await opts.fetchPage({ page: page, pageSize: pageSize, term: term, filters: filters })) || [];
             hasMore = total != null ? (page + 1) * pageSize < total : rows.length === pageSize;
           } else {
             rows = await opts.load();
           }
-          if (showApprovers) await loadApprovers(); // nomes de quem já aprovou (batch)
+          if (showApprovers) await loadApprovers();
           render();
         } catch (e) {
           window.viewError(bodyEl, e);
@@ -378,7 +349,6 @@
         }
       }
 
-      // busca: server-side (paginado) com debounce, ou client-side (simples)
       var debTimer = null;
       search.addEventListener('input', function () {
         if (!paged) { render(); return; }
@@ -386,8 +356,6 @@
         debTimer = setTimeout(function () { term = (search.value || '').trim(); page = 0; total = null; reload(); }, 350);
       });
 
-      // filtros persistentes (empresa/obra/data/status) — opções do banco; salvos
-      // por tela (storageKey = rota atual) e restaurados na próxima visita.
       var pf = await window.ProcessFilters.mount(host.querySelector('#pl-filters'), {
         storageKey: opts.storageKey || (window.location.hash || 'view'),
         onChange: function (values) {
@@ -395,10 +363,8 @@
           if (paged) { page = 0; total = null; reload(); } else render();
         },
       });
-      filters = pf.getValues(); // filtros restaurados valem já na carga inicial
+      filters = pf.getValues();
 
-      // filtro EXTRA da tela (ex.: "Aprovar como" na tela Aprovar) — select genérico,
-      // persistente, com opções carregadas do banco por opts.extraFilter.load().
       var extraEl = null, extraStorageKey = null;
       if (opts.extraFilter) {
         extraStorageKey = 'filters-extra:' + (opts.storageKey || (window.location.hash || 'view'));
@@ -411,13 +377,13 @@
           extraEl.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
             return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
           }).join('');
-        } catch (e) { /* sem opções, filtro fica só com "Todos" */ }
+        } catch (e) {  }
         try { extraValue = localStorage.getItem(extraStorageKey) || ''; } catch (e) { extraValue = ''; }
         extraEl.value = extraValue;
-        if (extraEl.value !== extraValue) { extraValue = ''; } // opção salva não existe mais
+        if (extraEl.value !== extraValue) { extraValue = ''; }
         extraEl.addEventListener('change', function () {
           extraValue = extraEl.value;
-          try { localStorage.setItem(extraStorageKey, extraValue); } catch (e) { /* ignore */ }
+          try { localStorage.setItem(extraStorageKey, extraValue); } catch (e) {  }
           render();
         });
       }
@@ -427,9 +393,9 @@
         if (paged) { page = 0; total = null; }
         if (extraEl) {
           extraValue = ''; extraEl.value = '';
-          try { localStorage.removeItem(extraStorageKey); } catch (e) { /* ignore */ }
+          try { localStorage.removeItem(extraStorageKey); } catch (e) {  }
         }
-        pf.clear(); // dispara onChange -> reload/render
+        pf.clear();
       });
 
       await reload();
@@ -437,9 +403,6 @@
     }
   };
 
-  // Filtros compartilhados entre contagem (META) e página (LIST) — mesmos critérios.
-  // `filters` = { company, building, from, to, status } (ProcessFilters); aplicados
-  // no SERVIDOR (eq/gte/lte), então valem para paginação e contagem.
   function applyProcessFilters(s, kind, term, filters) {
     if (kind) s = s.eq('kind_prc', Number(kind));
     var f = filters || {};
@@ -462,8 +425,6 @@
     return s;
   }
 
-  // LIST: a página traz só 50 linhas (range), sem contagem. kind opcional.
-  // A ordenação por coluna é CLIENT-SIDE (TableSort, sobre a página carregada).
   window.fetchProcessesPage = function (kind) {
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
@@ -474,7 +435,6 @@
     };
   };
 
-  // META: total exato p/ o mesmo filtro, sem trafegar linhas (head). Chamado 1x.
   window.fetchProcessesCount = function (kind) {
     return function (args) {
       return window.SB.count('v_processes', function (s) {
@@ -483,27 +443,18 @@
     };
   };
 
-  // Ações de fluxo mudam o processo de "lugar" (status/minhas aprovações/financeiro):
-  // invalida os caches DERIVADOS pra as telas refletirem sem forced refresh.
-  // NÃO invalida 'processes': a cascata dele derruba pending_approvals (entidade
-  // quente) e re-dispara a RPC my_pending_approvals — a mais cara do sistema — que o
-  // reload da lista esperaria (~4s no Aprovar). A lista de pendências já é ajustada
-  // cirurgicamente (Store.remove) e a Consulta lê direto do servidor a cada página.
   function invalidateFlowCaches() {
     ['my_approvals', 'financeiro', 'history', 'dashboard', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
   }
   window.invalidateFlowCaches = invalidateFlowCaches;
 
-  // Lista "Minhas Aprovações": rpc my_pending_approvals (autoridade). Enriquecemos os
-  // nomes buscando SÓ os uuids pendentes em v_processes (.in) — nunca todos os processos.
   window.mountPendingApprovals = async function (host) {
-    // "Aprovar como": uuid -> grupos do usuário que o tornam elegível (RPC em lote).
-    // Permite priorizar por nível (ex.: TI N3 primeiro — processos mais caros).
+
     var groupsByUuid = {};
     return window.ProcessList.mount(host, {
       emptyText: 'Você não tem aprovações pendentes.',
-      showApprovers: true, // Aprovar: quem já aprovou, visível SEM abrir o processo
-      approversPosition: 1, // ordem dos botões: Aprovar · Aprovadores · Reprovar
+      showApprovers: true,
+      approversPosition: 1,
       extraFilter: {
         label: 'Aprovar como',
         load: async function () {
@@ -514,7 +465,7 @@
             (groupsByUuid[r.uuid_prc] = groupsByUuid[r.uuid_prc] || []).push(r.group_id);
             names[r.group_id] = r.group_name; levels[r.group_id] = r.level;
           });
-          // level null = aprovador de urgência (CFO/CEO) — vem primeiro na lista
+
           var lv = function (id) { return levels[id] == null ? Infinity : levels[id]; };
           return Object.keys(names)
             .sort(function (a, b) { return (lv(b) - lv(a)) || String(names[a]).localeCompare(names[b]); })
@@ -543,14 +494,14 @@
             return window.Store.commit(
               function () {
                 return window.API.post('/processes/' + p.uuid_prc + '/approve')
-                  .then(function (r) { invalidateFlowCaches(); return r; }); // reflete em Minhas Aprovações/Consulta/Financeiro
+                  .then(function (r) { invalidateFlowCaches(); return r; });
               },
               function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
           }
         },
         {
           label: 'Corrigir', cls: 'btn-danger',
-          prompt: 'Devolver o processo para correção?', // motivo obrigatório -> histórico
+          prompt: 'Devolver o processo para correção?',
           run: function (p, reason) {
             return window.Store.commit(
               function () {

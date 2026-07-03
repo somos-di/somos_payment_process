@@ -1,8 +1,5 @@
-// Modal "Detalhes do Processo" — reaproveitável. window.openProcessDetail(proc)
-// Dois painéis: campos (esquerda) + visualizador de PDF NF/Boleto (direita).
-// Aba Histórico (Store.get('history', uuid)).
 (function () {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
   function fmtDT(d) { if (!d) return ''; var s = String(d).replace('T', ' '); var dt = s.slice(0, 10).split('-').reverse().join('/'); return dt + ' ' + s.slice(11, 16); }
@@ -62,7 +59,7 @@
         o.querySelectorAll('.pane').forEach(function (p) { p.hidden = (p.getAttribute('data-pane') !== t.getAttribute('data-t')); });
       });
     });
-    // troca o PDF exibido entre NF e Boleto
+    
     var frame = o.querySelector('.pd-doc-frame');
     o.querySelectorAll('.pd-doc-tab').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -73,10 +70,10 @@
     });
 
     document.body.appendChild(o);
-    // registra a VISUALIZAÇÃO e recarrega a timeline (mais recente em cima).
+    
     try { await window.API.post('/processes/' + proc.uuid_prc + '/log', { action: 'Visualizado' }); window.Store.invalidate('history'); } catch (e) { }
     try {
-      var h = await window.Store.get('history', proc.uuid_prc); // já vem ordenado desc
+      var h = await window.Store.get('history', proc.uuid_prc); 
       o.querySelector('[data-pane="hist"] .col-body').innerHTML = h.length
         ? '<ul class="timeline">' + h.map(function (x) {
           return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_hst) + '</div>'
