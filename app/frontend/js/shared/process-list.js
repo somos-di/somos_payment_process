@@ -55,6 +55,22 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
 
+  // "Telinha" de aviso (ex.: guard da máquina de estados no banco — "o processo foi
+  // devolvido para correção por outro aprovador"). Modal com OK; resolve ao fechar.
+  function uiAlert(message, title) {
+    return new Promise(function (resolve) {
+      var o = document.createElement('div'); o.className = 'modal-overlay';
+      o.innerHTML = '<div class="modal-box" style="width:460px"><div class="modal-title">' + esc(title || 'Não foi possível concluir') + '</div>'
+        + '<div style="font-size:14px;color:var(--text-2);line-height:1.5">' + esc(message) + '</div>'
+        + '<div class="modal-actions"><button class="btn btn-primary" data-ok>OK</button></div></div>';
+      function close() { o.remove(); resolve(); }
+      o.addEventListener('click', function (e) { if (e.target === o) close(); });
+      o.querySelector('[data-ok]').addEventListener('click', close);
+      document.body.appendChild(o); o.querySelector('[data-ok]').focus();
+    });
+  }
+  window.uiAlert = uiAlert;
+
   // Confirmação COM MOTIVO obrigatório (ações destrutivas de correção): o texto
   // digitado vai para o histórico do processo. Resolve com a string ou null (cancelou).
   // Exposto em window p/ telas com tabela própria (ex.: Financeiro).
@@ -263,9 +279,15 @@
                   reason = await uiPrompt(a.prompt, danger);
                   if (reason == null) return;
                 } else if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
-                try { await a.run(p, reason); await reload(); toast('Feito.', true); } catch (err) { toast('Erro: ' + err.message); }
+                try { await a.run(p, reason); await reload(); toast('Feito.', true); }
+                catch (err) {
+                  // guard da máquina de estados (ex.: outro aprovador devolveu enquanto a
+                  // tela estava aberta): telinha com o motivo + recarrega a lista fresca
+                  await uiAlert(err.message);
+                  await reload();
+                }
               };
-              var svg = ICONS[a.label];
+              var svg = a.icon || ICONS[a.label]; // a.icon: override por tela (ex.: lápis no Corrigir das Correções)
               cell.appendChild(svg
                 ? iconBtn(svg, a.cls || 'btn-primary', a.label, handler)
                 : btn(a.label, a.cls || 'btn-primary', handler));
