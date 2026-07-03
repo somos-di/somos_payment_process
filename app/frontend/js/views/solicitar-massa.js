@@ -3,22 +3,21 @@ async function initView_solicitar_massa() {
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
   var MAPA = [
-    { col: 'descr', key: 'description_prc' },
-    { col: 'companyidproc', key: 'company_prc', req: true },
-    { col: 'buildingidproc', key: 'building_prc', req: true },
-    { col: 'compositionidproc', key: 'composition_prc' },
-    { col: 'supplyidproc', key: 'supply_prc' },
-    { col: 'personidproc', key: 'person_prc', tipo: 'int' },
-    { col: 'isurgentproc', key: 'is_urgent_prc', tipo: 'bool' },
-    { col: 'issuedateproc', key: 'issue_date_prc', tipo: 'data' },
-    { col: 'duedateproc', key: 'due_date_prc', tipo: 'data', req: true },
-    { col: 'processvalueproc', key: 'value_prc', tipo: 'valor', req: true },
-    { col: 'fiscaldocumentproc', key: 'fiscal_doc_prc' },
-    { col: 'installmentQuantityproc', key: '__qtd', tipo: 'int' },
-    { col: 'processkindproc', key: 'kind_prc', tipo: 'int', req: true },
+    { col: 'Descrição', alias: 'descr', key: 'description_prc' },
+    { col: 'Empresa (código)', alias: 'companyidproc', key: 'company_prc', req: true },
+    { col: 'Obra (código)', alias: 'buildingidproc', key: 'building_prc', req: true },
+    { col: 'Composição (código)', alias: 'compositionidproc', key: 'composition_prc' },
+    { col: 'Insumo (código)', alias: 'supplyidproc', key: 'supply_prc' },
+    { col: 'Fornecedor (código)', alias: 'personidproc', key: 'person_prc', tipo: 'int' },
+    { col: 'Urgente', alias: 'isurgentproc', key: 'is_urgent_prc', tipo: 'bool' },
+    { col: 'Data de Emissão', alias: 'issuedateproc', key: 'issue_date_prc', tipo: 'data' },
+    { col: 'Data de Vencimento', alias: 'duedateproc', key: 'due_date_prc', tipo: 'data', req: true },
+    { col: 'Valor Total', alias: 'processvalueproc', key: 'value_prc', tipo: 'valor', req: true },
+    { col: 'Nº Documento Fiscal', alias: 'fiscaldocumentproc', key: 'fiscal_doc_prc' },
+    { col: 'Qtd. Parcelas', alias: 'installmentQuantityproc', key: '__qtd', tipo: 'int' },
+    { col: 'Tipo de Processo (ID)', alias: 'processkindproc', key: 'kind_prc', tipo: 'int', req: true },
   ];
   var COLS = MAPA.map(function (m) { return m.col; });
-  var REQ = MAPA.filter(function (m) { return m.req; }).map(function (m) { return m.col.toLowerCase(); });
   var lc = function (s) { return String(s).trim().toLowerCase(); };
   var pad2 = function (n) { return String(n).padStart(2, '0'); };
 
@@ -80,21 +79,21 @@ async function initView_solicitar_massa() {
       ['Não renomeie as colunas do cabeçalho. Datas: AAAA-MM-DD ou DD/MM/AAAA. Valores: 1000,00.'],
       [],
       ['Coluna', 'Obrigatória', 'Como preencher'],
-      ['descr', 'não', 'Descrição do processo (texto livre).'],
-      ['companyidproc', 'SIM', 'Código da empresa (o mesmo exibido na tela Solicitar).'],
-      ['buildingidproc', 'SIM', 'Código da obra dentro da empresa.'],
-      ['compositionidproc', 'não', 'Código da composição (apropriação).'],
-      ['supplyidproc', 'não', 'Código do insumo (apropriação).'],
-      ['personidproc', 'não', 'Código do fornecedor.'],
-      ['isurgentproc', 'não', 'Urgente? 1 = sim · 0 = não.'],
-      ['issuedateproc', 'não', 'Data de emissão do documento.'],
-      ['duedateproc', 'SIM', 'Vencimento da 1ª parcela.'],
-      ['processvalueproc', 'SIM', 'Valor TOTAL do processo (ex.: 1000,00).'],
-      ['fiscaldocumentproc', 'não', 'Número do documento fiscal (apenas números).'],
-      ['installmentQuantityproc', 'não', 'Qtd. de parcelas mensais a partir do vencimento (vazio = 1); o valor total é dividido igualmente.'],
-      ['processkindproc', 'SIM', 'ID do tipo de processo — consulte a tabela abaixo.'],
+      ['Descrição', 'não', 'Descrição do processo (texto livre).'],
+      ['Empresa (código)', 'SIM', 'Código da empresa (o mesmo exibido na tela Solicitar).'],
+      ['Obra (código)', 'SIM', 'Código da obra dentro da empresa.'],
+      ['Composição (código)', 'não', 'Código da composição (apropriação).'],
+      ['Insumo (código)', 'não', 'Código do insumo (apropriação).'],
+      ['Fornecedor (código)', 'não', 'Código do fornecedor.'],
+      ['Urgente', 'não', '1 ou sim = urgente · 0 ou vazio = normal.'],
+      ['Data de Emissão', 'não', 'Data de emissão do documento (AAAA-MM-DD ou DD/MM/AAAA).'],
+      ['Data de Vencimento', 'SIM', 'Vencimento da 1ª parcela (AAAA-MM-DD ou DD/MM/AAAA).'],
+      ['Valor Total', 'SIM', 'Valor TOTAL do processo (ex.: 1000,00).'],
+      ['Nº Documento Fiscal', 'não', 'Número do documento fiscal (apenas números).'],
+      ['Qtd. Parcelas', 'não', 'Qtd. de parcelas mensais a partir do vencimento (vazio = 1); o valor total é dividido igualmente.'],
+      ['Tipo de Processo (ID)', 'SIM', 'ID do tipo de processo — consulte a tabela abaixo.'],
       [],
-      ['TIPOS DE PROCESSO (processkindproc)'],
+      ['TIPOS DE PROCESSO — use o ID na coluna "Tipo de Processo (ID)"'],
       ['ID', 'Tipo'],
     ].concat((kinds || []).map(function (k) { return [k.id_pkn, k.name_pkn]; }));
     var ws = XLSX.utils.aoa_to_sheet(rows);
@@ -111,7 +110,7 @@ async function initView_solicitar_massa() {
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Processos');
       XLSX.utils.book_append_sheet(wb, await buildInstructionsSheet(XLSX), 'Instruções');
-      XLSX.writeFile(wb, 'import_base.xlsx');
+      XLSX.writeFile(wb, 'modelo_lancamento_massa.xlsx');
     } catch (e) { erro(e.message); }
   }
 
@@ -155,12 +154,12 @@ async function initView_solicitar_massa() {
   }
 
   var NAME_RESOLVERS = {
-    companyidproc: function (v) { return names.company[String(v)]; },
-    buildingidproc: function (v, l) { var e = cell(mapByKey('company_prc'), l); return names.building[String(e) + '/' + String(v).toUpperCase()]; },
-    personidproc: function (v) { return names.person[String(v)]; },
-    processkindproc: function (v) { return names.kind[String(v)]; },
-    compositionidproc: function (v, l) { var s = cell(mapByKey('supply_prc'), l); var x = names.composition[String(v) + '/' + String(s)]; return x && x.composition; },
-    supplyidproc: function (v, l) { var c = cell(mapByKey('composition_prc'), l); var x = names.composition[String(c) + '/' + String(v)]; return x && x.supply; },
+    company_prc: function (v) { return names.company[String(v)]; },
+    building_prc: function (v, l) { var e = cell(mapByKey('company_prc'), l); return names.building[String(e) + '/' + String(v).toUpperCase()]; },
+    person_prc: function (v) { return names.person[String(v)]; },
+    kind_prc: function (v) { return names.kind[String(v)]; },
+    composition_prc: function (v, l) { var s = cell(mapByKey('supply_prc'), l); var x = names.composition[String(v) + '/' + String(s)]; return x && x.composition; },
+    supply_prc: function (v, l) { var c = cell(mapByKey('composition_prc'), l); var x = names.composition[String(c) + '/' + String(v)]; return x && x.supply; },
   };
 
   function erro(msg) { $('lm-erro-msg').textContent = msg; $('lm-erro').hidden = false; }
@@ -169,7 +168,12 @@ async function initView_solicitar_massa() {
     $('lm-preview').hidden = true; $('lm-progresso').hidden = true; $('lm-erro').hidden = true;
     $('lm-result').innerHTML = ''; $('lm-upload').hidden = false;
   }
-  function cell(m, l) { return conv(m, l[lc(m.col)]); }
+  function rawCell(m, l) {
+    var v = l[lc(m.col)];
+    if (v === undefined && m.alias) v = l[lc(m.alias)];
+    return v;
+  }
+  function cell(m, l) { return conv(m, rawCell(m, l)); }
   function preview() {
     $('lm-upload').hidden = true; $('lm-preview').hidden = false;
     $('lm-preview-title').textContent = linhas.length + ' linha(s) lida(s)';
@@ -181,8 +185,8 @@ async function initView_solicitar_massa() {
         if (v === null || v === '') return '<td><span style="color:var(--muted)">—</span></td>';
 
         var extra = '';
-        if (NAME_RESOLVERS[m.col]) {
-          var resolved = NAME_RESOLVERS[m.col](v, l);
+        if (NAME_RESOLVERS[m.key]) {
+          var resolved = NAME_RESOLVERS[m.key](v, l);
           extra = resolved
             ? '<div style="font-size:11.5px;color:var(--muted)">' + esc(resolved) + '</div>'
             : '<div style="font-size:11.5px;color:var(--danger);font-weight:600">não encontrado</div>';
@@ -196,7 +200,7 @@ async function initView_solicitar_massa() {
     MAPA.forEach(function (m) { if (m.key !== '__qtd') process[m.key] = cell(m, l); });
 
     var total = process.value_prc || 0;
-    var qtd = toInt(l[lc('installmentQuantityproc')]) || 1;
+    var qtd = cell(mapByKey('__qtd'), l) || 1;
     var installments = gerarParcelas(total, qtd, process.due_date_prc);
     if (installments.length) process.due_date_prc = installments[0].due_date_ins;
     return { process: process, installments: installments };
@@ -243,7 +247,9 @@ async function initView_solicitar_massa() {
       linhas = await lerArquivo(file);
       if (!linhas.length) { erro('O arquivo não tem linhas de dados.'); return; }
       var header = Object.keys(linhas[0]);
-      var faltando = REQ.filter(function (c) { return header.indexOf(c) < 0; });
+      var faltando = MAPA.filter(function (m) {
+        return m.req && header.indexOf(lc(m.col)) < 0 && header.indexOf(lc(m.alias)) < 0;
+      }).map(function (m) { return m.col; });
       if (faltando.length) { erro('Colunas obrigatórias ausentes: ' + faltando.join(', ') + '. Baixe o modelo e use o cabeçalho correto.'); return; }
       await resolveNames();
       preview();
