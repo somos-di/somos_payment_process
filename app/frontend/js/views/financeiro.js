@@ -1,8 +1,6 @@
-// Financeiro — processos em análise (v_financeiro): colunas + ALERTAS (soma/ordem)
-// + ações: Detalhes, Parcelas (CRUD), Correção (devolve), Enviar UAU (stub, por último).
 async function initView_financeiro() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
   function toast(msg, ok) {
@@ -25,7 +23,6 @@ async function initView_financeiro() {
     });
   }
 
-  // monta a lista de alertas de uma linha (soma divergente + ordem das parcelas)
   function alertas(p) {
     var out = [];
     var soma = Number(p.soma_parcelas) || 0, total = Number(p.value_prc) || 0, diff = Math.round((soma - total) * 100) / 100;
@@ -48,7 +45,6 @@ async function initView_financeiro() {
   try { rows = await window.Store.get('financeiro'); }
   catch (e) { window.viewError($('fin-body'), e); return; }
 
-  // filtros persistentes (empresa/obra/data/status) — opções do banco (ProcessFilters)
   var filters = { company: '', building: '', from: '', to: '', status: '' };
   var pf = await window.ProcessFilters.mount($('fin-filters'), {
     storageKey: 'financeiro',
@@ -59,7 +55,6 @@ async function initView_financeiro() {
 
   function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
 
-  // ordenação por coluna (estilo Excel), persistente até remoção manual (3º clique)
   var FIN_SORT_COLS = [
     { label: '#', col: 'id_prc', type: 'num' },
     { label: 'Empresa', col: 'empresa_nome', type: 'text' },
@@ -127,7 +122,7 @@ async function initView_financeiro() {
         b.innerHTML = svg; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
       }
       cell.appendChild(iconBtn(FIN_ICONS.correcao, 'btn-danger', 'Correção', async function () {
-        // motivo OBRIGATÓRIO: vai para o histórico do processo (o autor vê o porquê)
+
         var reason = await window.uiPrompt('Devolver para correção? Isto remove parcelas e aprovações e volta o processo para "Pendente de Correção".', true);
         if (reason == null) return;
         try {
@@ -161,7 +156,7 @@ async function initView_financeiro() {
       cell.appendChild(uauBtn);
       tr.addEventListener('click', function () { window.openProcessDetail(p); });
     });
-    // popover de alertas
+
     $('fin-body').querySelectorAll('.fin-alert').forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.stopPropagation();

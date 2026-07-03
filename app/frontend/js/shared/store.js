@@ -1,19 +1,7 @@
-// ============================================================================
-// store.js — Estado da aplicação EM MEMÓRIA (sem localStorage, sem serialização).
-// Expõe window.Store. Script clássico (sem build).
-//
-// Regra central: toda mutação (update/post/delete) chama Store.mutate(entidade,...)
-// que SEMPRE invalida a entidade alterada E suas dependentes. O que foi invalidado
-// é refeito sob demanda (lazy) e os componentes inscritos são notificados.
-// ============================================================================
 (function () {
-  // Cascata só para mudanças ESTRUTURAIS (criar processo, mexer em regra). Ações
-  // de fluxo (aprovar/devolver/financeiro/parcelas) NÃO entram aqui — são tratadas
-  // cirurgicamente (patch/remove) p/ não rebaixar tudo. Lookups (empresas, obras,
-  // compositions, fornecedores, tipos, status) NUNCA são invalidados por processo:
-  // só por ação destrutiva explícita (ex.: sync UAU -> Store.clear()).
+
   var DEPENDENTS = {
-    processes: ['dashboard', 'no_approver', 'pending_approvals'],  // criar/reenviar: pode virar pendente de aprovação
+    processes: ['dashboard', 'no_approver', 'pending_approvals'],
     supply_rules: ['eligible_approvers', 'no_approver'],
     company_rules: ['eligible_approvers', 'no_approver'],
     building_permission: ['eligible_approvers', 'no_approver'],
@@ -21,10 +9,10 @@
     users_group: ['eligible_approvers', 'no_approver'],
   };
 
-  var _state = new Map();    // chave -> { data, ts, promise }
-  var _fetchers = new Map(); // entidade -> async (param) => data
-  var _subs = new Map();     // entidade -> Set<cb>
-  var _warm = new Map();     // entidade -> param  (mantida quente: refaz em background ao invalidar)
+  var _state = new Map();
+  var _fetchers = new Map();
+  var _subs = new Map();
+  var _warm = new Map();
 
   var keyOf = function (e, p) { return (p === undefined || p === null || p === '' ? e : e + '::' + p); };
 
@@ -59,9 +47,6 @@
 
     peek: function (entity, param) { var c = _state.get(keyOf(entity, param)); return c ? c.data : undefined; },
 
-    // marca a entidade como "quente": pré-busca AGORA e refaz sozinha em background
-    // sempre que for invalidada (ex.: my_pending_approvals, que é cara — fica pronta
-    // no estado pra abrir "Aprovações" instantâneo, e se mantém fresca após ações).
     warm: function (entity, param) {
       _warm.set(entity, (param === undefined ? null : param));
       return this.get(entity, param).catch(function () {});
@@ -77,22 +62,18 @@
       });
       _notify(entity);
       (DEPENDENTS[entity] || []).forEach(function (dep) { self.invalidate(dep, _seen); });
-      // entidade quente: re-busca em background (não bloqueia) p/ ficar pronta de novo
+
       if (_warm.has(entity)) {
         var p = _warm.get(entity);
         Promise.resolve().then(function () { self.get(entity, p).catch(function () {}); });
       }
     },
 
-    // invalida UMA chave específica (entidade::param), sem cascata. Para o caso
-    // "essa parcela mudou" sem rebaixar nada além dela.
     invalidateKey: function (entity, param) {
       _state.delete(keyOf(entity, param));
       _notify(entity);
     },
 
-    // PATCH cirúrgico: aplica `changes` no item idField===idValue em TODAS as
-    // coleções cacheadas da entidade (sem rede) e notifica. (SRP: atualizar 1 item.)
     patch: function (entity, idField, idValue, changes) {
       Array.from(_state.entries()).forEach(function (pair) {
         var k = pair[0], c = pair[1];
@@ -105,8 +86,6 @@
       _notify(entity);
     },
 
-    // REMOVE cirúrgico: tira o item de TODAS as coleções cacheadas da entidade
-    // (sem rede) e notifica. (SRP: remover 1 item — "some da tela".)
     remove: function (entity, idField, idValue) {
       Array.from(_state.entries()).forEach(function (pair) {
         var k = pair[0], c = pair[1];
@@ -117,8 +96,6 @@
       _notify(entity);
     },
 
-    // mutação ESTRUTURAL: roda a ação e invalida a entidade + dependentes (cascata).
-    // Use para CRIAR processo (a lista precisa refletir o novo registro).
     mutate: async function (entity, action) {
       var result = await action();
       var list = Array.isArray(entity) ? entity : [entity];
@@ -128,9 +105,6 @@
       return result;
     },
 
-    // COMMIT otimista (SRP: orquestrar). `apply()` faz a mudança LOCAL na hora
-    // (patch/remove) e devolve as entidades tocadas; `run()` persiste async no
-    // backend. Se o backend falhar, invalida as tocadas (refaz a verdade) e relança.
     commit: async function (run, apply) {
       var touched = apply ? (apply() || []) : [];
       try { return await run(); }

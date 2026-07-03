@@ -1,9 +1,6 @@
-// Admin — Grupos & Usuários (visão POR USUÁRIO): selecione um usuário e marque os
-// grupos aos quais ele pertence. Também: editar usuário UAU e criar grupos novos
-// (opcionalmente do tipo LANÇADOR — restringe os tipos de processo que os membros lançam).
 async function initView_admin_grupos() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   var SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
   var SVG_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
   function toast(msg, ok) {
@@ -28,7 +25,7 @@ async function initView_admin_grupos() {
   }
 
   var groups = [], users = [];
-  var userGroups = {}; // user_usg -> Set(group_usg)
+  var userGroups = {}; 
   var currentUser = null;
 
   try {
@@ -42,7 +39,6 @@ async function initView_admin_grupos() {
 
   function groupCountOf(userId) { return (userGroups[userId] && userGroups[userId].size) || 0; }
 
-  // ── coluna esquerda: usuários ─────────────────────────────────────────────
   function renderUserList() {
     var term = ($('ag-search').value || '').toLowerCase().trim();
     var list = users.filter(function (u) {
@@ -64,7 +60,6 @@ async function initView_admin_grupos() {
     });
   }
 
-  // ── detalhe: grupos do usuário selecionado ────────────────────────────────
   function groupTags(g) {
     var tags = '';
     if (g.restrict_launch_kinds_grp) tags += '<span class="badge violet">Lançador</span>';
@@ -101,14 +96,13 @@ async function initView_admin_grupos() {
       if (!userGroups[userId]) userGroups[userId] = new Set();
       if (add) userGroups[userId].add(groupId); else userGroups[userId].delete(groupId);
       var b = $('ag-membadge'); if (b) b.textContent = userGroups[userId].size + ' grupo(s)';
-      renderUserList(); // atualiza a contagem na lista (mantém o usuário ativo)
-      var only = $('ag-only'); if (only && only.checked && !add) renderGroupList(); // some do "só os dele"
+      renderUserList(); 
+      var only = $('ag-only'); if (only && only.checked && !add) renderGroupList(); 
       toast(add ? 'Adicionado ao grupo.' : 'Removido do grupo.', true);
     } catch (err) { cb.checked = !add; toast('Erro: ' + err.message); }
     finally { cb.disabled = false; }
   }
 
-  // edição inline do usuário UAU (no cabeçalho do detalhe)
   function wireUauEditor(host) {
     var view = host.querySelector('.ag-uau-view'), form = host.querySelector('.ag-uau-form');
     var input = host.querySelector('.ag-uau-input'), valEl = host.querySelector('.ag-uau-val');
@@ -161,7 +155,6 @@ async function initView_admin_grupos() {
     renderGroupList();
   }
 
-  // ── novo grupo (opcional: LANÇADOR — restringe tipos de lançamento) ───────
   function openNewGroupModal() {
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box" style="width:480px"><div class="modal-title">Novo grupo</div>'
@@ -187,7 +180,7 @@ async function initView_admin_grupos() {
         });
         groups.push(created);
         groups.sort(function (a, b) { return String(a.name_grp).localeCompare(b.name_grp); });
-        window.Store.invalidate('groups'); // outras telas (Permissões) enxergam o grupo novo
+        window.Store.invalidate('groups'); 
         if (currentUser) renderGroupList();
         toast('Grupo "' + created.name_grp + '" criado. Agora conceda as permissões (Empresa/Obra/Tipo).', true);
         close();

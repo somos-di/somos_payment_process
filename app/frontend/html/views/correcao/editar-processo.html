@@ -9,14 +9,12 @@
 
     .ep-card { padding: 20px 22px; }
 
-    /* form em 2 colunas, sem scroll interno (a página rola normalmente) */
     .ep-form {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px 16px;
     }
 
-    /* títulos de seção: discretos, no padrão do design system */
     .ep-sec {
       grid-column: 1 / -1;
       font-size: 11px;
@@ -42,7 +40,6 @@
     .ep-results .it:hover { background: var(--surface-2); }
     .ep-results .it small { display: block; color: var(--muted); font-size: 12px; }
 
-    /* rodapé do form: status de auto-save + reenviar */
     .ep-foot {
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
       margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap;
@@ -50,7 +47,6 @@
     .ep-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
     .ep-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
 
-    /* ── anexos: um card, dois blocos compactos ─────────────────────────── */
     .ep-attach { padding: 20px 22px; display: grid; gap: 18px; }
     .ep-attach-block { display: grid; gap: 8px; }
     .ep-attach-title { font-size: 13px; font-weight: 700; color: var(--text-2); }
@@ -91,7 +87,7 @@
   <div id="ep-loading" class="empty">Carregando…</div>
 
   <div class="ep-grid" id="ep-grid" hidden>
-    <!-- coluna esquerda: form -->
+    
     <div class="card ep-card">
       <div class="ep-form">
         <div class="ep-sec">Dados Gerais</div>
@@ -127,7 +123,6 @@
       </div>
     </div>
 
-    <!-- coluna direita: anexos -->
     <div class="card ep-attach">
       <div class="ep-attach-block">
         <span class="ep-attach-title">Boleto Bancário</span>

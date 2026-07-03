@@ -1,9 +1,3 @@
-/* ============================================================================
-   theme.css — Design system "Processo de Pagamento V2" (tema claro).
-   Fundo cinza-claro, cards brancos com borda sutil, sidebar com item ativo em
-   pílula azul, stepper numerado, inputs limpos, botões Corrigir/Ignorar/Excel,
-   modal de validação com linhas alternadas. Carrega por último (override).
-   ============================================================================ */
 :root {
   --bg: #f3f4f6;
   --surface: #ffffff;
@@ -40,9 +34,6 @@
   box-sizing: border-box;
 }
 
-/* o atributo [hidden] tem que SEMPRE esconder — senão display:flex/inline-flex
-   (ex.: .btn, .pane) sobrepõe o display:none do user-agent e o elemento "some"
-   no JS mas continua visível. */
 [hidden] {
   display: none !important;
 }
@@ -54,7 +45,6 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ---- sidebar (tudo claro; remove o tema escuro do layout.css) ---- */
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -64,7 +54,6 @@ body {
   display: none !important;
 }
 
-/* forma removida por completo */
 .brand-name {
   color: var(--text);
   font-weight: 700;
@@ -75,7 +64,6 @@ body {
   color: var(--muted);
 }
 
-/* pastas/itens: fundo transparente sobre a sidebar branca (override do dark) */
 .folder,
 .folder.open,
 .folder-body {
@@ -113,7 +101,6 @@ body {
   box-shadow: inset 3px 0 0 var(--accent-bar);
 }
 
-/* foot da sidebar / breadcrumb tag */
 .sidebar-foot {
   border-top: 1px solid var(--border);
 }
@@ -132,7 +119,6 @@ body {
   text-transform: none;
 }
 
-/* ---- topbar / conteúdo ---- */
 .topbar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -154,7 +140,6 @@ body {
   padding: 22px;
 }
 
-/* ---- cards / painéis / títulos ---- */
 .card,
 .panel {
   background: var(--surface);
@@ -175,7 +160,6 @@ body {
   margin: 0 0 16px;
 }
 
-/* ---- stepper (Novo Processo) ---- */
 .stepper {
   display: flex;
   gap: 28px;
@@ -225,7 +209,6 @@ body {
   font-size: 12px;
 }
 
-/* ---- formulário ---- */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -278,7 +261,6 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-weak);
 }
 
-/* ---- botões ---- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -299,7 +281,6 @@ textarea:focus {
 
 .btn:active { transform: translateY(1px); }
 
-/* botão só-ícone (ações da linha: aprovadores/aprovar/corrigir) */
 .btn-icon { padding: 0; width: 38px; height: 38px; flex: 0 0 auto; }
 .btn-icon svg { width: 18px; height: 18px; }
 
@@ -362,7 +343,6 @@ textarea:focus {
   border: 0;
 }
 
-/* ---- tabelas / listas ---- */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -371,7 +351,7 @@ table {
 
 thead th {
   text-align: left;
-  background: var(--surface-2); /* override do th escuro do base.css (tema legado) */
+  background: var(--surface-2); 
   color: var(--text-2);
   font-size: 12.5px;
   font-weight: 600;
@@ -403,7 +383,6 @@ tbody tr:hover td {
   color: var(--danger);
 }
 
-/* Aviso amigável (ex.: sessão expirada) — card centralizado com ação */
 .view-notice {
   display: flex;
   flex-direction: column;
@@ -440,7 +419,6 @@ tbody tr:hover td {
   color: var(--accent);
 }
 
-/* ---- filtros (linha de selects) ---- */
 .filters-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -448,7 +426,6 @@ tbody tr:hover td {
   margin-bottom: 16px;
 }
 
-/* ---- badges de status (quadradinho moderno, com borda sutil) ---- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -465,9 +442,8 @@ tbody tr:hover td {
 .badge.ok   { background: var(--ok-weak);   color: #15803d; border-color: #bce5c8; }
 .badge.blue { background: var(--accent-weak); color: var(--accent); border-color: #c7dcfb; }
 .badge.red  { background: var(--danger-weak); color: var(--danger); border-color: #f5c6d1; }
-.badge.violet { background: var(--violet-weak); color: var(--violet); border-color: #ded3fe; } /* Pendente de Correção */
+.badge.violet { background: var(--violet-weak); color: var(--violet); border-color: #ded3fe; } 
 
-/* ---- toolbar do ProcessList (busca + range de data + ações) ---- */
 .pl-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -485,44 +461,35 @@ tbody tr:hover td {
 .pl-dates label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .pl-dates input { width: 150px; }
 
-/* ---- filtros persistentes (Empresa/Obra/Data/Status — ProcessFilters) ---- */
 .pl-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
 .pl-filters .pf-field { display: flex; flex-direction: column; gap: 3px; font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
 .pl-filters .pf-field select { width: 150px; padding: 6px 8px; font-size: 10px; }
 .pl-filters .pf-field input { width: 122px; padding: 6px 8px; font-size: 10px; }
 .pl-filters .pf-field select:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
 
-/* ---- ordenação por coluna (estilo Excel) nas listas de processos ---- */
 .table-scroll th[data-col] { cursor: pointer; user-select: none; white-space: nowrap; }
 .table-scroll th[data-col]:hover { color: var(--accent); }
 .table-scroll .sort-ind { font-size: 9px; color: var(--muted-2); margin-left: 2px; }
 .table-scroll .sort-ind.on { color: var(--accent); }
 
-/* ---- coluna "Aprovações" (quem já aprovou, na própria lista) ---- */
 .pl-approvers { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
                 white-space: nowrap; vertical-align: middle; font-size: 12px; color: var(--muted); margin-left: 6px; }
 .pl-toolbar-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 
-/* ---- marcador de urgente: bolinha vermelha ao lado do ID (tooltip nativo) ---- */
 .id-cell { display: inline-flex; align-items: center; gap: 6px; }
 .urgent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; box-shadow: 0 0 0 3px var(--danger-weak); }
 
-/* ---- tabela responsiva: rola na horizontal sem quebrar a página/zoom ---- */
 .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .table-scroll table { min-width: 720px; }
 
-/* fontes compactas nas LISTAS DE PROCESSOS (~30% menores que o padrão de tabela):
-   nomes longos (SPE/fornecedor/obra) param de quebrar em 2–3 linhas */
 .table-scroll thead th { font-size: 10px; padding: 10px 12px; }
 .table-scroll tbody td { font-size: 10.5px; padding: 10px 12px; }
 .table-scroll .badge { font-size: 10px; padding: 3px 7px; }
 .table-scroll .pl-approvers { font-size: 10.5px; max-width: 130px; }
 
-/* ---- paginação numerada ---- */
 .pl-pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--border); }
 .pl-pager .btn { padding: 7px 11px; }
 
-/* ---- dropzone (anexos) ---- */
 .dropzone {
   display: block;
   border: 1.5px dashed var(--border);
@@ -547,7 +514,6 @@ tbody tr:hover td {
   color: var(--text);
 }
 
-/* ---- KPI cards (dashboard) ---- */
 .kpis {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -601,7 +567,6 @@ tbody tr:hover td {
   color: var(--text);
 }
 
-/* ---- modais ---- */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -630,22 +595,20 @@ tbody tr:hover td {
 
 .modal-box.xl {
   width: 1180px;
-  height: 88vh;            /* altura FIXA: não muda ao alternar Detalhes/Histórico */
+  height: 88vh;            
   display: flex;
   flex-direction: column;
-  overflow: hidden;        /* quem rola é a aba ativa, não o modal */
+  overflow: hidden;        
 }
 .modal-box.xl.no-doc {
-  width: 620px;            /* sem documento, só os campos */
+  width: 620px;            
   height: 80vh;
 }
-/* dentro do modal de altura fixa, a aba ativa preenche e rola por dentro */
+
 .modal-box.xl .tabs { flex: 0 0 auto; }
 .modal-box.xl .pane { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .modal-box.xl .pd-doc-frame { min-height: 0; }
 
-/* ---- detalhe do processo: 2 painéis (campos | visualizador de PDF) ---- */
-/* display:flex sobrepõe o display:none do [hidden] — reforça pra aba esconder de fato */
 .pane[hidden] { display: none !important; }
 .pd-detail { display: flex; gap: 20px; align-items: stretch; }
 .pd-fields { flex: 0 0 320px; min-width: 0; }
@@ -713,7 +676,6 @@ tbody tr:hover td {
   margin-top: 18px;
 }
 
-/* timeline do histórico (mais recente em cima) */
 .timeline {
   list-style: none;
   margin: 0;
@@ -774,7 +736,6 @@ tbody tr:hover td {
   margin-top: 2px;
 }
 
-/* tabela de validação (linhas alternadas) */
 .validate-table {
   width: 100%;
   border: 1px solid var(--border);
@@ -802,7 +763,6 @@ tbody tr:hover td {
   color: #5b6b9c;
 }
 
-/* colunas (modal aprovadores) */
 .cols-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -837,7 +797,6 @@ tbody tr:hover td {
 .u-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
 .u-tag { flex-shrink: 0; white-space: nowrap; }
 
-/* ============ Modal de Aprovadores (3 colunas + busca + empty-state) ========= */
 .modal-box.approvers { width: 1100px; }
 .modal-box.approvers h2 { margin: 0 0 16px; font-size: 22px; }
 

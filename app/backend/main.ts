@@ -14,9 +14,11 @@ const { controllers, warmer } = createContainer();
 // bodyLimit alto p/ upload de anexo em base64 (boleto/NF)
 const app = Fastify({ logger: { level: 'info' }, trustProxy: s.trustProxy, bodyLimit: 20 * 1024 * 1024 });
 
-// CORS_ORIGIN aceita lista separada por vírgula (ex.: http://localhost:3000,http://localhost:5500)
-const corsOrigins = s.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean);
-await app.register(cors, { origin: corsOrigins.length ? corsOrigins : true, credentials: true });
+// CORS_ORIGIN aceita lista separada por vírgula (ex.: http://localhost:3000,http://localhost:5500).
+// Fallback SEM origem configurada = false (nega cross-origin): nunca refletir qualquer
+// origem com credentials:true — same-origin (nginx proxy /api) não precisa de CORS.
+const corsOrigins = s.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean).filter((o) => o !== '*');
+await app.register(cors, { origin: corsOrigins.length ? corsOrigins : false, credentials: true });
 await app.register(cookie);
 
 // Rate limiting / anti-brute-force. Chaveia por USUÁRIO (sub do JWT no cookie),

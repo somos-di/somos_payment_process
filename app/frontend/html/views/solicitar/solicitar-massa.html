@@ -1,6 +1,6 @@
 <main>
   <style>
-    /* ── passos (baixar modelo / importar) ─────────────────────────────── */
+    
     .lm-steps { display: grid; grid-template-columns: 400px 1fr; gap: 16px; align-items: stretch; }
     .lm-step { padding: 20px 22px; display: flex; flex-direction: column; }
     .lm-step-head { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
@@ -23,13 +23,11 @@
     .dropzone-lote svg { width: 32px; height: 32px; color: var(--accent); }
     .lm-dz-sub { font-size: 12.5px; color: var(--muted); }
 
-    /* ── erro ───────────────────────────────────────────────────────────── */
     .lm-error { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px;
                 border: 1px solid #f5c6d1; background: var(--danger-weak); color: #9f1239;
                 border-radius: 12px; padding: 13px 16px; font-size: 13.5px; }
     .lm-error svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 
-    /* ── painéis (preview / resultado) ──────────────────────────────────── */
     .lm-panel { margin-top: 16px; padding: 0; overflow: hidden; }
     .lm-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px;
                      flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border); }
@@ -52,7 +50,6 @@
   <div class="section-sub" style="margin-bottom:16px">Crie vários processos de uma vez a partir de uma planilha
     <b>.xlsx</b> (ou .csv).</div>
 
-  <!-- passos 1 e 2 (escondidos quando há pré-visualização) -->
   <div class="lm-steps" id="lm-upload">
     <div class="card lm-step">
       <div class="lm-step-head">
@@ -84,13 +81,11 @@
     </div>
   </div>
 
-  <!-- erro de leitura/validação -->
   <div class="lm-error" id="lm-erro" hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
     <span id="lm-erro-msg"></span>
   </div>
 
-  <!-- pré-visualização -->
   <div class="card lm-panel" id="lm-preview" hidden>
     <div class="lm-panel-head">
       <div>
@@ -110,7 +105,6 @@
     </div>
   </div>
 
-  <!-- progresso + resultados -->
   <div class="card lm-panel" id="lm-progresso" hidden>
     <div class="lm-progress-head">
       <b id="lm-prog-label">Processando…</b>

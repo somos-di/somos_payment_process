@@ -1,8 +1,6 @@
-// Processos sem Aprovador — cards de diagnóstico (igual ao Mitra V2).
-// Lê v_no_approver (nomes resolvidos + o que falta por grupo candidato).
 async function initView_sem_aprovador() {
   var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
   var rows;

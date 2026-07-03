@@ -1,5 +1,3 @@
-// Popula a sidebar da Consulta: 1 item por tipo de processo (#/consulta?kind=N)
-// + "Minhas Aprovações" (#/consulta?view=aprovacoes).
 (function () {
   document.addEventListener('DOMContentLoaded', function () {
     var body = document.getElementById('consulta-tabs');

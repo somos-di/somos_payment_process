@@ -1,8 +1,6 @@
-// Editar Processo (correção) — 2 colunas: form (auto-save) + anexos (Boleto/NF).
-// Só processos em status 2. Vencimento sempre >= hoje+10 dias. Reenviar -> status 1.
 async function initView_editar_processo() {
   var SB = window.SB, $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
@@ -26,7 +24,6 @@ async function initView_editar_processo() {
 
   var ready = false, apropMap = {}, anexos = { boleto: null, nf: null }, tmr = null;
 
-  // carrega o processo + lookups
   var proc;
   try {
     var rows = await SB.select('v_processes', function (q) { return q.eq('uuid_prc', uuid); });
@@ -62,14 +59,13 @@ async function initView_editar_processo() {
         opts.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
       });
       var cur = keepComp ? (keepComp + '|' + keepSup) : '';
-      // garante a opção atual mesmo que não venha na lista
+
       if (cur && !apropMap[cur]) { apropMap[cur] = { comp: keepComp, insumo: keepSup }; opts.unshift({ k: cur, t: keepComp + ' / ' + keepSup }); }
       ap.innerHTML = '<option value="">Selecione</option>' + opts.map(function (o) { return '<option value="' + esc(o.k) + '">' + esc(o.t) + '</option>'; }).join('');
       if (cur) ap.value = cur;
     } catch (e) { ap.innerHTML = '<option value="">Erro</option>'; }
   }
 
-  // prefill
   $('ep-empresa').value = proc.company_prc || '';
   await loadObras(proc.company_prc, proc.building_prc);
   await loadAprop(proc.company_prc, proc.building_prc, proc.composition_prc, proc.supply_prc);
@@ -88,11 +84,10 @@ async function initView_editar_processo() {
 
   $('ep-loading').hidden = true; $('ep-grid').hidden = false;
 
-  // se não está em correção, bloqueia edição/reenvio
   if (proc.status_step_prc !== window.CONFIG.STATUS.correcao) {
     $('ep-status').textContent = 'Somente processos em correção podem ser editados.';
     $('ep-reenviar').disabled = true;
-    return; // ready continua false -> sem auto-save
+    return;
   }
   ready = true;
 
@@ -125,14 +120,13 @@ async function initView_editar_processo() {
     try {
       await window.API.post('/processes/' + uuid + '/correct', { process: collect(), resend: !!resend });
       if (resend) {
-        window.Store.invalidate('processes'); // estrutural: 2->1 (cascata dashboard/no_approver/pending)
+        window.Store.invalidate('processes');
         toast('Processo corrigido e reenviado para aprovação.', true); window.location.hash = '#/correcao';
       } else $('ep-status').textContent = 'Salvo automaticamente ✓';
     } catch (e) { $('ep-status').textContent = 'Erro ao salvar'; toast('Erro: ' + e.message); }
   }
   function scheduleSave() { if (!ready) return; $('ep-status').textContent = 'Editando…'; clearTimeout(tmr); tmr = setTimeout(function () { save(false); }, 700); }
 
-  // cascatas
   $('ep-empresa').addEventListener('change', async function () {
     await loadObras(this.value); await loadAprop(this.value, $('ep-obra').value); scheduleSave();
   });
@@ -146,7 +140,6 @@ async function initView_editar_processo() {
   $('ep-valor').addEventListener('input', scheduleSave);
   $('ep-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); });
 
-  // pessoa (busca paginada, igual ao Solicitar)
   var pin = $('ep-pessoa-input'), pres = $('ep-pessoa-results'), ptmr = null;
   async function searchPessoas(term) {
     pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
@@ -162,8 +155,6 @@ async function initView_editar_processo() {
   pin.addEventListener('input', function () { $('ep-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchPessoas(pin.value.trim()); }, 300); });
   document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
 
-  // anexos: com documento existente, o box mostra Ver / SUBSTITUIR / Remover
-  // (substituir e adicionar usam o mesmo input; a dropzone também substitui).
   function renderAnexo(key) {
     var box = $('ep-' + key + '-file'), url = anexos[key];
     var label = key === 'boleto' ? 'Boleto' : 'Documento Fiscal';
@@ -180,7 +171,7 @@ async function initView_editar_processo() {
     try { var r = await SB.upload(file); anexos[key] = r ? r.url : null; renderAnexo(key); save(false); }
     catch (e) { $('ep-status').textContent = ''; toast('Anexo não enviado: ' + (e.message || 'storage')); }
   }
-  // this.value = '' após o upload: re-selecionar o MESMO arquivo volta a disparar o change
+
   $('ep-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); this.value = ''; });
   $('ep-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); this.value = ''; });
 

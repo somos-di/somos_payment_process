@@ -7,7 +7,6 @@
       align-items: start;
     }
 
-    /* coluna esquerda: USUÁRIOS */
     .ag-list { max-height: 70vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
     .ag-item {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -25,7 +24,6 @@
     }
     .ag-item.active small { color: var(--accent); background: #fff; }
 
-    /* detalhe (direita): usuário selecionado + grupos com checkbox */
     .ag-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
     .ag-detail-tools { display: flex; gap: 12px; align-items: center; margin: 14px 0 10px; flex-wrap: wrap; }
     .ag-detail-tools .pl-search { flex: 1 1 220px; }
@@ -45,7 +43,6 @@
     .ag-group-row .gdesc { font-size: 12px; color: var(--muted); }
     .ag-group-row .gtags { margin-left: auto; display: flex; gap: 6px; flex: none; }
 
-    /* edição inline do usuário UAU (no cabeçalho do detalhe) */
     .ag-uau { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .ag-uau-lbl { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
     .ag-uau-val { font-size: 13px; font-weight: 600; }
