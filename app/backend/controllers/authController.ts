@@ -9,7 +9,9 @@ function cookieOpts() {
   const s = getSettings();
   return {
     httpOnly: true, sameSite: 'lax' as const, secure: s.cookieSecure,
-    path: '/', maxAge: 60 * 60 * 8, // 8h
+    // 8h. A duração REAL da sessão = min(este maxAge, expiração do JWT do Supabase):
+    // ajuste também Auth -> JWT expiry para 28800s no dashboard do Supabase.
+    path: '/', maxAge: 60 * 60 * 8,
   };
 }
 
