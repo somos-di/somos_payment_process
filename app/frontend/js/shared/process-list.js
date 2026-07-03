@@ -287,7 +287,7 @@
                   await reload();
                 }
               };
-              var svg = ICONS[a.label];
+              var svg = a.icon || ICONS[a.label]; // a.icon: override por tela (ex.: lápis no Corrigir das Correções)
               cell.appendChild(svg
                 ? iconBtn(svg, a.cls || 'btn-primary', a.label, handler)
                 : btn(a.label, a.cls || 'btn-primary', handler));

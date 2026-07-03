@@ -2,10 +2,12 @@
   <style>
     .ep-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
       gap: 16px;
       align-items: start;
     }
+
+    .ep-card { padding: 20px 22px; }
 
     /* form em 2 colunas, sem scroll interno (a página rola normalmente) */
     .ep-form {
@@ -14,81 +16,75 @@
       gap: 14px 16px;
     }
 
+    /* títulos de seção: discretos, no padrão do design system */
     .ep-sec {
       grid-column: 1 / -1;
+      font-size: 11px;
       font-weight: 700;
-      font-size: 13px;
-      color: var(--text);
-      margin: 6px 0 0;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-2);
+      margin: 10px 0 2px;
     }
-
     .ep-sec:first-child { margin-top: 0; }
     .ep-form .full { grid-column: 1 / -1; }
 
     .ep-search-wrap { position: relative; }
-
     .ep-results {
-      position: absolute;
-      z-index: 30;
-      left: 0;
-      right: 0;
-      top: calc(100% + 4px);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: var(--shadow-md);
-      max-height: 240px;
-      overflow: auto;
-      display: none;
+      position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: var(--shadow-md); max-height: 240px; overflow: auto; display: none;
     }
-
     .ep-results.show { display: block; }
     .ep-results .it { padding: 9px 12px; cursor: pointer; font-size: 14px; }
     .ep-results .it:hover { background: var(--surface-2); }
     .ep-results .it small { display: block; color: var(--muted); font-size: 12px; }
 
-    .ep-dz-file {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .ep-dz-file a { color: var(--accent); text-decoration: none; font-weight: 600; }
-    .ep-dz-file button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 18px; }
-
-    .ep-status { font-size: 13px; color: var(--muted); }
-
+    /* rodapé do form: status de auto-save + reenviar */
     .ep-foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-top: 18px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border);
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap;
     }
+    .ep-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+    .ep-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
 
-    @media (max-width: 980px) {
-      .ep-grid { grid-template-columns: 1fr; }
+    /* ── anexos: um card, dois blocos compactos ─────────────────────────── */
+    .ep-attach { padding: 20px 22px; display: grid; gap: 18px; }
+    .ep-attach-block { display: grid; gap: 8px; }
+    .ep-attach-title { font-size: 13px; font-weight: 700; color: var(--text-2); }
+    .ep-attach-sub { font-size: 12px; color: var(--muted); margin-top: -4px; }
+
+    .ep-dz {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      border: 1.5px dashed var(--border); border-radius: 10px; padding: 18px 14px;
+      text-align: center; cursor: pointer; background: var(--surface-2); font-size: 13px;
+      color: var(--text-2); transition: border-color .12s, background .12s;
     }
-    @media (max-width: 560px) {
-      .ep-form { grid-template-columns: 1fr; }
+    .ep-dz:hover { border-color: var(--accent); background: var(--accent-weak); }
+    .ep-dz svg { width: 22px; height: 22px; color: var(--accent); }
+    .ep-dz small { color: var(--muted); font-size: 11.5px; }
+
+    .ep-dz-file {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+      background: var(--surface-2); font-size: 13.5px;
     }
+    .ep-dz-file a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .ep-dz-file button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 17px; border-radius: 6px; padding: 2px 7px; }
+    .ep-dz-file button:hover { background: var(--danger-weak); color: var(--danger); }
+
+    @media (max-width: 980px) { .ep-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .ep-form { grid-template-columns: 1fr; } }
   </style>
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
     <a href="#/correcao" class="btn btn-light">← Voltar</a>
     <div>
       <div class="section-title" id="ep-title">Editar Processo</div>
-      <div class="section-sub" style="margin:2px 0 0">Altere os dados do processo. As alterações são salvas
-        automaticamente.</div>
+      <div class="section-sub" style="margin:2px 0 0">Altere os dados do processo — as alterações são salvas
+        automaticamente. Ao terminar, reenvie para aprovação.</div>
     </div>
   </div>
 
@@ -96,7 +92,7 @@
 
   <div class="ep-grid" id="ep-grid" hidden>
     <!-- coluna esquerda: form -->
-    <div class="card">
+    <div class="card ep-card">
       <div class="ep-form">
         <div class="ep-sec">Dados Gerais</div>
         <div class="field"><label>Empresa</label><select id="ep-empresa"></select></div>
@@ -132,21 +128,26 @@
     </div>
 
     <!-- coluna direita: anexos -->
-    <div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="section-title" style="font-size:15px">Boleto Bancário</div>
-        <div class="section-sub" style="margin:2px 0 12px">Anexe ou substitua o boleto para pagamento.</div>
-        <label class="dropzone" for="ep-boleto">
-          <div><b>Clique para enviar</b> ou arraste o arquivo — substitui o atual, se houver</div>
+    <div class="card ep-attach">
+      <div class="ep-attach-block">
+        <span class="ep-attach-title">Boleto Bancário</span>
+        <span class="ep-attach-sub">Anexe ou substitua o boleto para pagamento.</span>
+        <label class="ep-dz" for="ep-boleto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="M8 17l4-4 4 4"/></svg>
+          <div><b>Clique para enviar</b> ou arraste o arquivo</div>
+          <small>Substitui o atual, se houver.</small>
         </label>
         <input id="ep-boleto" type="file" hidden>
         <div class="ep-dz-file" id="ep-boleto-file" hidden></div>
       </div>
-      <div class="card">
-        <div class="section-title" style="font-size:15px">Documento Fiscal</div>
-        <div class="section-sub" style="margin:2px 0 12px">Anexe ou substitua a nota fiscal ou equivalente.</div>
-        <label class="dropzone" for="ep-nf">
-          <div><b>Clique para enviar</b> ou arraste o arquivo — substitui o atual, se houver</div>
+
+      <div class="ep-attach-block">
+        <span class="ep-attach-title">Documento Fiscal</span>
+        <span class="ep-attach-sub">Anexe ou substitua a nota fiscal ou equivalente.</span>
+        <label class="ep-dz" for="ep-nf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="M8 17l4-4 4 4"/></svg>
+          <div><b>Clique para enviar</b> ou arraste o arquivo</div>
+          <small>Substitui o atual, se houver.</small>
         </label>
         <input id="ep-nf" type="file" hidden>
         <div class="ep-dz-file" id="ep-nf-file" hidden></div>
