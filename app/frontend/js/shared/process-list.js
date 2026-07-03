@@ -461,10 +461,13 @@
   };
 
   // Ações de fluxo mudam o processo de "lugar" (status/minhas aprovações/financeiro):
-  // invalida os caches derivados pra TODAS as telas refletirem sem forced refresh.
-  // Lazy: só re-busca quando a tela for aberta (pending_approvals, quente, refaz sozinha).
+  // invalida os caches DERIVADOS pra as telas refletirem sem forced refresh.
+  // NÃO invalida 'processes': a cascata dele derruba pending_approvals (entidade
+  // quente) e re-dispara a RPC my_pending_approvals — a mais cara do sistema — que o
+  // reload da lista esperaria (~4s no Aprovar). A lista de pendências já é ajustada
+  // cirurgicamente (Store.remove) e a Consulta lê direto do servidor a cada página.
   function invalidateFlowCaches() {
-    ['my_approvals', 'processes', 'financeiro', 'history'].forEach(function (e) { window.Store.invalidate(e); });
+    ['my_approvals', 'financeiro', 'history', 'dashboard', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
   }
   window.invalidateFlowCaches = invalidateFlowCaches;
 
