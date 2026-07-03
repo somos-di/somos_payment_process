@@ -23,7 +23,8 @@ const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'gr
 // completed_approvals/eligible_approvers gateiam can_see_process por dentro.
 // process_levels/current_level saíram: não são usados pelo front e reduzem superfície.
 const READ_RPCS = new Set<string>([
-  'my_pending_approvals', 'my_pending_approval_groups', 'completed_approvals', 'eligible_approvers', 'next_levels',
+  'my_pending_approvals', 'my_pending_approval_groups', 'my_launchable_kinds',
+  'completed_approvals', 'eligible_approvers', 'next_levels',
 ]);
 
 type Op = [string, ...unknown[]];

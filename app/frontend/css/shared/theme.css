@@ -465,6 +465,7 @@ tbody tr:hover td {
 .badge.ok   { background: var(--ok-weak);   color: #15803d; border-color: #bce5c8; }
 .badge.blue { background: var(--accent-weak); color: var(--accent); border-color: #c7dcfb; }
 .badge.red  { background: var(--danger-weak); color: var(--danger); border-color: #f5c6d1; }
+.badge.violet { background: var(--violet-weak); color: var(--violet); border-color: #ded3fe; } /* Pendente de Correção */
 
 /* ---- toolbar do ProcessList (busca + range de data + ações) ---- */
 .pl-toolbar {

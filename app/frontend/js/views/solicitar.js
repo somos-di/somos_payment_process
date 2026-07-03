@@ -65,7 +65,8 @@ async function initView_solicitar() {
   }
   try {
     fill($('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
-    fill($('sol-tipo'), await window.Store.get('process_kinds'), 'id_pkn', 'name_pkn', 'Selecione o tipo');
+    // só os tipos que o usuário pode LANÇAR (grupo lançador restringe; o banco valida de novo)
+    fill($('sol-tipo'), await window.Store.get('launchable_kinds'), 'id_pkn', 'name_pkn', 'Selecione o tipo');
     fill($('sol-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
   } catch (e) { toast('Falha ao carregar listas: ' + e.message); }
 

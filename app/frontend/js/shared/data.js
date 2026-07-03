@@ -35,6 +35,8 @@
   S.register('cost_centers', function () { return SB.select('cost_centers'); });
   S.register('persons', function () { return SB.select('persons'); });
   S.register('process_kinds', function () { return SB.select('process_kinds', function (q) { return q.order('name_pkn'); }); });
+  // tipos que o usuário logado pode LANÇAR (grupo lançador restringe; padrão = todos)
+  S.register('launchable_kinds', function () { return SB.rpc('my_launchable_kinds'); });
   S.register('document_kinds', function () { return SB.select('document_kinds', function (q) { return q.order('name_dck'); }); });
   // status_kind não é registrado aqui: o catálogo de status vem normalizado do backend
   // (GET /catalog/status -> CONFIG.STEPS + CONFIG.STATUS no boot).
