@@ -86,8 +86,14 @@ export class UauIntegrationService {
   private async buildPayload(uuid: string): Promise<Record<string, unknown>> {
     const a = adminClient();
     const p = await unwrap(a.from('processes').select('*').eq('uuid_prc', uuid).single()) as any;
+    // compositions tem UMA linha por EMPRESA/OBRA para o mesmo par composição/insumo
+    // (cada obra tem seu planejamento: Item/Contrato/Produto próprios). Sem o filtro
+    // de empresa+obra, o limit(1) devolvia uma linha arbitrária de OUTRA obra e o
+    // payload saía com CodigoProduto/Contrato errados.
     const comp = ((await unwrap(a.from('compositions')
       .select('item_cins,prod_cins,contrato_cins,codigo_composicao,codigo_insumo,unidade_insumo')
+      .eq('empresa_cins', Number(p.company_prc))
+      .ilike('obra_cins', p.building_prc)
       .eq('codigo_composicao', p.composition_prc).eq('codigo_insumo', p.supply_prc).limit(1)) as any[])[0]) || {};
     const doc = p.doc_kind_prc != null
       ? ((await unwrap(a.from('document_kinds').select('especie_dck,tipo_dck,modelo_dck,serie_dck')
