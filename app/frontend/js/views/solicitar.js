@@ -212,8 +212,8 @@ async function initView_solicitar() {
         attachment_url_prc: attachments.boleto, attachment_url2_prc: attachments.nf,
 
       };
-      var installments = installments.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
-      return window.API.post('/processes/full', { process: process, installments: installments });
+      var installmentsPayload = installments.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
+      return window.API.post('/processes/full', { process: process, installments: installmentsPayload });
     });
   }
 
