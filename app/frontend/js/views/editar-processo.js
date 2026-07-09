@@ -84,10 +84,34 @@ async function initView_editar_processo() {
 
   $('ep-loading').hidden = true; $('ep-grid').hidden = false;
 
-  if (proc.status_step_prc !== window.CONFIG.STATUS.correcao) {
-    $('ep-status').textContent = 'Somente processos em correção podem ser editados.';
+  // Editável: em correção (status 2) OU aguardando aprovação (status 1) SEM nenhuma
+  // aprovação registrada — sempre pelo AUTOR. O gate real é a RPC correct_process;
+  // aqui é só UX para não abrir um formulário que falharia ao salvar.
+  var STATUS = window.CONFIG.STATUS;
+  var isCorrection = proc.status_step_prc === STATUS.correcao;
+  var isAwaiting = proc.status_step_prc === STATUS.aguardando;
+  var me = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || null;
+  var isAuthor = !!(me && me.id && proc.author_prc === me.id);
+  var hasApprovals = false;
+  if (isAwaiting) {
+    try {
+      var approvals = await SB.select('v_process_approvers', function (q) { return q.eq('process_app', uuid); });
+      hasApprovals = (approvals || []).length > 0;
+    } catch (e) { hasApprovals = true; } // na dúvida, bloqueia — o banco é a autoridade final
+  }
+  if (!isAuthor || !(isCorrection || (isAwaiting && !hasApprovals))) {
+    $('ep-status').textContent = !isAuthor
+      ? 'Apenas o autor pode editar este processo.'
+      : (isAwaiting
+        ? 'Este processo já recebeu aprovação e não pode mais ser editado.'
+        : 'Somente processos em correção ou aguardando aprovação (sem aprovações) podem ser editados.');
     $('ep-reenviar').disabled = true;
     return;
+  }
+  if (isAwaiting) {
+    $('ep-reenviar').hidden = true; // já está em aprovação — o auto-save basta
+    $('ep-voltar').setAttribute('href', '#/meus-lancamentos');
+    $('ep-sub').textContent = 'Altere os dados do processo — as alterações são salvas automaticamente enquanto ninguém aprovar.';
   }
   ready = true;
 
