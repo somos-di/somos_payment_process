@@ -13,6 +13,14 @@ async function initView_meus_lancamentos() {
     },
     actions: [
       {
+        // Editar enquanto AGUARDA aprovação e NINGUÉM aprovou ainda (a tela de
+        // edição e a RPC correct_process validam a ausência de aprovações).
+        label: 'Editar', cls: 'btn-primary',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>',
+        show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando; },
+        run: function (p) { window.location.hash = '#/editar-processo?uuid=' + p.uuid_prc; return Promise.resolve(); },
+      },
+      {
         label: 'Cancelar', cls: 'btn-danger',
         prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', 
         
