@@ -257,11 +257,11 @@
                   reason = await uiPrompt(a.prompt, danger);
                   if (reason == null) return;
                 } else if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
-                try { await a.run(p, reason); await reload(); toast('Feito.', true); }
+                try { await a.run(p, reason); toast('Feito.', true); await applyRowEffect(a, p.uuid_prc); }
                 catch (err) {
 
                   await uiAlert(err.message);
-                  await reload();
+                  await reload();   // em erro, ressincroniza tudo (estado pode ter mudado no servidor)
                 }
               };
               var svg = a.icon || ICONS[a.label];
@@ -347,6 +347,43 @@
           window.viewError(bodyEl, e);
           updatePager();
         }
+      }
+
+      function indexOfUuid(uuid) {
+        for (var i = 0; i < rows.length; i++) if (rows[i].uuid_prc === uuid) return i;
+        return -1;
+      }
+      // remove UMA linha da lista em memória e re-renderiza (sem refetch de todos).
+      // Usado por ações que TIRAM o processo da lista atual (ex.: aprovar/devolver
+      // na tela Aprovar). O total paginado, se houver, é decrementado localmente.
+      function removeRow(uuid) {
+        var i = indexOfUuid(uuid);
+        if (i < 0) return;
+        rows.splice(i, 1);
+        if (paged && total != null) total = Math.max(0, total - 1);
+        render();
+      }
+      // atualiza UMA linha buscando só ela (sem refetch de todos). Usado por ações
+      // que MANTÊM o processo na lista com estado novo (ex.: cancelar). reloadRow
+      // pode ser sobrescrito por opts; por padrão relê de v_processes pelo uuid.
+      async function refreshRow(uuid) {
+        var fetchRow = opts.reloadRow || function (id) {
+          return window.SB.select('v_processes', function (q) { return q.eq('uuid_prc', id).limit(1); })
+            .then(function (r) { return (r && r[0]) || null; });
+        };
+        var fresh = await fetchRow(uuid);
+        var i = indexOfUuid(uuid);
+        if (i < 0) return;
+        if (fresh) rows[i] = fresh; else rows.splice(i, 1);
+        if (showApprovers) await loadApprovers();
+        render();
+      }
+      // aplica o efeito declarado pela ação após o run: 'remove' | 'update' |
+      // (ausente) => reload() completo (comportamento padrão, retrocompatível).
+      async function applyRowEffect(a, uuid) {
+        if (a.effect === 'remove') removeRow(uuid);
+        else if (a.effect === 'update') await refreshRow(uuid);
+        else await reload();
       }
 
       var debTimer = null;
@@ -490,6 +527,7 @@
       actions: [
         {
           label: 'Aprovar', cls: 'btn-primary', confirm: 'Confirmar aprovação deste processo?',
+          effect: 'remove',   // aprovado sai da MINHA fila de pendentes (só esta linha some)
           run: function (p) {
             return window.Store.commit(
               function () {
@@ -502,6 +540,7 @@
         {
           label: 'Corrigir', cls: 'btn-danger',
           prompt: 'Devolver o processo para correção?',
+          effect: 'remove',   // devolvido sai da fila de pendentes (só esta linha some)
           run: function (p, reason) {
             return window.Store.commit(
               function () {

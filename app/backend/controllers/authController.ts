@@ -1,19 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { clearSessionCookies, setSessionCookies } from '../middlewares/sessionCookies.js';
 import type { AuthService } from '../services/authService.js';
 import { getSettings } from '../settings.js';
 
 const LoginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
-
-function cookieOpts() {
-  const s = getSettings();
-  return {
-    httpOnly: true, sameSite: 'lax' as const, secure: s.cookieSecure,
-    // 8h. A duração REAL da sessão = min(este maxAge, expiração do JWT do Supabase):
-    // ajuste também Auth -> JWT expiry para 28800s no dashboard do Supabase.
-    path: '/', maxAge: 60 * 60 * 8,
-  };
-}
 
 export class AuthController {
   constructor(private readonly service: AuthService) {
@@ -46,9 +37,9 @@ export class AuthController {
     reply.clearCookie('sb_oauth', { path: '/' });
     try {
       if (!code) throw new Error(req.query.error_description || 'sem code');
-      const { token } = await this.service.oauthCallback(code, pkce);
+      const { token, refreshToken } = await this.service.oauthCallback(code, pkce);
 
-      reply.setCookie(getSettings().cookieName, token, cookieOpts());
+      setSessionCookies(reply, token, refreshToken);
 
       return reply.redirect('/');
     } catch {
@@ -59,15 +50,15 @@ export class AuthController {
 
   async login(req: FastifyRequest, reply: FastifyReply) {
     const { email, password } = LoginSchema.parse(req.body);
-    const { token, user } = await this.service.login(email, password);
+    const { token, refreshToken, user } = await this.service.login(email, password);
 
-    reply.setCookie(getSettings().cookieName, token, cookieOpts());
+    setSessionCookies(reply, token, refreshToken);
 
     return reply.send({ success: true, data: { user } });
   }
 
-  async logout(req: FastifyRequest, reply: FastifyReply) {
-    reply.clearCookie(getSettings().cookieName, { path: '/' });
+  async logout(_req: FastifyRequest, reply: FastifyReply) {
+    clearSessionCookies(reply);
 
     return reply.send({ success: true });
   }

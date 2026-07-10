@@ -66,7 +66,7 @@
         o.querySelectorAll('.pane').forEach(function (p) { p.hidden = (p.getAttribute('data-pane') !== t.getAttribute('data-t')); });
       });
     });
-    
+
     var frame = o.querySelector('.pd-doc-frame');
     o.querySelectorAll('.pd-doc-tab').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -77,10 +77,10 @@
     });
 
     document.body.appendChild(o);
-    
+
     try { await window.API.post('/processes/' + proc.uuid_prc + '/log', { action: 'Visualizado' }); window.Store.invalidate('history'); } catch (e) { }
     try {
-      var h = await window.Store.get('history', proc.uuid_prc); 
+      var h = await window.Store.get('history', proc.uuid_prc);
       o.querySelector('[data-pane="hist"] .col-body').innerHTML = h.length
         ? '<ul class="timeline">' + h.map(function (x) {
           return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_hst) + '</div>'

@@ -9,7 +9,7 @@ import { registerProtectedRoutes, registerPublicRoutes } from './routes/index.js
 import { getSettings } from './settings.js';
 
 const s = getSettings();
-const { controllers, warmer } = createContainer();
+const { controllers, authService, warmer } = createContainer();
 
 // bodyLimit alto p/ upload de anexo em base64 (boleto/NF)
 const app = Fastify({ logger: { level: 'info' }, trustProxy: s.trustProxy, bodyLimit: 20 * 1024 * 1024 });
@@ -46,7 +46,7 @@ await app.register(async (api) => { registerPublicRoutes(api, controllers); }, {
 
 // protegidas (default-deny: requireAuth como preHandler do plugin)
 await app.register(async (api) => {
-  api.addHook('preHandler', requireAuth);
+  api.addHook('preHandler', requireAuth(authService));
   registerProtectedRoutes(api, controllers);
 }, { prefix: '/api/v1' });
 
