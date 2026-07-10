@@ -2,7 +2,14 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
-  function fmtDT(d) { if (!d) return ''; var s = String(d).replace('T', ' '); var dt = s.slice(0, 10).split('-').reverse().join('/'); return dt + ' ' + s.slice(11, 16); }
+  // created_at_hst vem do banco como timestamptz (UTC). Formata no fuso do Brasil
+  // (America/Sao_Paulo) via Intl — fatiar a string crua mostraria o relógio UTC (+3h).
+  function fmtDT(d) {
+    if (!d) return '';
+    var dt = new Date(d);
+    if (isNaN(dt)) { var s = String(d).replace('T', ' '); return s.slice(0, 10).split('-').reverse().join('/') + ' ' + s.slice(11, 16); }
+    return dt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
   function fieldBox(label, val) {
     var v = (val === null || val === undefined || val === '') ? '—' : val;
     return '<div class="pd-field"><label>' + esc(label) + '</label><div class="pd-field-box">' + esc(v) + '</div></div>';
