@@ -20,7 +20,8 @@ import { getSettings } from '../settings.js';
 
 export interface Container {
   controllers: ControllersContainer;
-  warmer: CacheWarmer;   // usado no boot (main.ts) para aquecer o cache
+  authService: AuthService;   // usado pelo requireAuth (renovação de sessão)
+  warmer: CacheWarmer;        // usado no boot (main.ts) para aquecer o cache
 }
 
 // instancia gateways, services e controllers. quaisquer novas entidades entram aqui
@@ -46,5 +47,5 @@ export function createContainer(): Container {
     admin: new AdminController(adminService),
     catalog: new CatalogController(catalogService),
   };
-  return { controllers, warmer };
+  return { controllers, authService, warmer };
 }

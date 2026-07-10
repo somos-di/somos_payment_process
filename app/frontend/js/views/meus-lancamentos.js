@@ -22,12 +22,13 @@ async function initView_meus_lancamentos() {
       },
       {
         label: 'Cancelar', cls: 'btn-danger',
-        prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.', 
-        
+        prompt: 'Cancelar este lançamento? Esta ação é IRREVERSÍVEL.',
+        // cancelado continua visível (view-only) com status novo -> atualiza só esta linha
+        effect: 'update',
         show: function (p) { return p.status_step_prc === window.CONFIG.STATUS.aguardando || p.status_step_prc === window.CONFIG.STATUS.correcao; },
         run: function (p, reason) {
           return window.API.post('/processes/' + p.uuid_prc + '/cancel', { reason: reason })
-            .then(function (r) { window.invalidateFlowCaches(); return r; }); 
+            .then(function (r) { window.invalidateFlowCaches(); return r; });
         },
       },
     ],

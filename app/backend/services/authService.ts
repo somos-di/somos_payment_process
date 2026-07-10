@@ -3,6 +3,14 @@ import { AppError, UnauthorizedError } from '../errors.js';
 import { adminClient, anonClient, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
 
+// Sessão emitida pelo Supabase: access token (JWT curto), refresh token (renova a
+// sessão) e o usuário. Compartilhada por login, oauthCallback e refresh.
+export interface Session {
+  token: string;
+  refreshToken: string;
+  user: { id: string; email: string };
+}
+
 // storage em memória pro handshake PKCE: o verifier que o supabase-js gera no
 // `signInWithOAuth` é capturado daqui e persistido num cookie curto entre
 // start→callback (backend é stateless). No callback, restauramos o verifier.
@@ -39,8 +47,8 @@ export class AuthService {
   }
 
   // Troca o `code` pela sessão (usando o verifier restaurado), provisiona o perfil
-  // e devolve o access_token (vira cookie httpOnly, igual ao login email/senha).
-  async oauthCallback(code: string, pkce: string): Promise<{ token: string; user: { id: string; email: string } }> {
+  // e devolve access + refresh token (viram cookies httpOnly, igual ao login e-mail/senha).
+  async oauthCallback(code: string, pkce: string): Promise<Session> {
     let initial: Record<string, string> = {};
     try { initial = JSON.parse(pkce || '{}'); } catch { /* cookie ausente/corrompido */ }
     const { data, error } = await oauthClient(memStorage(initial)).auth.exchangeCodeForSession(code);
@@ -53,7 +61,21 @@ export class AuthService {
     if (name) row.name_usr = name; // só seta se veio (não zera nome existente)
     // sem ignoreDuplicates: atualiza o nome no row já existente do usuário
     await adminClient().from('users').upsert(row, { onConflict: 'id_usr' });
-    return { token: data.session.access_token, user: { id, email: mail } };
+    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: { id, email: mail } };
+  }
+
+  // RENOVAÇÃO da sessão: troca o refresh token por um novo par (access+refresh),
+  // mantendo o usuário logado sem novo login. O Supabase rotaciona o refresh token,
+  // por isso devolvemos o novo (o requireAuth regrava os cookies). Chamado quando o
+  // access token (JWT) expira — é o que mantém a sessão "aberta".
+  async refresh(refreshToken: string): Promise<Session> {
+    const { data, error } = await anonClient().auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session || !data.user) throw new UnauthorizedError('Sessão expirada');
+    return {
+      token: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      user: { id: data.user.id, email: data.user.email || '' },
+    };
   }
 
   // brute-force por E-MAIL (independe de IP/XFF): N falhas por conta numa janela -> 429.
@@ -62,8 +84,8 @@ export class AuthService {
   private static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000;
   private readonly failed = new Map<string, { n: number; until: number }>();
 
-  // login : retorna o access_token (vai virar cookie) + dados não-sensíveis do usuário.
-  async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string } }> {
+  // login : retorna access + refresh token (viram cookies) + dados não-sensíveis do usuário.
+  async login(email: string, password: string): Promise<Session> {
     const key = (email || '').toLowerCase();
     const now = Date.now();
     const f = this.failed.get(key);
@@ -81,7 +103,7 @@ export class AuthService {
     // auto-provisiona o perfil em payment.users (assim o usuário é atribuível a grupos
     // e serve de FK p/ author_prc). service_role pois users não tem policy de insert.
     await adminClient().from('users').upsert({ id_usr: id, email_usr: mail }, { onConflict: 'id_usr', ignoreDuplicates: true });
-    return { token: data.session.access_token, user: { id, email: mail } };
+    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: { id, email: mail } };
   }
 
   // DIAGNÓSTICO: o que o Postgres enxerga como auth.uid() via userClient(token).
