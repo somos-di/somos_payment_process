@@ -75,6 +75,7 @@ async function initView_financeiro() {
     { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
     { label: 'Descrição', col: 'description_prc', type: 'text' },
     { label: 'Nota Fiscal', col: 'fiscal_doc_prc', type: 'text' },
+    { label: 'Nº UAU', col: 'uau_number_prc', type: 'text' },
     { label: 'Status', col: 'status_nome', type: 'text' },
     { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
     { label: 'Valor Bruto', col: 'value_prc', type: 'num' },
@@ -116,6 +117,7 @@ async function initView_financeiro() {
         + '<td>' + (p.fornecedor_nome ? esc(p.fornecedor_nome) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
+        + '<td>' + (p.uau_number_prc ? esc(p.uau_number_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td><span class="badge ' + statusCls(p.status_step_prc) + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
         + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'

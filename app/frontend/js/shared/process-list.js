@@ -162,8 +162,10 @@
         { label: 'Valor', col: 'value_prc', type: 'num' },
         { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
         { label: 'Status', col: 'status_nome', type: 'text' },
-      ];
-      var SORT_TYPES = {}; SORT_COLS.forEach(function (c) { SORT_TYPES[c.col] = c.type; });
+      // colunas extras opcionais por tela (ex.: Nº UAU no Financeiro). Cada uma:
+      // { label, col, type?, render?(p) }. Entram no cabeçalho, no corpo e no sort.
+      ].concat(opts.extraColumns || []);
+      var SORT_TYPES = {}; SORT_COLS.forEach(function (c) { SORT_TYPES[c.col] = c.type || 'text'; });
       var sortKey = 'sort:' + (opts.storageKey || (window.location.hash || 'view'));
       var sort = window.TableSort.load(sortKey);
 
@@ -249,6 +251,10 @@
               + '<td>' + esc(p.tipo_nome) + '</td>'
               + '<td>' + money(p.value_prc) + '</td><td>' + fmtDate(p.due_date_prc) + '</td>'
               + '<td>' + statusBadge(p.status_step_prc, p.status_nome) + '</td>'
+              + (opts.extraColumns || []).map(function (c) {
+                var v = c.render ? c.render(p) : (p[c.col] == null || p[c.col] === '' ? '<span style="color:var(--muted)">—</span>' : esc(p[c.col]));
+                return '<td>' + v + '</td>';
+              }).join('')
               + (showApprovers ? '<td style="white-space:nowrap">' + approversCell(p) + '</td>' : '')
               + '<td style="white-space:nowrap;text-align:right"></td></tr>';
           });

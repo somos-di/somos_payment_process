@@ -7,6 +7,7 @@ async function initView_financeiro_integrados() {
     storageKey: 'financeiro-integrados',
     dateField: 'due_date_prc',
     refreshKeys: ['financeiro_integrados'],
+    extraColumns: [{ label: 'Nº UAU', col: 'uau_number_prc', type: 'text' }],  // nº do processo gerado no UAU
     load: function () { return window.Store.get('financeiro_integrados'); },
     // sem ações: tela de acompanhamento (o processo já foi integrado)
   });
