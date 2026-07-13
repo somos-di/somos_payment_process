@@ -18,6 +18,7 @@ const ROUTES = {
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
     'permissoes': { title: 'Permissões (Empresa/Obra/Tipo)', folder: 'admin', parentLabel: 'Administração', admin: true },
     'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'um-aprovador': { title: 'Processos com 1 Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
 }
 
