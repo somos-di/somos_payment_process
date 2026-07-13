@@ -55,10 +55,19 @@ async function initView_financeiro() {
 
   function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
 
+  // classe do badge por status (espelha o mapa do process-list): erro/cancelado em
+  // vermelho, integrado/uau em verde, financeiro em amarelo, etc.
+  var STATUS_CLS = { 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' };
+  function statusCls(step) { return STATUS_CLS[step] || ''; }
+  // ações do financeiro (devolver / parcelas / enviar UAU) só valem em ANÁLISE
+  // FINANCEIRA (6) ou ERRO (8); os demais status entram como monitoramento (read-only).
+  function isActionable(p) { return p.status_step_prc === window.CONFIG.STATUS.financeiro || p.status_step_prc === window.CONFIG.STATUS.erro; }
+
   var FIN_SORT_COLS = [
     { label: '#', col: 'id_prc', type: 'num' },
     { label: 'Empresa', col: 'empresa_nome', type: 'text' },
     { label: 'Obra', col: 'obra_nome', type: 'text' },
+    { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
     { label: 'Descrição', col: 'description_prc', type: 'text' },
     { label: 'Nota Fiscal', col: 'fiscal_doc_prc', type: 'text' },
     { label: 'Status', col: 'status_nome', type: 'text' },
@@ -74,8 +83,9 @@ async function initView_financeiro() {
       out = out.filter(function (p) { return [p.id_prc, p.empresa_nome, p.obra_nome, p.description_prc, p.fornecedor_nome, p.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
     }
     return out.filter(function (p) {
-      if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
-      if (filters.building && String(p.building_prc || '').toUpperCase() !== String(filters.building).toUpperCase()) return false;
+      if (filters.company && filters.company.length && filters.company.map(String).indexOf(String(p.company_prc)) < 0) return false;
+      if (filters.building && filters.building.length
+        && filters.building.map(function (b) { return String(b).toUpperCase(); }).indexOf(String(p.building_prc || '').toUpperCase()) < 0) return false;
       if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
       if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
       if (filters.from || filters.to) {
@@ -89,7 +99,7 @@ async function initView_financeiro() {
   }
   function render() {
     var data = window.TableSort.sortRows(filtered(), finSort, FIN_SORT_TYPES);
-    if (!data.length) { $('fin-body').innerHTML = '<div class="empty">Nenhum processo em análise financeira.</div>'; return; }
+    if (!data.length) { $('fin-body').innerHTML = '<div class="empty">Nenhum processo.</div>'; return; }
     var head = FIN_SORT_COLS.map(function (c) {
       return '<th data-col="' + c.col + '">' + esc(c.label) + ' ' + window.TableSort.indicator(finSort, c.col) + '</th>';
     }).join('');
@@ -98,9 +108,10 @@ async function initView_financeiro() {
       var alerts = buildAlerts(p);
       html += '<tr data-i="' + i + '" style="cursor:pointer">'
         + '<td>' + esc(p.id_prc) + '</td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
+        + '<td>' + (p.fornecedor_nome ? esc(p.fornecedor_nome) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td>' + esc(p.fiscal_doc_prc || '—') + '</td>'
-        + '<td><span class="badge ' + (p.status_step_prc === window.CONFIG.STATUS.erro ? 'red' : 'warn') + '">' + esc(p.status_nome) + '</span></td>'
+        + '<td><span class="badge ' + statusCls(p.status_step_prc) + '">' + esc(p.status_nome) + '</span></td>'
         + '<td>' + fmtDate(p.due_date_prc) + '</td><td>' + money(p.value_prc) + '</td>'
         + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + i + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';
@@ -121,6 +132,8 @@ async function initView_financeiro() {
         b.style.marginLeft = '6px'; b.title = title; b.setAttribute('aria-label', title);
         b.innerHTML = svg; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
       }
+      // status fora de análise financeira (6/8) => linha só de monitoramento, sem ações
+      if (!isActionable(p)) { tr.addEventListener('click', function () { window.openProcessDetail(p); }); return; }
       cell.appendChild(iconBtn(FIN_ICONS.correcao, 'btn-danger', 'Correção', async function () {
 
         var reason = await window.uiPrompt('Devolver para correção? Isto remove parcelas e aprovações e volta o processo para "Pendente de Correção".', true);

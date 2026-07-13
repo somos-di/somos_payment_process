@@ -10,6 +10,9 @@
   S.register('financeiro', function () {
     return SB.select('v_financeiro', function (q) { return q.order('due_date_prc', { ascending: true }); });
   });
+  S.register('financeiro_integrados', function () {
+    return SB.select('v_financeiro_integrados', function (q) { return q.order('id_prc', { ascending: false }); });
+  });
   S.register('pending_approvals', function () { return SB.rpc('my_pending_approvals'); });
   S.register('my_approvals', function () { return SB.select('v_my_approvals', function (q) { return q.order('approved_at_app', { ascending: false }); }); });
   S.register('no_approver', function () { return SB.select('v_processes_no_approver'); });

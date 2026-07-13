@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { AppError, UnauthorizedError } from '../errors.js';
-import { adminClient, anonClient, userClient } from '../gateways/supabase.js';
+import { adminClient, anonClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
 
 // Sessão emitida pelo Supabase: access token (JWT curto), refresh token (renova a
@@ -116,10 +116,18 @@ export class AuthService {
   // }
   // esse whoami eu usei para diagnóstico, mas não é neces´sario expor
   // perfil do usuário logado (inclui o departamento) — lido com o JWT (RLS vale).
-  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null; is_admin: boolean }> {
-    const { data, error } = await userClient(token)
+  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null; is_admin: boolean; is_financeiro: boolean }> {
+    const client = userClient(token);
+    const { data, error } = await client
       .from('users').select('name_usr, department_usr, is_admin').eq('id_usr', id).maybeSingle();
     if (error) throw new AppError(error.message, 400, 'supabase');
-    return { id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null, is_admin: !!data?.is_admin };
+    // is_financeiro: membro de algum grupo "Financeiro Integração%" (gate das telas de
+    // financeiro). Derivado de group membership via RPC (auth.uid()), não de coluna.
+    let isFinanceiro = false;
+    try { isFinanceiro = !!(await unwrap(client.rpc('is_financeiro_member'))); } catch { /* sem acesso => false */ }
+    return {
+      id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null,
+      is_admin: !!data?.is_admin, is_financeiro: isFinanceiro,
+    };
   }
 }

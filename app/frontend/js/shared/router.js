@@ -13,6 +13,7 @@ const ROUTES = {
     'aprovacoes': { title: 'Aprovações Pendentes', folder: 'aprovar', parentLabel: 'Aprovar' },
     'minhas-aprovacoes': { title: 'Minhas Aprovações', folder: 'aprovar', parentLabel: 'Aprovar' },
     'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento' },
+    'financeiro-integrados': { title: 'Processos Integrados', folder: 'departamento', parentLabel: 'Departamento', financeiro: true },
     'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração', admin: true },
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },
     'permissoes': { title: 'Permissões (Empresa/Obra/Tipo)', folder: 'admin', parentLabel: 'Administração', admin: true },
@@ -165,6 +166,15 @@ async function loadView(route, params) {
     if (meta.admin) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || !u.is_admin) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    // rota de financeiro: só membros dos grupos "Financeiro Integração*" (is_financeiro)
+    // ou admin. A RLS ainda limita as LINHAS por grupo; este gate é o de acesso à tela.
+    if (meta.financeiro) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_financeiro && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }

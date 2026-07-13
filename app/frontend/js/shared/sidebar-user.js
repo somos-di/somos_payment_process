@@ -1,10 +1,11 @@
 (function () {
     function reflectAdmin(user) {
-        
-        
         const show = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="admin"], .menu-group[data-group="integracao"]')
             .forEach(function (g) { g.style.display = show })
+        // itens só para financeiro (grupos "Financeiro Integração*") ou admin
+        const finShow = (user && (user.is_financeiro || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('[data-fin-only]').forEach(function (el) { el.style.display = finShow })
     }
 
     function reflectUser(user) {

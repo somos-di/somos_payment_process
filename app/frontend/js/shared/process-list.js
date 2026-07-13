@@ -124,8 +124,10 @@
         + '<div class="pl-toolbar">'
         + '<div class="pl-search">' + SVG_SEARCH + '<input id="pl-search" placeholder="Buscar…"></div>'
         + '<div class="pl-filters" id="pl-filters"></div>'
-        + (opts.extraFilter ? '<div class="pl-filters" id="pl-extra"></div>' : '')
-        + '<div class="pl-toolbar-actions"><button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
+        + '<div class="pl-filters" id="pl-extra"></div>'
+        + '<div class="pl-toolbar-actions">'
+        + (opts.batchAction ? '<button class="btn btn-primary" id="pl-batch" disabled>' + esc(opts.batchAction.label || 'Aprovar selecionados') + '</button>' : '')
+        + '<button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
         + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
         + (paged ? '<div class="pl-pager" id="pl-pager"></div>' : '')
@@ -141,13 +143,18 @@
       var hasMore = false;
       var term = '';
       var filters = { company: '', building: '', from: '', to: '', status: '', urgent: '' };
-      var extraValue = '';
+      // filtros extras: aceita opts.extraFilters (array) ou opts.extraFilter (único, legado)
+      var extraFilters = opts.extraFilters || (opts.extraFilter ? [opts.extraFilter] : []);
+      var extraValues = extraFilters.map(function () { return ''; });
+      var batch = opts.batchAction || null;   // ação em lote (checkboxes)
+      var selected = {};                       // uuid_prc -> true (seleção do lote)
       var approversByUuid = {};
 
       var SORT_COLS = [
         { label: '#', col: 'id_prc', type: 'num' },
         { label: 'Empresa', col: 'empresa_nome', type: 'text' },
         { label: 'Obra', col: 'obra_nome', type: 'text' },
+        { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
         { label: 'Descrição', col: 'description_prc', type: 'text' },
         { label: 'Tipo', col: 'tipo_nome', type: 'text' },
         { label: 'Valor', col: 'value_prc', type: 'num' },
@@ -192,8 +199,9 @@
           });
         }
         out = out.filter(function (p) {
-          if (filters.company && String(p.company_prc) !== String(filters.company)) return false;
-          if (filters.building && String(p.building_prc || '').toUpperCase() !== String(filters.building).toUpperCase()) return false;
+          if (filters.company && filters.company.length && filters.company.map(String).indexOf(String(p.company_prc)) < 0) return false;
+          if (filters.building && filters.building.length
+            && filters.building.map(function (b) { return String(b).toUpperCase(); }).indexOf(String(p.building_prc || '').toUpperCase()) < 0) return false;
           if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
           if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
           if (filters.from || filters.to) {
@@ -204,8 +212,16 @@
           }
           return true;
         });
-        if (opts.extraFilter && extraValue) out = opts.extraFilter.apply(out, extraValue);
+        extraFilters.forEach(function (ef, i) { if (extraValues[i]) out = ef.apply(out, extraValues[i]); });
         return out;
+      }
+
+      function updateBatchBtn() {
+        if (!batch) return;
+        var b = host.querySelector('#pl-batch'); if (!b) return;
+        var n = Object.keys(selected).length;
+        b.disabled = n === 0;
+        b.textContent = (batch.label || 'Aprovar selecionados') + (n ? ' (' + n + ')' : '');
       }
 
       function render() {
@@ -217,13 +233,16 @@
           var head = SORT_COLS.map(function (c) {
             return '<th data-col="' + c.col + '">' + esc(c.label) + ' ' + window.TableSort.indicator(sort, c.col) + '</th>';
           }).join('');
-          var html = '<div class="table-scroll"><table><thead><tr>' + head
+          var checkTh = batch ? '<th style="width:34px;text-align:center"><input type="checkbox" data-check-all title="Selecionar todos"></th>' : '';
+          var html = '<div class="table-scroll"><table><thead><tr>' + checkTh + head
             + (showApprovers ? '<th>Aprovações</th>' : '') + '<th></th></tr></thead><tbody>';
           data.forEach(function (p, i) {
             html += '<tr data-i="' + i + '" style="cursor:pointer">'
+              + (batch ? '<td style="text-align:center"><input type="checkbox" data-check="' + esc(p.uuid_prc) + '"' + (selected[p.uuid_prc] ? ' checked' : '') + '></td>' : '')
               + '<td><span class="id-cell">' + esc(p.id_prc)
               + (p.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
               + '</span></td><td>' + esc(p.empresa_nome) + '</td><td>' + esc(p.obra_nome) + '</td>'
+              + '<td>' + (p.fornecedor_nome ? esc(p.fornecedor_nome) : '<span style="color:var(--muted)">—</span>') + '</td>'
               + '<td>' + (p.description_prc ? esc(p.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
               + '<td>' + esc(p.tipo_nome) + '</td>'
               + '<td>' + money(p.value_prc) + '</td><td>' + fmtDate(p.due_date_prc) + '</td>'
@@ -241,6 +260,23 @@
               render();
             });
           });
+
+          if (batch) {
+            bodyEl.querySelectorAll('[data-check]').forEach(function (cb) {
+              cb.addEventListener('click', function (e) { e.stopPropagation(); });   // não abrir o detalhe
+              cb.addEventListener('change', function () {
+                var id = cb.getAttribute('data-check');
+                if (cb.checked) selected[id] = true; else delete selected[id];
+                updateBatchBtn();
+              });
+            });
+            var allBox = bodyEl.querySelector('[data-check-all]');
+            if (allBox) allBox.addEventListener('change', function () {
+              data.forEach(function (p) { if (allBox.checked) selected[p.uuid_prc] = true; else delete selected[p.uuid_prc]; });
+              bodyEl.querySelectorAll('[data-check]').forEach(function (cb) { cb.checked = allBox.checked; });
+              updateBatchBtn();
+            });
+          }
           bodyEl.querySelectorAll('tr[data-i]').forEach(function (tr) {
             var p = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
             var approversBtn = iconBtn(ICONS.aprovadores, 'btn-light', 'Aprovadores', function (e) { e.stopPropagation(); window.openProcessApprovers(p); });
@@ -402,36 +438,64 @@
       });
       filters = pf.getValues();
 
-      var extraEl = null, extraStorageKey = null;
-      if (opts.extraFilter) {
-        extraStorageKey = 'filters-extra:' + (opts.storageKey || (window.location.hash || 'view'));
+      var extraEls = [], extraStorageKeys = [];
+      if (extraFilters.length) {
         var extraHost = host.querySelector('#pl-extra');
-        extraHost.innerHTML = '<label class="pf-field">' + esc(opts.extraFilter.label || 'Filtro')
-          + '<select data-extra><option value="">Todos</option></select></label>';
-        extraEl = extraHost.querySelector('[data-extra]');
-        try {
-          var options = await opts.extraFilter.load();
-          extraEl.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
-            return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
-          }).join('');
-        } catch (e) {  }
-        try { extraValue = localStorage.getItem(extraStorageKey) || ''; } catch (e) { extraValue = ''; }
-        extraEl.value = extraValue;
-        if (extraEl.value !== extraValue) { extraValue = ''; }
-        extraEl.addEventListener('change', function () {
-          extraValue = extraEl.value;
-          try { localStorage.setItem(extraStorageKey, extraValue); } catch (e) {  }
-          render();
+        extraHost.innerHTML = extraFilters.map(function (ef, i) {
+          return '<label class="pf-field">' + esc(ef.label || 'Filtro')
+            + '<select data-extra="' + i + '"><option value="">Todos</option></select></label>';
+        }).join('');
+        for (var ei = 0; ei < extraFilters.length; ei++) {
+          var key = 'filters-extra:' + ei + ':' + (opts.storageKey || (window.location.hash || 'view'));
+          extraStorageKeys[ei] = key;
+          var el = extraHost.querySelector('[data-extra="' + ei + '"]');
+          extraEls[ei] = el;
+          try {
+            var options = await extraFilters[ei].load();
+            el.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
+              return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
+            }).join('');
+          } catch (e) {  }
+          try { extraValues[ei] = localStorage.getItem(key) || ''; } catch (e) { extraValues[ei] = ''; }
+          el.value = extraValues[ei];
+          if (el.value !== extraValues[ei]) extraValues[ei] = '';
+          (function (i, elx, k) {
+            elx.addEventListener('change', function () {
+              extraValues[i] = elx.value;
+              try { localStorage.setItem(k, extraValues[i]); } catch (e) {  }
+              render();
+            });
+          })(ei, el, key);
+        }
+      }
+
+      if (batch) {
+        var batchBtn = host.querySelector('#pl-batch');
+        batchBtn.addEventListener('click', async function () {
+          var picked = rows.filter(function (p) { return selected[p.uuid_prc]; });
+          if (!picked.length) return;
+          var msg = (batch.confirm || 'Aprovar os {n} processos selecionados?').replace('{n}', picked.length);
+          if (!(await uiConfirm(msg, false))) return;
+          batchBtn.disabled = true;
+          var ok = 0, fail = 0, firstErr = '';
+          for (var i = 0; i < picked.length; i++) {
+            try { await batch.run(picked[i]); ok++; var idx = indexOfUuid(picked[i].uuid_prc); if (idx >= 0) { rows.splice(idx, 1); if (paged && total != null) total = Math.max(0, total - 1); } delete selected[picked[i].uuid_prc]; }
+            catch (e) { fail++; if (!firstErr) firstErr = e.message; }
+          }
+          updateBatchBtn(); render();
+          toast(ok + ' aprovado(s)' + (fail ? ' · ' + fail + ' com erro' : ''), fail === 0);
+          if (fail) await uiAlert('Alguns processos não foram aprovados. Primeiro erro: ' + firstErr);
         });
       }
 
       host.querySelector('#pl-clear').addEventListener('click', function () {
         search.value = ''; term = '';
         if (paged) { page = 0; total = null; }
-        if (extraEl) {
-          extraValue = ''; extraEl.value = '';
-          try { localStorage.removeItem(extraStorageKey); } catch (e) {  }
-        }
+        extraEls.forEach(function (el, i) {
+          extraValues[i] = ''; if (el) el.value = '';
+          try { localStorage.removeItem(extraStorageKeys[i]); } catch (e) {  }
+        });
+        selected = {}; updateBatchBtn();
         pf.clear();
       });
 
@@ -443,8 +507,10 @@
   function applyProcessFilters(s, kind, term, filters) {
     if (kind) s = s.eq('kind_prc', Number(kind));
     var f = filters || {};
-    if (f.company) s = s.eq('company_prc', f.company);
-    if (f.building) s = s.eq('building_prc', f.building);
+    var comps = Array.isArray(f.company) ? f.company : (f.company ? [f.company] : []);
+    var builds = Array.isArray(f.building) ? f.building : (f.building ? [f.building] : []);
+    if (comps.length) s = s.in('company_prc', comps);
+    if (builds.length) s = s.in('building_prc', builds);
     if (f.status !== '' && f.status != null) s = s.eq('status_step_prc', Number(f.status));
     if (f.urgent === '1' || f.urgent === '0') s = s.eq('is_urgent_prc', f.urgent === '1');
     if (f.from) s = s.gte('due_date_prc', f.from);
@@ -481,41 +547,84 @@
   };
 
   function invalidateFlowCaches() {
-    ['my_approvals', 'financeiro', 'history', 'dashboard', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
+    ['my_approvals', 'financeiro', 'financeiro_integrados', 'history', 'dashboard', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
   }
   window.invalidateFlowCaches = invalidateFlowCaches;
 
   window.mountPendingApprovals = async function (host) {
 
     var groupsByUuid = {};
+    var approvedByUuid = {};   // uuid_prc -> { approver_app: true } (quem JÁ aprovou)
+    // aprovação em lote (loop no front): reaproveita o mesmo caminho do botão Aprovar.
+    function approveOne(p) {
+      return window.Store.commit(
+        function () {
+          return window.API.post('/processes/' + p.uuid_prc + '/approve')
+            .then(function (r) { invalidateFlowCaches(); return r; });
+        },
+        function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
+    }
     return window.ProcessList.mount(host, {
       emptyText: 'Você não tem aprovações pendentes.',
       showApprovers: true,
       approversPosition: 1,
-      extraFilter: {
-        label: 'Aprovar como',
-        load: async function () {
-          var rows = await window.SB.rpc('my_pending_approval_groups', {});
-          groupsByUuid = {};
-          var names = {}, levels = {};
-          (rows || []).forEach(function (r) {
-            (groupsByUuid[r.uuid_prc] = groupsByUuid[r.uuid_prc] || []).push(r.group_id);
-            names[r.group_id] = r.group_name; levels[r.group_id] = r.level;
-          });
-
-          var lv = function (id) { return levels[id] == null ? Infinity : levels[id]; };
-          return Object.keys(names)
-            .sort(function (a, b) { return (lv(b) - lv(a)) || String(names[a]).localeCompare(names[b]); })
-            .map(function (id) {
-              return { value: id, label: names[id] + (levels[id] != null ? ' (nível ' + levels[id] + ')' : ' (urgência)') };
-            });
-        },
-        apply: function (rows, groupId) {
-          return rows.filter(function (p) {
-            return (groupsByUuid[p.uuid_prc] || []).indexOf(Number(groupId)) >= 0;
-          });
-        },
+      batchAction: {
+        label: 'Aprovar selecionados',
+        confirm: 'Aprovar os {n} processos selecionados? A aprovação segue as mesmas regras (nível/elegibilidade) de cada processo.',
+        run: approveOne,
       },
+      extraFilters: [
+        {
+          label: 'Aprovar como',
+          load: async function () {
+            var rows = await window.SB.rpc('my_pending_approval_groups', {});
+            groupsByUuid = {};
+            var names = {}, levels = {};
+            (rows || []).forEach(function (r) {
+              (groupsByUuid[r.uuid_prc] = groupsByUuid[r.uuid_prc] || []).push(r.group_id);
+              names[r.group_id] = r.group_name; levels[r.group_id] = r.level;
+            });
+
+            var lv = function (id) { return levels[id] == null ? Infinity : levels[id]; };
+            return Object.keys(names)
+              .sort(function (a, b) { return (lv(b) - lv(a)) || String(names[a]).localeCompare(names[b]); })
+              .map(function (id) {
+                return { value: id, label: names[id] + (levels[id] != null ? ' (nível ' + levels[id] + ')' : ' (urgência)') };
+              });
+          },
+          apply: function (rows, groupId) {
+            return rows.filter(function (p) {
+              return (groupsByUuid[p.uuid_prc] || []).indexOf(Number(groupId)) >= 0;
+            });
+          },
+        },
+        {
+          // "Já aprovado por": mostra os pendentes onde a pessoa escolhida já assinou
+          // (para aprovar por cima). Usa v_process_approvers do conjunto pendente.
+          label: 'Já aprovado por',
+          load: async function () {
+            var pend = await window.Store.get('pending_approvals');
+            var uuids = (pend || []).map(function (r) { return r.uuid_prc; });
+            approvedByUuid = {};
+            var names = {};
+            if (uuids.length) {
+              var appr = await window.SB.select('v_process_approvers', function (q) { return q.in('process_app', uuids); });
+              (appr || []).forEach(function (a) {
+                (approvedByUuid[a.process_app] = approvedByUuid[a.process_app] || {})[a.approver_app] = true;
+                names[a.approver_app] = a.approver_name || String(a.approver_app);
+              });
+            }
+            return Object.keys(names)
+              .sort(function (a, b) { return String(names[a]).localeCompare(names[b], 'pt-BR'); })
+              .map(function (id) { return { value: id, label: names[id] }; });
+          },
+          apply: function (rows, approverId) {
+            return rows.filter(function (p) {
+              return approvedByUuid[p.uuid_prc] && approvedByUuid[p.uuid_prc][approverId];
+            });
+          },
+        },
+      ],
       load: async function () {
         var pend = await window.Store.get('pending_approvals');
         if (!pend.length) return [];
@@ -528,14 +637,7 @@
         {
           label: 'Aprovar', cls: 'btn-primary', confirm: 'Confirmar aprovação deste processo?',
           effect: 'remove',   // aprovado sai da MINHA fila de pendentes (só esta linha some)
-          run: function (p) {
-            return window.Store.commit(
-              function () {
-                return window.API.post('/processes/' + p.uuid_prc + '/approve')
-                  .then(function (r) { invalidateFlowCaches(); return r; });
-              },
-              function () { window.Store.remove('pending_approvals', 'uuid_prc', p.uuid_prc); return ['pending_approvals']; });
-          }
+          run: approveOne,
         },
         {
           label: 'Corrigir', cls: 'btn-danger',
