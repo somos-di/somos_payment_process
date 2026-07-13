@@ -18,20 +18,21 @@
     var st = document.createElement('style'); st.id = STYLE_ID;
     st.textContent =
       '.pf-ms{position:relative}'
-      + '.pf-ms-btn{display:flex;align-items:center;gap:6px;justify-content:space-between;min-width:180px;max-width:280px;'
-      + 'padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;'
-      + 'font-size:14px;color:var(--text);text-align:left;white-space:nowrap;overflow:hidden}'
+      + '.pf-ms-btn{display:flex;align-items:center;gap:6px;justify-content:space-between;min-width:150px;max-width:230px;'
+      + 'padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;'
+      + 'font-size:13px;color:var(--text);text-align:left;white-space:nowrap;overflow:hidden}'
       + '.pf-ms-btn .pf-ms-txt{overflow:hidden;text-overflow:ellipsis}'
       + '.pf-ms-btn[disabled]{opacity:.5;cursor:not-allowed}'
-      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:260px;max-width:360px;'
-      + 'background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);padding:8px;display:none}'
+      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:260px;'
+      + 'background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:6px;display:none}'
       + '.pf-ms-pop.open{display:block}'
-      + '.pf-ms-search{width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px}'
-      + '.pf-ms-list{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:1px}'
-      + '.pf-ms-opt{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:14px}'
+      + '.pf-ms-search{width:100%;margin-bottom:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box}'
+      + '.pf-ms-list{max-height:210px;overflow:auto;display:flex;flex-direction:column}'
+      + '.pf-ms-opt{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:5px;cursor:pointer;'
+      + 'font-size:12.5px;line-height:1.25}'
       + '.pf-ms-opt:hover{background:var(--surface-2)}'
-      + '.pf-ms-opt input{flex:none}'
-      + '.pf-ms-empty{padding:8px;color:var(--muted);font-size:13px}';
+      + '.pf-ms-opt input{flex:none;margin:0}'
+      + '.pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
     document.head.appendChild(st);
   }
 
