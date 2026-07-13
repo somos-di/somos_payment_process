@@ -23,7 +23,8 @@ const fmtMonthYear = (d?: string | null): string => {         // 'MM/YYYY'
 // Responsabilidade isolada do ProcessesService (persistência/domínio do processo).
 export class UauIntegrationService {
   // ENVIAR UAU (botão Integrar): valida visibilidade + pendências, POSTa no webhook
-  // e marca status 4 + histórico (via RPC send_to_uau, com auth.uid()).
+  // e registra no histórico (via RPC send_to_uau). NÃO muda o status: a transição
+  // (Em integração / Integrado / Erro) é feita pela INTEGRAÇÃO EXTERNA.
   async sendToUau(token: string, uuid: string): Promise<{ uuid_prc: string; sent: true }> {
     // Visibilidade PELA RLS antes de tudo: buildUauPayload/pendingAlerts leem via
     // service_role (bypass de RLS), então sem este gate um usuário poderia disparar
@@ -57,7 +58,7 @@ export class UauIntegrationService {
       const body = await resp.text().catch(() => '');
       throw new AppError('Webhook de integração retornou ' + resp.status + ': ' + body.slice(0, 200), 502, 'integration');
     }
-    await unwrap(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));   // status 4 + histórico (auth.uid())
+    await unwrap(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));   // só histórico (auth.uid()); status é da integração externa
     return { uuid_prc: uuid, sent: true };
   }
 

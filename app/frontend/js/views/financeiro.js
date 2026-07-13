@@ -52,6 +52,11 @@ async function initView_financeiro() {
   });
   filters = pf.getValues();
   $('fin-clear').addEventListener('click', function () { $('fin-search').value = ''; pf.clear(); });
+  // Atualizar: invalida só o cache do Financeiro e rebusca (sem F5, mantém filtros).
+  $('fin-refresh').addEventListener('click', async function () {
+    var b = $('fin-refresh'); b.disabled = true;
+    try { window.Store.invalidate('financeiro'); await reloadAll(); } finally { b.disabled = false; }
+  });
 
   function isoDay(v) { return v ? String(v).split('T')[0] : ''; }
 
@@ -156,13 +161,12 @@ async function initView_financeiro() {
           if (rowAlerts.length) { toast('Processo com ' + rowAlerts.length + ' alerta(s). Resolva antes de integrar.'); return; }
           if (!(await confirmDialog('Enviar este processo para integração com o UAU?'))) return;
           try {
-            await window.Store.commit(
-              function () {
-                return window.API.post('/processes/' + p.uuid_prc + '/send-uau')
-                  .then(function (r) { window.invalidateFlowCaches(); return r; });
-              },
-              function () { window.Store.remove('financeiro', 'uuid_prc', p.uuid_prc); return ['financeiro']; });
-            toast('Enviado ao UAU.', true); reloadAll();
+            // dispara a integração; o STATUS é atualizado pela integração EXTERNA
+            // (o app não muda mais o status aqui), então o processo permanece na lista.
+            await window.API.post('/processes/' + p.uuid_prc + '/send-uau');
+            window.invalidateFlowCaches();
+            toast('Integração disparada. O status será atualizado pela integração externa.', true);
+            reloadAll();
           } catch (e) { toast('Erro: ' + e.message); reloadAll(); }
         });
       if (rowAlerts.length) { uauBtn.disabled = true; uauBtn.style.opacity = '0.45'; uauBtn.style.cursor = 'not-allowed'; }
