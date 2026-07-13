@@ -127,6 +127,8 @@
         + '<div class="pl-filters" id="pl-extra"></div>'
         + '<div class="pl-toolbar-actions">'
         + (opts.batchAction ? '<button class="btn btn-primary" id="pl-batch" disabled>' + esc(opts.batchAction.label || 'Aprovar selecionados') + '</button>' : '')
+        + '<button class="btn btn-light" id="pl-refresh" title="Recarregar os dados desta tela">'
+        + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar</button>'
         + '<button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
         + '</div>'
         + '<div id="pl-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>'
@@ -488,6 +490,18 @@
         });
       }
 
+      // Atualizar: invalida SÓ o cache desta tela (opts.refreshKeys) e rebusca os dados.
+      // Não recarrega a página nem perde filtros/busca/ordenação.
+      var refreshBtn = host.querySelector('#pl-refresh');
+      if (refreshBtn) refreshBtn.addEventListener('click', async function () {
+        refreshBtn.disabled = true;
+        try {
+          (opts.refreshKeys || []).forEach(function (k) { window.Store.invalidate(k); });
+          if (paged) { total = null; }
+          await reload();
+        } finally { refreshBtn.disabled = false; }
+      });
+
       host.querySelector('#pl-clear').addEventListener('click', function () {
         search.value = ''; term = '';
         if (paged) { page = 0; total = null; }
@@ -568,6 +582,7 @@
       emptyText: 'Você não tem aprovações pendentes.',
       showApprovers: true,
       approversPosition: 1,
+      refreshKeys: ['pending_approvals'],   // "Atualizar" rebusca a fila de pendentes
       batchAction: {
         label: 'Aprovar selecionados',
         confirm: 'Aprovar os {n} processos selecionados? A aprovação segue as mesmas regras (nível/elegibilidade) de cada processo.',

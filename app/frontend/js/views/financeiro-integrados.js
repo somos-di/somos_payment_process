@@ -6,6 +6,7 @@ async function initView_financeiro_integrados() {
     emptyText: 'Nenhum processo integrado.',
     storageKey: 'financeiro-integrados',
     dateField: 'due_date_prc',
+    refreshKeys: ['financeiro_integrados'],
     load: function () { return window.Store.get('financeiro_integrados'); },
     // sem ações: tela de acompanhamento (o processo já foi integrado)
   });
