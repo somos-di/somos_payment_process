@@ -23,15 +23,18 @@
       + 'font-size:13px;color:var(--text);text-align:left;white-space:nowrap;overflow:hidden}'
       + '.pf-ms-btn .pf-ms-txt{overflow:hidden;text-overflow:ellipsis}'
       + '.pf-ms-btn[disabled]{opacity:.5;cursor:not-allowed}'
-      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:260px;'
+      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:260px;text-transform:none;'
       + 'background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:6px;display:none}'
       + '.pf-ms-pop.open{display:block}'
       + '.pf-ms-search{width:100%;margin-bottom:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box}'
       + '.pf-ms-list{max-height:210px;overflow:auto;display:flex;flex-direction:column}'
-      + '.pf-ms-opt{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:5px;cursor:pointer;'
-      + 'font-size:12.5px;line-height:1.25}'
+      // opções: label alinhado à esquerda, 1 linha com reticências, sem MAIÚSCULA
+      // (sobrepõe o CSS global de <label> dos filtros, que usa uppercase + space-between).
+      + '.pf-ms-opt{display:flex;justify-content:flex-start;gap:8px;align-items:center;padding:5px 6px;border-radius:5px;'
+      + 'cursor:pointer;font-size:13px;line-height:1.2;text-transform:none;text-align:left;font-weight:400;letter-spacing:normal}'
       + '.pf-ms-opt:hover{background:var(--surface-2)}'
-      + '.pf-ms-opt input{flex:none;margin:0}'
+      + '.pf-ms-opt input{flex:none;margin:0;width:15px;height:15px}'
+      + '.pf-ms-opt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
     document.head.appendChild(st);
   }
@@ -64,8 +67,8 @@
       var shown = items.filter(function (it) { return !term || String(it.label).toLowerCase().indexOf(term) >= 0; });
       if (!shown.length) { list.innerHTML = '<div class="pf-ms-empty">Nada encontrado</div>'; return; }
       list.innerHTML = shown.map(function (it) {
-        return '<label class="pf-ms-opt"><input type="checkbox" value="' + esc(it.value) + '"'
-          + (selected[it.value] ? ' checked' : '') + '>' + esc(it.label) + '</label>';
+        return '<label class="pf-ms-opt" title="' + esc(it.label) + '"><input type="checkbox" value="' + esc(it.value) + '"'
+          + (selected[it.value] ? ' checked' : '') + '><span>' + esc(it.label) + '</span></label>';
       }).join('');
       list.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
         cb.addEventListener('change', function () {
