@@ -39,6 +39,7 @@ async function initView_financeiro() {
     parcelas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
     correcao: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
     uau: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
+    approvers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   };
 
   var rows = [];
@@ -140,7 +141,9 @@ async function initView_financeiro() {
         b.style.marginLeft = '6px'; b.title = title; b.setAttribute('aria-label', title);
         b.innerHTML = svg; b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
       }
-      // status fora de análise financeira (6/8) => linha só de monitoramento, sem ações
+      // aprovadores elegíveis: disponível em TODOS os status (consulta, não altera nada)
+      cell.appendChild(iconBtn(FIN_ICONS.approvers, 'btn-light', 'Aprovadores elegíveis', function () { window.openProcessApprovers(p); }));
+      // status fora de análise financeira (6/8) => linha só de monitoramento, sem ações de fluxo
       if (!isActionable(p)) { tr.addEventListener('click', function () { window.openProcessDetail(p); }); return; }
       cell.appendChild(iconBtn(FIN_ICONS.correcao, 'btn-danger', 'Correção', async function () {
 

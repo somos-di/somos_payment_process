@@ -60,12 +60,16 @@ async function initView_comissoes() {
 
   // ações disponíveis por status (espelha a máquina de estados da RPC) FILTRADAS pelo papel
   function actionsFor(c) {
-    var s = Number(c.status_step_com), a = [], part = isTrack || isFin;
-    if (s === 1 && isTrack) a.push('validate');
-    if ((s === 2 || s === 5) && isTrack) a.push('set-nf');       // 5 = Pendência: reanexar NF e reenviar (correção)
-    if (s === 3 && isFin) a.push('finalize');
-    if ([1, 2, 3].indexOf(s) >= 0 && part) a.push('pendency');   // pendenciar só no fluxo ativo
-    if (s !== 0 && s !== 4 && part) a.push('cancel');            // cancelar em qualquer etapa aberta
+    var s = Number(c.status_step_com), a = [];
+    // TRILHA age só nos SEUS passos: validar (1), anexar NF (2), corrigir/reanexar (5).
+    // Ao ir para o Financeiro (3) a trilha fica BLOQUEADA (só visualização).
+    if (isTrack) {
+      if (s === 1) a.push('validate');
+      if (s === 2 || s === 5) a.push('set-nf');                  // 5 = Pendência: reanexar e reenviar (correção)
+      if (s === 1 || s === 2 || s === 5) a.push('cancel');
+    }
+    // FINANCEIRO age na validação financeira (3): finalizar OU devolver p/ correção (pendência).
+    if (isFin && s === 3) { a.push('finalize'); a.push('pendency'); a.push('cancel'); }
     return a;
   }
   var LABEL = { validate: 'Validar', 'set-nf': 'Anexar NF', finalize: 'Finalizar (Financeiro)', resolve: 'Resolver', pendency: 'Pendência', cancel: 'Cancelar' };
@@ -169,44 +173,70 @@ async function initView_comissoes() {
     });
   }
 
-  // Detalhe da comissão: dados + anexos + timeline (v_comm_history). Abre ao clicar na linha.
+  // Detalhe da comissão — MESMO layout do detalhe de processo (classes pd-*): campos +
+  // NF/boleto ao lado (iframe) + aba Histórico (timeline de v_comm_history).
   async function openDetail(c) {
-    function vr(k, v) { return (v == null || v === '') ? '' : '<div class="vr"><div class="vk">' + esc(k) + '</div><div class="vv">' + v + '</div></div>'; }
-    function link(url, label) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + '</a>' : ''; }
-    var dados = ''
-      + vr('Empresa', esc(c.empresa_nome) + ' <span style="color:var(--muted)">(' + esc(c.company_com) + ')</span>')
-      + vr('Obra', esc(c.building_com))
-      + vr('Unidade', esc(c.unit_com))
-      + vr('Nº da Venda', esc(c.sale_num_com))
-      + vr('Data da Venda', c.sale_date_com ? fmtDate(c.sale_date_com) : '')
-      + vr('Data de Liberação', c.release_date_com ? fmtDate(c.release_date_com) : '')
-      + vr('Cliente', esc(c.client_name_com))
-      + vr('Vendedor', esc(c.seller_name_com))
-      + vr('Código do Vendedor', c.seller_id_com != null ? esc(c.seller_id_com) : '')
-      + vr('E-mail', esc(c.seller_email_com))
-      + vr('Celular', esc(c.seller_phone_com))
-      + vr('Valor', money(c.value_com))
-      + vr('Observação', esc(c.note_com))
-      + vr('Nota Fiscal', link(c.nf_url_com, 'Abrir NF'))
-      + vr('Boleto', link(c.boleto_url_com, 'Abrir boleto'));
-
-    var o = overlay('<div class="modal-title">Comissão #' + esc(c.id_com) + ' — ' + esc(c.empreendimento_nome || '—')
-      + ' <span class="badge ' + (STATUS_CLS[c.status_step_com] || '') + '" style="margin-left:8px">' + esc(c.status_nome) + '</span></div>'
-      + '<div class="validate-table" style="margin-top:8px">' + dados + '</div>'
-      + '<div style="font-weight:700;font-size:13px;margin:16px 0 6px">Histórico</div>'
-      + '<div id="com-hist"><div class="empty">Carregando…</div></div>'
-      + '<div class="modal-actions"><button class="btn btn-light" data-x>Fechar</button></div>', 600);
-    o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
+    function fieldBox(label, val) {
+      var v = (val === null || val === undefined || val === '') ? '—' : val;
+      return '<div class="pd-field"><label>' + esc(label) + '</label><div class="pd-field-box">' + esc(v) + '</div></div>';
+    }
+    var nf = c.nf_url_com, bol = c.boleto_url_com, firstUrl = nf || bol;
+    var docHtml = '';
+    if (firstUrl) {
+      docHtml = '<div class="pd-doc"><div class="pd-doc-head"><div class="pd-doc-tabs">'
+        + (nf ? '<button class="pd-doc-tab active" data-url="' + esc(nf) + '">Nota Fiscal</button>' : '')
+        + (bol ? '<button class="pd-doc-tab' + (nf ? '' : ' active') + '" data-url="' + esc(bol) + '">Boleto</button>' : '')
+        + '</div><div class="pd-doc-actions">'
+        + (nf ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + esc(nf) + '">Nota Fiscal</a>' : '')
+        + (bol ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + esc(bol) + '">Boleto</a>' : '')
+        + '</div></div><iframe class="pd-doc-frame" src="' + esc(firstUrl) + '" title="Documento"></iframe></div>';
+    }
+    var o = document.createElement('div'); o.className = 'modal-overlay';
+    o.innerHTML = '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
+      + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
+      + '<div data-pane="dados" class="pane pd-detail">'
+      + '<div class="pd-fields"><h3>Comissão #' + esc(c.id_com) + ' — ' + esc(c.status_nome) + '</h3>'
+      + fieldBox('Empreendimento', c.empreendimento_nome)
+      + fieldBox('Empresa', c.empresa_nome || c.company_com)
+      + fieldBox('Obra', c.building_com)
+      + fieldBox('Trilha', c.trilha)
+      + fieldBox('Unidade', c.unit_com)
+      + fieldBox('Nº da Venda', c.sale_num_com)
+      + fieldBox('Data da Venda', c.sale_date_com ? fmtDate(c.sale_date_com) : '')
+      + fieldBox('Data de Liberação', c.release_date_com ? fmtDate(c.release_date_com) : '')
+      + fieldBox('Cliente', c.client_name_com)
+      + fieldBox('Vendedor', c.seller_name_com)
+      + fieldBox('Código do Vendedor', c.seller_id_com)
+      + fieldBox('E-mail', c.seller_email_com)
+      + fieldBox('Celular', c.seller_phone_com)
+      + fieldBox('Valor', money(c.value_com))
+      + fieldBox('Observação', c.note_com)
+      + '</div>' + docHtml + '</div>'
+      + '<div data-pane="hist" class="pane" hidden><div class="col-body">…</div></div></div>';
+    o.addEventListener('click', function (e) { if (e.target === o || e.target.classList.contains('modal-x')) o.remove(); });
+    o.querySelectorAll('.tab').forEach(function (t) {
+      t.addEventListener('click', function () {
+        o.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); }); t.classList.add('active');
+        o.querySelectorAll('.pane').forEach(function (p) { p.hidden = (p.getAttribute('data-pane') !== t.getAttribute('data-t')); });
+      });
+    });
+    var frame = o.querySelector('.pd-doc-frame');
+    o.querySelectorAll('.pd-doc-tab').forEach(function (b) {
+      b.addEventListener('click', function () {
+        o.querySelectorAll('.pd-doc-tab').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active'); if (frame) frame.src = b.getAttribute('data-url');
+      });
+    });
+    document.body.appendChild(o);
     try {
       var hist = await window.Store.get('comm_history', c.uuid_com);
-      o.querySelector('#com-hist').innerHTML = (hist && hist.length)
-        ? '<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">' + hist.map(function (h) {
-            return '<li style="border-left:2px solid var(--border);padding:2px 0 2px 12px">'
-              + '<div style="font-size:13.5px">' + esc(h.action_chs) + '</div>'
-              + '<div style="font-size:12px;color:var(--muted)">' + esc(h.user_nome || 'sistema') + ' · ' + esc(fmtDateTime(h.created_at_chs)) + '</div></li>';
+      o.querySelector('[data-pane="hist"] .col-body').innerHTML = (hist && hist.length)
+        ? '<ul class="timeline">' + hist.map(function (x) {
+            return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_chs) + '</div>'
+              + '<div class="tl-meta">' + esc(x.user_nome || 'Sistema') + ' · ' + esc(fmtDateTime(x.created_at_chs)) + '</div></div></li>';
           }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
-    } catch (e) { o.querySelector('#com-hist').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
+    } catch (e) { o.querySelector('[data-pane="hist"] .col-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }
 
   ['com-search', 'com-trilha', 'com-status'].forEach(function (id) { $(id).addEventListener('input', render); $(id).addEventListener('change', render); });
