@@ -28,6 +28,9 @@
   S.register('comm_empreendimentos', function () {
     return SB.select('v_comm_empreendimentos', function (q) { return q.order('name_cem'); });
   });
+  S.register('comm_history', function (uuid) {
+    return SB.select('v_comm_history', function (q) { return q.eq('commission_chs', uuid).order('created_at_chs', { ascending: false }); });
+  });
 
   S.register('installments', function (uuid) {
     return SB.select('installments', function (q) { return q.eq('process_ins', uuid).order('number_ins'); });
