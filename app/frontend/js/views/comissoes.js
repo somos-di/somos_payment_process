@@ -7,6 +7,11 @@ async function initView_comissoes() {
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function fmtDateTime(d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return String(d); }
+  }
   function toast(msg, ok) {
     var t = document.createElement('div'); t.textContent = msg;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
@@ -57,9 +62,8 @@ async function initView_comissoes() {
   function actionsFor(c) {
     var s = Number(c.status_step_com), a = [], part = isTrack || isFin;
     if (s === 1 && isTrack) a.push('validate');
-    if (s === 2 && isTrack) a.push('set-nf');
+    if ((s === 2 || s === 5) && isTrack) a.push('set-nf');       // 5 = Pendência: reanexar NF e reenviar (correção)
     if (s === 3 && isFin) a.push('finalize');
-    if (s === 5 && part) a.push('resolve');
     if ([1, 2, 3].indexOf(s) >= 0 && part) a.push('pendency');   // pendenciar só no fluxo ativo
     if (s !== 0 && s !== 4 && part) a.push('cancel');            // cancelar em qualquer etapa aberta
     return a;
@@ -90,17 +94,20 @@ async function initView_comissoes() {
 
     $('com-body').querySelectorAll('tr[data-i]').forEach(function (tr) {
       var c = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', function () { openDetail(c); });
       actionsFor(c).forEach(function (act) {
         var b = document.createElement('button');
-        b.className = 'btn ' + (CLS[act] || 'btn-light'); b.style.marginLeft = '6px'; b.textContent = LABEL[act];
-        b.addEventListener('click', function () { runAction(c, act); });
+        b.className = 'btn ' + (CLS[act] || 'btn-light'); b.style.marginLeft = '6px';
+        b.textContent = (act === 'set-nf' && Number(c.status_step_com) === 5) ? 'Anexar NF e reenviar' : LABEL[act];
+        b.addEventListener('click', function (e) { e.stopPropagation(); runAction(c, act); });
         cell.appendChild(b);
       });
     });
   }
 
   function post(uuid, action, body) { return window.API.post('/commissions/' + uuid + '/' + action, body || {}); }
-  async function done() { window.Store.invalidate('commissions'); await reload(); }
+  async function done() { window.Store.invalidate('commissions'); window.Store.invalidate('comm_history'); await reload(); }
 
   function runAction(c, act) {
     if (act === 'validate') return confirmThen('Validar esta comissão e solicitar a Nota Fiscal?', function () { return post(c.uuid_com, 'validate'); });
@@ -160,6 +167,46 @@ async function initView_comissoes() {
       try { await post(c.uuid_com, 'set-nf', { nf_url: nfUrl, boleto_url: boletoUrl }); toast('NF anexada.', true); await done(); }
       catch (e) { toast('Erro: ' + e.message); }
     });
+  }
+
+  // Detalhe da comissão: dados + anexos + timeline (v_comm_history). Abre ao clicar na linha.
+  async function openDetail(c) {
+    function vr(k, v) { return (v == null || v === '') ? '' : '<div class="vr"><div class="vk">' + esc(k) + '</div><div class="vv">' + v + '</div></div>'; }
+    function link(url, label) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + '</a>' : ''; }
+    var dados = ''
+      + vr('Empresa', esc(c.empresa_nome) + ' <span style="color:var(--muted)">(' + esc(c.company_com) + ')</span>')
+      + vr('Obra', esc(c.building_com))
+      + vr('Unidade', esc(c.unit_com))
+      + vr('Nº da Venda', esc(c.sale_num_com))
+      + vr('Data da Venda', c.sale_date_com ? fmtDate(c.sale_date_com) : '')
+      + vr('Data de Liberação', c.release_date_com ? fmtDate(c.release_date_com) : '')
+      + vr('Cliente', esc(c.client_name_com))
+      + vr('Vendedor', esc(c.seller_name_com))
+      + vr('Código do Vendedor', c.seller_id_com != null ? esc(c.seller_id_com) : '')
+      + vr('E-mail', esc(c.seller_email_com))
+      + vr('Celular', esc(c.seller_phone_com))
+      + vr('Valor', money(c.value_com))
+      + vr('Observação', esc(c.note_com))
+      + vr('Nota Fiscal', link(c.nf_url_com, 'Abrir NF'))
+      + vr('Boleto', link(c.boleto_url_com, 'Abrir boleto'));
+
+    var o = overlay('<div class="modal-title">Comissão #' + esc(c.id_com) + ' — ' + esc(c.empreendimento_nome || '—')
+      + ' <span class="badge ' + (STATUS_CLS[c.status_step_com] || '') + '" style="margin-left:8px">' + esc(c.status_nome) + '</span></div>'
+      + '<div class="validate-table" style="margin-top:8px">' + dados + '</div>'
+      + '<div style="font-weight:700;font-size:13px;margin:16px 0 6px">Histórico</div>'
+      + '<div id="com-hist"><div class="empty">Carregando…</div></div>'
+      + '<div class="modal-actions"><button class="btn btn-light" data-x>Fechar</button></div>', 600);
+    o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
+    try {
+      var hist = await window.Store.get('comm_history', c.uuid_com);
+      o.querySelector('#com-hist').innerHTML = (hist && hist.length)
+        ? '<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">' + hist.map(function (h) {
+            return '<li style="border-left:2px solid var(--border);padding:2px 0 2px 12px">'
+              + '<div style="font-size:13.5px">' + esc(h.action_chs) + '</div>'
+              + '<div style="font-size:12px;color:var(--muted)">' + esc(h.user_nome || 'sistema') + ' · ' + esc(fmtDateTime(h.created_at_chs)) + '</div></li>';
+          }).join('') + '</ul>'
+        : '<div class="empty">Sem histórico.</div>';
+    } catch (e) { o.querySelector('#com-hist').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }
 
   ['com-search', 'com-trilha', 'com-status'].forEach(function (id) { $(id).addEventListener('input', render); $(id).addEventListener('change', render); });

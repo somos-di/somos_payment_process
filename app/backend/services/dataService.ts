@@ -12,7 +12,7 @@ const READ_RESOURCES = new Set<string>([
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
   'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_single_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'v_financeiro_integrados', 'v_processes_admin', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
-  'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind',
+  'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind', 'v_comm_history',
 ]);
 
 // Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
