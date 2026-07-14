@@ -6,7 +6,11 @@ import { UuidParamSchema } from '../validators/common.js';
 
 // ações do fluxo e o payload esperado de cada uma
 const NoteSchema = z.object({ note: z.string().trim().max(500).optional() });
-const SetNfSchema = z.object({ nf_url: z.string().optional(), boleto_url: z.string().optional() });
+// nullish: o front pode mandar a URL, ausente OU null (ex.: boleto não anexado)
+const SetNfSchema = z.object({
+  nf_url: z.string().max(2000).nullish(),
+  boleto_url: z.string().max(2000).nullish(),
+});
 const VALID_ACTIONS = new Set(['validate', 'set-nf', 'finalize', 'pendency', 'resolve', 'cancel']);
 // cadastro de empreendimento (admin): nome, empresa (SPE), obra, trilha (somos), ativo.
 const EmpreendimentoSchema = z.object({
@@ -80,7 +84,7 @@ export class CommissionsController {
 
     const body = (req.body ?? {}) as Record<string, unknown>;
     const opts: { note?: string; nfUrl?: string; boletoUrl?: string } = {};
-    if (action === 'set-nf') { const b = SetNfSchema.parse(body); opts.nfUrl = b.nf_url; opts.boletoUrl = b.boleto_url; }
+    if (action === 'set-nf') { const b = SetNfSchema.parse(body); opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined; }
     else if (action === 'pendency' || action === 'cancel') { opts.note = NoteSchema.parse(body).note; }
 
     const data = await this.service.transition(req.accessToken!, uuid, action, opts);
