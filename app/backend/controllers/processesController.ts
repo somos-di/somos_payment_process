@@ -17,6 +17,12 @@ const CorrectSchema = z.object({
   installments: z.array(InstallmentSchema).optional(), // ausente = não mexe nas parcelas
   resend: z.boolean().default(false),
 });
+// GESTÃO (admin): motivo OBRIGATÓRIO; a autorização (is_admin) vive na RPC.
+const AdminEditSchema = z.object({
+  process: z.record(z.any()),
+  installments: z.array(InstallmentSchema).optional(),
+  reason: z.string().trim().min(1).max(500),
+});
 
 const ACTIONS: Record<string, string> = {
   approve: 'approve_process', close: 'close_process',
@@ -43,6 +49,14 @@ export class ProcessesController {
     this.logEvent = this.logEvent.bind(this);
     this.correct = this.correct.bind(this);
     this.setInstallments = this.setInstallments.bind(this);
+    this.adminEdit = this.adminEdit.bind(this);
+  }
+
+  async adminEdit(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {
+    const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
+    const { process, installments, reason } = AdminEditSchema.parse(req.body);
+    const data = await this.service.adminEdit(req.accessToken!, uuid, process, installments, reason);
+    return reply.send({ success: true, data });
   }
 
   async setInstallments(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {

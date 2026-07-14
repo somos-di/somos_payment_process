@@ -20,6 +20,7 @@ const ROUTES = {
     'sem-aprovador': { title: 'Processos sem Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'um-aprovador': { title: 'Processos com 1 Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'gestao-processos': { title: 'Gestão de Processos', folder: 'admin', parentLabel: 'Administração', admin: true },
 }
 
 const loadedScripts = new Set()

@@ -9,6 +9,7 @@ export function registerProcessesRoutes(app: FastifyInstance, processes_center: 
   app.post('/processes/bulk', processes_center.createBulk); // lançamento em massa
   app.post('/processes/:uuid/log', processes_center.logEvent); // registra evento no histórico (static > :action)
   app.post('/processes/:uuid/correct', processes_center.correct); // correção: edita dados/parcelas (+reenviar)
+  app.post('/processes/:uuid/admin-edit', processes_center.adminEdit); // gestão (admin): edita qualquer campo (static > :action)
   app.post('/processes/:uuid/installments', processes_center.setInstallments); // CRUD de parcelas (financeiro)
   // ações: approve | reject | close | financeiro-reject | send-uau
   app.post('/processes/:uuid/:action', processes_center.action);

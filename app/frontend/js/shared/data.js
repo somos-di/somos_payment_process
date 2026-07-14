@@ -16,6 +16,9 @@
   S.register('pending_approvals', function () { return SB.rpc('my_pending_approvals'); });
   S.register('my_approvals', function () { return SB.select('v_my_approvals', function (q) { return q.order('approved_at_app', { ascending: false }); }); });
   S.register('no_approver', function () { return SB.select('v_processes_no_approver'); });
+  S.register('processes_admin', function () {
+    return SB.select('v_processes_admin', function (q) { return q.order('id_prc', { ascending: false }); });
+  });
 
   S.register('installments', function (uuid) {
     return SB.select('installments', function (q) { return q.eq('process_ins', uuid).order('number_ins'); });

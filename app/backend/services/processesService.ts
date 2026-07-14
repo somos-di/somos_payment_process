@@ -54,6 +54,20 @@ export class ProcessesService {
     })) as Promise<{ uuid_prc: string; resent: boolean }>;
   }
 
+  // GESTÃO (admin): edita qualquer processo em god-mode, com motivo obrigatório.
+  // A autorização (is_admin) e a whitelist de colunas vivem na RPC admin_edit_process.
+  adminEdit(
+    token: string, uuid: string,
+    process: Record<string, unknown>,
+    installments: Array<{ due_date_ins: string; value_ins: number }> | undefined,
+    reason: string,
+  ): Promise<{ uuid_prc: string }> {
+    return unwrap(userClient(token).rpc('admin_edit_process', {
+      p_uuid: uuid, p_process: process,
+      p_installments: installments ?? null, p_reason: reason,
+    })) as Promise<{ uuid_prc: string }>;
+  }
+
   // lançamento em massa: cada item = { process, installments }. Não aborta o lote
   // se uma linha falhar — devolve o resultado por linha.
   async createBulk(

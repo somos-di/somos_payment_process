@@ -301,7 +301,12 @@
                   reason = await uiPrompt(a.prompt, danger);
                   if (reason == null) return;
                 } else if (a.confirm && !(await uiConfirm(a.confirm, danger))) return;
-                try { await a.run(p, reason); toast('Feito.', true); await applyRowEffect(a, p.uuid_prc); }
+                try {
+                  await a.run(p, reason);
+                  if (a.effect === 'none') return;   // ação abre modal/navega: sem toast nem reload
+                  toast('Feito.', true);
+                  await applyRowEffect(a, p.uuid_prc);
+                }
                 catch (err) {
 
                   await uiAlert(err.message);
