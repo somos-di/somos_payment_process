@@ -447,6 +447,24 @@
       filters = pf.getValues();
 
       var extraEls = [], extraStorageKeys = [];
+      // (re)carrega as opções de UM filtro extra, preservando a seleção atual se ainda
+      // existir. Recalcula os mapas internos do filtro (ex.: quem já aprovou) via load().
+      async function populateExtraFilter(i) {
+        var el = extraEls[i]; if (!el) return;
+        var prev = extraValues[i] || '';
+        var options = [];
+        try { options = await extraFilters[i].load(); } catch (e) { options = []; }
+        el.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
+          return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
+        }).join('');
+        el.value = prev;
+        if (el.value !== prev) extraValues[i] = '';   // a opção sumiu -> volta pra "Todos"
+      }
+      // reabastece TODOS os filtros extras — usado no "Atualizar" (senão as opções,
+      // ex.: "Já aprovado por", ficam congeladas no estado do mount até um F5).
+      async function reloadExtraFilters() {
+        for (var i = 0; i < extraFilters.length; i++) await populateExtraFilter(i);
+      }
       if (extraFilters.length) {
         var extraHost = host.querySelector('#pl-extra');
         extraHost.innerHTML = extraFilters.map(function (ef, i) {
@@ -456,24 +474,16 @@
         for (var ei = 0; ei < extraFilters.length; ei++) {
           var key = 'filters-extra:' + ei + ':' + (opts.storageKey || (window.location.hash || 'view'));
           extraStorageKeys[ei] = key;
-          var el = extraHost.querySelector('[data-extra="' + ei + '"]');
-          extraEls[ei] = el;
-          try {
-            var options = await extraFilters[ei].load();
-            el.innerHTML = '<option value="">Todos</option>' + (options || []).map(function (op) {
-              return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
-            }).join('');
-          } catch (e) {  }
+          extraEls[ei] = extraHost.querySelector('[data-extra="' + ei + '"]');
           try { extraValues[ei] = localStorage.getItem(key) || ''; } catch (e) { extraValues[ei] = ''; }
-          el.value = extraValues[ei];
-          if (el.value !== extraValues[ei]) extraValues[ei] = '';
+          await populateExtraFilter(ei);
           (function (i, elx, k) {
             elx.addEventListener('change', function () {
               extraValues[i] = elx.value;
               try { localStorage.setItem(k, extraValues[i]); } catch (e) {  }
               render();
             });
-          })(ei, el, key);
+          })(ei, extraEls[ei], key);
         }
       }
 
@@ -504,6 +514,7 @@
         try {
           (opts.refreshKeys || []).forEach(function (k) { window.Store.invalidate(k); });
           if (paged) { total = null; }
+          await reloadExtraFilters();   // reabastece as opções dos filtros (ex.: "Já aprovado por")
           await reload();
         } finally { refreshBtn.disabled = false; }
       });
