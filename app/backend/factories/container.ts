@@ -3,6 +3,7 @@ import { CacheWarmer } from '../cache/cacheWarmer.js';
 import { AdminController } from '../controllers/adminController.js';
 import { AuthController } from '../controllers/authController.js';
 import { CatalogController } from '../controllers/catalogController.js';
+import { CommissionsController } from '../controllers/commissionsController.js';
 import { DataController } from '../controllers/dataController.js';
 import { ProcessesController } from '../controllers/processesController.js';
 import { SyncController } from '../controllers/syncController.js';
@@ -12,6 +13,7 @@ import type { ControllersContainer } from '../routes/index.js';
 import { AdminService } from '../services/adminService.js';
 import { AuthService } from '../services/authService.js';
 import { CatalogService } from '../services/catalogService.js';
+import { CommissionsService } from '../services/commissionsService.js';
 import { DataService } from '../services/dataService.js';
 import { ProcessesService } from '../services/processesService.js';
 import { UauSyncService } from '../services/syncUauData/sync.js';
@@ -38,6 +40,7 @@ export function createContainer(): Container {
   const dataService = new DataService(cache);
   const adminService = new AdminService();
   const catalogService = new CatalogService(cache);
+  const commissionsService = new CommissionsService();
 
   const controllers: ControllersContainer = {
     processes: new ProcessesController(processesService, uauIntegrationService),
@@ -46,6 +49,7 @@ export function createContainer(): Container {
     data: new DataController(dataService),
     admin: new AdminController(adminService),
     catalog: new CatalogController(catalogService),
+    commissions: new CommissionsController(commissionsService),
   };
   return { controllers, authService, warmer };
 }

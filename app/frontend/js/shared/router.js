@@ -21,6 +21,8 @@ const ROUTES = {
     'um-aprovador': { title: 'Processos com 1 Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'gestao-processos': { title: 'Gestão de Processos', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'comissoes': { title: 'Pagamento de Comissões', folder: 'comissoes', parentLabel: 'Comissões', commission: true },
+    'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', folder: 'comissoes', parentLabel: 'Comissões', admin: true },
 }
 
 const loadedScripts = new Set()
@@ -177,6 +179,15 @@ async function loadView(route, params) {
     if (meta.financeiro) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_financeiro && !u.is_admin)) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    // rota de comissões: trilha (is_commission), Financeiro (is_financeiro) ou admin.
+    // A RLS limita as LINHAS (trilha vê a sua; financeiro vê todas); este gate é o de acesso à tela.
+    if (meta.commission) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_commission && !u.is_financeiro && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }

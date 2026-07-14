@@ -61,9 +61,38 @@ async function initView_solicitar() {
   try {
     fill($('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
 
-    fill($('sol-tipo'), await window.Store.get('launchable_kinds'), 'id_pkn', 'name_pkn', 'Selecione o tipo');
+    // Comissão é um domínio próprio (mini app): sem apropriação/parcelas/aprovação.
+    // NÃO é mais um tipo de PAGAMENTO — removemos o kind legado "Comissão" da lista e
+    // usamos uma opção sentinela (value 'commission') que troca a tela. Só quem opera
+    // comissões (trilha) ou admin vê a opção; o RPC ainda valida a trilha no banco.
+    var kinds = (await window.Store.get('launchable_kinds')) || [];
+    var payKinds = kinds.filter(function (k) { return String(k.name_pkn || '').trim().toLowerCase() !== 'comissão'; });
+    fill($('sol-tipo'), payKinds, 'id_pkn', 'name_pkn', 'Selecione o tipo');
+    if (me && (me.is_commission || me.is_admin)) {
+      var optC = document.createElement('option'); optC.value = 'commission'; optC.textContent = 'Comissão';
+      $('sol-tipo').appendChild(optC);
+    }
     fill($('sol-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
   } catch (e) { toast('Falha ao carregar listas: ' + e.message); }
+
+  // Alterna a tela conforme o tipo: "Comissão" troca o wizard de pagamento pelo
+  // formulário de comissão (módulo isolado — SRP). Demais tipos = wizard padrão.
+  // Monta o módulo UMA vez (evita re-registrar listeners a cada troca de tipo);
+  // depois só alterna a visibilidade.
+  var commissionMounted = false;
+  function applyMode() {
+    var isComm = $('sol-tipo').value === 'commission';
+    document.querySelectorAll('[data-payonly]').forEach(function (el) { el.hidden = isComm; });
+    var host = $('sol-commission-host'); host.hidden = !isComm;
+    if (isComm) {
+      if (commissionMounted) return;
+      if (window.CommissionLaunch && typeof window.CommissionLaunch.mount === 'function') {
+        window.CommissionLaunch.mount(host, { onDone: function () { window.location.hash = '#/comissoes'; } });
+        commissionMounted = true;
+      } else { host.innerHTML = '<div class="view-error">Módulo de comissão não carregado.</div>'; }
+    } else { show(); }
+  }
+  $('sol-tipo').addEventListener('change', applyMode);
 
   $('sol-empresa').addEventListener('change', async function () {
     var company = this.value;

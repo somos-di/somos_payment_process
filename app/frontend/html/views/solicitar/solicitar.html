@@ -67,16 +67,21 @@
   </style>
 
   <div class="card" style="padding:0">
-    <div
-      style="padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
-      <div>
-        <div class="section-title">Novo Processo de Pagamento</div>
-        <ol class="stepper" id="sol-stepper" style="margin-top:12px"></ol>
+    <div style="padding:20px;border-bottom:1px solid var(--border)">
+      <div class="section-title">Novo Processo</div>
+      <div class="field" style="max-width:420px;margin-top:12px">
+        <label>Tipo de Processo</label>
+        <select id="sol-tipo">
+          <option value="">Carregando…</option>
+        </select>
       </div>
+      <ol class="stepper" id="sol-stepper" style="margin-top:16px" data-payonly></ol>
     </div>
 
-    <div style="padding:20px">
-      
+    <div id="sol-commission-host" hidden style="padding:20px"></div>
+
+    <div style="padding:20px" data-payonly>
+
       <div class="sol-step" data-step="1">
         <div class="form-grid cols-2">
           <div class="field"><label>Empresa</label>
@@ -105,11 +110,6 @@
               <option value="">Selecione uma obra</option>
             </select>
           </div>
-          <div class="field"><label>Tipo de Processo</label>
-            <select id="sol-tipo">
-              <option value="">Carregando…</option>
-            </select>
-          </div>
           <div class="field"><label>Urgente</label>
             <select id="sol-urgente">
               <option value="">Selecione</option>
@@ -124,13 +124,13 @@
             </select>
           </div>
           <div class="field"><label>Número do Documento</label>
-            <input id="sol-numdoc" placeholder='"Apenas números" 12345…' inputmode="numeric">
+            <input id="sol-numdoc" placeholder='"Apenas números" 12345…' inputmode="numeric" maxlength="100">
           </div>
           <div class="field"><label>Data de Emissão</label><input type="date" id="sol-emissao"></div>
           <div class="field"><label>Valor Total Bruto</label><input id="sol-valor" placeholder="R$ 0,00"
               inputmode="decimal"></div>
           <div class="field full"><label>Histórico / Descrição</label>
-            <input id="sol-historico" placeholder="Descrição do serviço ou produto">
+            <input id="sol-historico" placeholder="Descrição do serviço ou produto" maxlength="1000">
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@
       </div>
     </div>
 
-    <div
+    <div data-payonly
       style="padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <button class="btn btn-light" id="sol-back" disabled>Voltar</button>
       <div>

@@ -19,6 +19,15 @@
   S.register('processes_admin', function () {
     return SB.select('v_processes_admin', function (q) { return q.order('id_prc', { ascending: false }); });
   });
+  S.register('commissions', function () {
+    return SB.select('v_commissions', function (q) { return q.order('id_com', { ascending: false }); });
+  });
+  S.register('comm_status', function () {
+    return SB.select('comm_status_kind', function (q) { return q.order('id_csk'); });
+  });
+  S.register('comm_empreendimentos', function () {
+    return SB.select('v_comm_empreendimentos', function (q) { return q.order('name_cem'); });
+  });
 
   S.register('installments', function (uuid) {
     return SB.select('installments', function (q) { return q.eq('process_ins', uuid).order('number_ins'); });
