@@ -23,6 +23,7 @@ async function initView_editar_processo() {
   var MIN_DUE_DATE = minDate.toISOString().split('T')[0];
 
   var ready = false, appropriationMap = {}, attachments = { boleto: null, nf: null }, tmr = null;
+  var installments = [];   // [{ due_date_ins, value_ins }]
 
   var proc;
   try {
@@ -82,6 +83,16 @@ async function initView_editar_processo() {
   $('ep-pessoa-input').value = proc.fornecedor_nome || '';
   renderAttachment('boleto'); renderAttachment('nf');
 
+  // parcelas atuais do processo (o financeiro pode ter apagado -> vem vazio; o autor recria)
+  try {
+    var insRows = await window.Store.get('installments', uuid);
+    installments = (insRows || []).map(function (r) {
+      return { due_date_ins: r.due_date_ins ? String(r.due_date_ins).split('T')[0] : '', value_ins: r.value_ins };
+    });
+  } catch (e) { installments = []; }
+  $('ep-qtd').value = installments.length || 1;
+  renderInstallments();
+
   $('ep-loading').hidden = true; $('ep-grid').hidden = false;
 
   // Editável: em correção (status 2) OU aguardando aprovação (status 1) SEM nenhuma
@@ -136,15 +147,96 @@ async function initView_editar_processo() {
       attachment_url_prc: attachments.boleto, attachment_url2_prc: attachments.nf,
     };
   }
+  // ----- Parcelas -----
+  function renderInstallments() {
+    var box = $('ep-parcelas');
+    box.innerHTML = installments.map(function (p, i) {
+      return '<div class="ep-parc-row"><span class="pl">Parcela ' + (i + 1) + '</span>'
+        + '<input type="date" value="' + esc(p.due_date_ins || '') + '" data-i="' + i + '" data-f="due">'
+        + '<input type="number" step="0.01" min="0" value="' + esc(p.value_ins != null ? p.value_ins : '') + '" data-i="' + i + '" data-f="val">'
+        + '<button type="button" class="rm" title="Remover parcela" data-rm="' + i + '">×</button></div>';
+    }).join('');
+    box.querySelectorAll('input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
+        if (f === 'due') installments[i].due_date_ins = inp.value;
+        else installments[i].value_ins = inp.value === '' ? null : Number(inp.value);
+        updateSum(); scheduleSave();
+      });
+    });
+    box.querySelectorAll('[data-rm]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        installments.splice(+b.getAttribute('data-rm'), 1); renderInstallments(); scheduleSave();
+      });
+    });
+    updateSum();
+  }
+  function installmentsSum() { return Math.round(installments.reduce(function (a, p) { return a + (Number(p.value_ins) || 0); }, 0) * 100) / 100; }
+  function updateSum() {
+    var el = $('ep-parc-sum'); if (!el) return;
+    var total = parseVal($('ep-valor').value) || 0, soma = installmentsSum();
+    var ok = installments.length > 0 && Math.abs(soma - total) < 0.01;
+    el.textContent = installments.length
+      ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (ok ? ' ✓' : ' — ajuste para bater com o valor'))
+      : 'Nenhuma parcela. Gere as parcelas a partir do valor e do 1º vencimento.';
+    el.classList.toggle('bad', !ok);
+  }
+  function generateInstallments() {
+    var total = parseVal($('ep-valor').value), count = parseInt($('ep-qtd').value, 10), first = $('ep-venc').value;
+    var err = $('ep-parc-erro');
+    if (!total || total <= 0 || !count || count < 1 || !first) {
+      err.textContent = 'Preencha Valor, Quantidade de Parcelas e Data de Vencimento (1ª parcela) para gerar.';
+      err.style.display = 'block'; return;
+    }
+    err.style.display = 'none';
+    installments = [];
+    var base = Math.floor((total / count) * 100) / 100, acc = 0, fd = new Date(first + 'T12:00:00Z');
+    for (var i = 0; i < count; i++) {
+      var val = (i === count - 1) ? Math.round((total - acc) * 100) / 100 : base; acc += val;
+      var d = new Date(fd); d.setUTCMonth(d.getUTCMonth() + i);
+      installments.push({ due_date_ins: d.toISOString().split('T')[0], value_ins: val });
+    }
+    renderInstallments(); scheduleSave();
+  }
+  // Reenvio exige processo completo (mesma regra reforçada na RPC correct_process).
+  function validateForResend() {
+    var ap = appropriationMap[$('ep-apropriacao').value] || {}, val = parseVal($('ep-valor').value), probs = [];
+    if (!$('ep-empresa').value) probs.push('empresa');
+    if (!$('ep-obra').value) probs.push('obra');
+    if (!ap.comp || !ap.insumo) probs.push('composição/insumo');
+    if (!$('ep-pessoa').value) probs.push('fornecedor');
+    if (!$('ep-tipodoc').value) probs.push('tipo de documento');
+    if (val == null || val <= 0) probs.push('valor');
+    if (!dueDateValid()) probs.push('vencimento (≥ 10 dias)');
+    if (!installments.length) probs.push('parcelas');
+    else if (installments.some(function (p) { return !p.due_date_ins || p.value_ins == null || Number(p.value_ins) <= 0; })) probs.push('parcelas incompletas');
+    else if (val != null && Math.abs(installmentsSum() - val) >= 0.01) probs.push('soma das parcelas ≠ valor');
+    return probs;
+  }
+
   async function save(resend) {
     if (!ready) return;
     toggleDueDateError();
-    if (!dueDateValid()) { $('ep-status').textContent = 'Ajuste o vencimento (≥ 10 dias) para salvar.'; if (resend) toast('Vencimento deve ser pelo menos 10 dias a partir de hoje.'); return; }
+    if (resend) {
+      var probs = validateForResend();
+      if (probs.length) {
+        $('ep-status').textContent = 'Complete os obrigatórios para reenviar.';
+        toast('Não é possível reenviar. Verifique: ' + probs.join(', ') + '.');
+        return;
+      }
+    } else if (!dueDateValid()) {
+      $('ep-status').textContent = 'Ajuste o vencimento (≥ 10 dias) para salvar.'; return;
+    }
     $('ep-status').textContent = resend ? 'Reenviando…' : 'Salvando…';
     try {
-      await window.API.post('/processes/' + uuid + '/correct', { process: collect(), resend: !!resend });
+      var payload = { process: collect(), resend: !!resend };
+      // auto-save só envia parcelas se houver (não apaga sem querer); no reenvio sempre (já validado >=1).
+      if (resend || installments.length) {
+        payload.installments = installments.map(function (p) { return { due_date_ins: p.due_date_ins, value_ins: Number(p.value_ins) }; });
+      }
+      await window.API.post('/processes/' + uuid + '/correct', payload);
       if (resend) {
-        window.Store.invalidate('processes');
+        window.Store.invalidate('processes'); window.Store.invalidate('installments');
         toast('Processo corrigido e reenviado para aprovação.', true); window.location.hash = '#/correcao';
       } else $('ep-status').textContent = 'Salvo automaticamente ✓';
     } catch (e) { $('ep-status').textContent = 'Erro ao salvar'; toast('Erro: ' + e.message); }
@@ -161,8 +253,9 @@ async function initView_editar_processo() {
     $(id).addEventListener('change', scheduleSave); $(id).addEventListener('input', scheduleSave);
   });
   $('ep-venc').addEventListener('change', function () { toggleDueDateError(); scheduleSave(); });
-  $('ep-valor').addEventListener('input', scheduleSave);
-  $('ep-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); });
+  $('ep-valor').addEventListener('input', function () { updateSum(); scheduleSave(); });
+  $('ep-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); updateSum(); });
+  $('ep-gerar').addEventListener('click', generateInstallments);
 
   var pin = $('ep-pessoa-input'), pres = $('ep-pessoa-results'), ptmr = null;
   async function searchSuppliers(term) {
