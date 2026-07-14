@@ -6,6 +6,12 @@
         // itens só para financeiro (grupos "Financeiro Integração*") ou admin
         const finShow = (user && (user.is_financeiro || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('[data-fin-only]').forEach(function (el) { el.style.display = finShow })
+        // grupo Comissões: trilha, financeiro ou admin
+        const commShow = (user && (user.is_commission || user.is_financeiro || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (g) { g.style.display = commShow })
+        // itens marcados como só-admin (ex.: cadastro de empreendimentos)
+        const admOnly = (user && user.is_admin) ? '' : 'none'
+        document.querySelectorAll('[data-admin-only]').forEach(function (el) { el.style.display = admOnly })
     }
 
     function reflectUser(user) {

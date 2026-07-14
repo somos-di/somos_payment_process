@@ -36,6 +36,11 @@
     
     upload: function (file) {
       return new Promise(function (resolve, reject) {
+        // teto único de tamanho (todos os uploads passam por aqui): 14 MB.
+        var MAX_FILE_BYTES = 14 * 1024 * 1024;
+        if (file && file.size > MAX_FILE_BYTES) {
+          reject(new Error('Arquivo excede o limite de 14 MB.')); return;
+        }
         var fr = new FileReader();
         fr.onload = function () {
           var b64 = String(fr.result).split(',')[1] || '';

@@ -3,6 +3,7 @@ import type { CacheManager } from '../cache/cacheManager.js';
 import { AppError, NotFoundError } from '../errors.js';
 import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
+import { MAX_FILE_BYTES } from '../validators/common.js';
 
 // Recursos (tabelas/views) que o front pode LER. RLS ainda restringe as linhas.
 const READ_RESOURCES = new Set<string>([
@@ -11,6 +12,7 @@ const READ_RESOURCES = new Set<string>([
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
   'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_single_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'v_financeiro_integrados', 'v_processes_admin', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
+  'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind',
 ]);
 
 // Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
@@ -92,6 +94,10 @@ export class DataService {
   async uploadAttachment(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
     const s = getSettings();
     const buf = Buffer.from(base64, 'base64');
+    // enforcement autoritativo do tamanho real (o base64 no controller é só um teto grosseiro)
+    if (buf.length > MAX_FILE_BYTES) {
+      throw new AppError(`Arquivo excede o limite de ${Math.floor(MAX_FILE_BYTES / 1024 / 1024)} MB`, 400, 'file_too_large');
+    }
     const name = `${Date.now()}_${filename.replace(/[^\w.\-]/g, '_')}`;
     const up = await adminClient().storage.from(s.attachmentsBucket)
       .upload(name, buf, { contentType: contentType || 'application/octet-stream', upsert: true });

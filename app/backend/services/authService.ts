@@ -116,18 +116,19 @@ export class AuthService {
   // }
   // esse whoami eu usei para diagnóstico, mas não é neces´sario expor
   // perfil do usuário logado (inclui o departamento) — lido com o JWT (RLS vale).
-  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null; is_admin: boolean; is_financeiro: boolean }> {
+  async me(token: string, id: string, email: string): Promise<{ id: string; email: string; name: string | null; department: number | null; is_admin: boolean; is_financeiro: boolean; is_commission: boolean }> {
     const client = userClient(token);
     const { data, error } = await client
       .from('users').select('name_usr, department_usr, is_admin').eq('id_usr', id).maybeSingle();
     if (error) throw new AppError(error.message, 400, 'supabase');
-    // is_financeiro: membro de algum grupo "Financeiro Integração%" (gate das telas de
-    // financeiro). Derivado de group membership via RPC (auth.uid()), não de coluna.
-    let isFinanceiro = false;
+    // flags de acesso derivadas de group membership (auth.uid()), não de coluna:
+    //  is_financeiro: grupos "Financeiro Integração%"  ·  is_commission: grupos de comissão.
+    let isFinanceiro = false, isCommission = false;
     try { isFinanceiro = !!(await unwrap(client.rpc('is_financeiro_member'))); } catch { /* sem acesso => false */ }
+    try { isCommission = !!(await unwrap(client.rpc('is_commission_member'))); } catch { /* sem acesso => false */ }
     return {
       id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null,
-      is_admin: !!data?.is_admin, is_financeiro: isFinanceiro,
+      is_admin: !!data?.is_admin, is_financeiro: isFinanceiro, is_commission: isCommission,
     };
   }
 }

@@ -3,23 +3,23 @@ import { z } from 'zod';
 import { NotFoundError } from '../errors.js';
 import type { ProcessesService } from '../services/processesService.js';
 import type { UauIntegrationService } from '../services/uauIntegrationService.js';
-import { UuidParamSchema } from '../validators/common.js';
+import { UuidParamSchema, boundedRecord } from '../validators/common.js';
 
 const InstallmentSchema = z.object({ due_date_ins: z.string(), value_ins: z.number() });
 const SolicitationSchema = z.object({
-  process: z.record(z.any()),
+  process: boundedRecord,
   installments: z.array(InstallmentSchema).default([]),
 });
 const BulkSchema = z.object({ items: z.array(SolicitationSchema).min(1).max(1000) });
 const LogSchema = z.object({ action: z.string().min(1).max(200) });
 const CorrectSchema = z.object({
-  process: z.record(z.any()),
+  process: boundedRecord,
   installments: z.array(InstallmentSchema).optional(), // ausente = não mexe nas parcelas
   resend: z.boolean().default(false),
 });
 // GESTÃO (admin): motivo OBRIGATÓRIO; a autorização (is_admin) vive na RPC.
 const AdminEditSchema = z.object({
-  process: z.record(z.any()),
+  process: boundedRecord,
   installments: z.array(InstallmentSchema).optional(),
   reason: z.string().trim().min(1).max(500),
 });

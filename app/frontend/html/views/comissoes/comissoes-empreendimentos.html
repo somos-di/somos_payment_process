@@ -1,0 +1,41 @@
+<main>
+  <style>
+    .ce-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; align-items: start; }
+    .ce-form { display: grid; gap: 12px; }
+    .ce-form .field { display: grid; gap: 4px; }
+    .ce-foot { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+    .ce-author { font-size: 12.5px; color: var(--muted); }
+    @media (max-width: 900px) { .ce-grid { grid-template-columns: 1fr; } }
+  </style>
+
+  <div class="section-title">Empreendimentos (Comissões)</div>
+  <div class="section-sub" style="margin-bottom:16px">Cadastre o empreendimento (obra dentro da SPE) e defina quem
+    valida a comissão: <b>SOMOS</b> ou <b>PARTINI</b>. Só administradores gerenciam.</div>
+
+  <div class="ce-grid">
+    <div class="card" style="padding:18px 20px">
+      <div class="ce-form">
+        <div class="ce-sec" style="font-weight:700;font-size:13px">Novo / Editar empreendimento</div>
+        <div class="field"><label>Nome do empreendimento</label><input id="ce-nome" placeholder="Ex.: URBANITY KASA RESORT" maxlength="200"></div>
+        <div class="field"><label>Empresa (SPE)</label><select id="ce-empresa"></select></div>
+        <div class="field"><label>Obra</label><select id="ce-obra" disabled></select></div>
+        <div class="field"><label>Validado por (trilha)</label><select id="ce-trilha"><option value="false">PARTINI</option><option value="true">SOMOS</option></select></div>
+        <div class="field"><label>Ativo</label><select id="ce-ativo"><option value="true">Sim</option><option value="false">Não</option></select></div>
+        <div class="ce-author" id="ce-author"></div>
+        <div class="ce-foot">
+          <button class="btn btn-primary" id="ce-save">Salvar</button>
+          <button class="btn btn-light" id="ce-reset">Limpar</button>
+          <span id="ce-status" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0">
+      <div class="pl-toolbar"><div class="pl-search" style="flex:1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="ce-search" placeholder="Buscar empreendimento, empresa ou obra…"></div>
+      </div>
+      <div id="ce-list" style="padding:6px 0"><div class="empty">Carregando…</div></div>
+    </div>
+  </div>
+</main>
