@@ -23,19 +23,19 @@
       + 'font-size:13px;color:var(--text);text-align:left;white-space:nowrap;overflow:hidden}'
       + '.pf-ms-btn .pf-ms-txt{overflow:hidden;text-overflow:ellipsis}'
       + '.pf-ms-btn[disabled]{opacity:.5;cursor:not-allowed}'
-      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:260px;text-transform:none;'
+      + '.pf-ms-pop{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:230px;text-transform:none;'
       + 'background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:6px;display:none}'
       + '.pf-ms-pop.open{display:block}'
-      + '.pf-ms-search{width:100%;margin-bottom:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box}'
-      + '.pf-ms-list{max-height:210px;overflow:auto;display:flex;flex-direction:column}'
-      // opções: label alinhado à esquerda, 1 linha com reticências, sem MAIÚSCULA
-      // (sobrepõe o CSS global de <label> dos filtros, que usa uppercase + space-between).
-      + '.pf-ms-opt{display:flex;justify-content:flex-start;gap:8px;align-items:center;padding:5px 6px;border-radius:5px;'
-      + 'cursor:pointer;font-size:13px;line-height:1.2;text-transform:none;text-align:left;font-weight:400;letter-spacing:normal}'
-      + '.pf-ms-opt:hover{background:var(--surface-2)}'
-      + '.pf-ms-opt input{flex:none;margin:0;width:15px;height:15px}'
-      + '.pf-ms-opt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      + '.pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
+      + '.pf-ms-pop .pf-ms-search{width:100%;margin-bottom:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box}'
+      + '.pf-ms-pop .pf-ms-list{max-height:200px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}'
+      // opções escopadas em .pf-ms-pop para VENCER o CSS global de <label> dos filtros
+      // (que usa uppercase + space-between + margens). 1 linha, reticências, sem MAIÚSCULA.
+      + '.pf-ms-pop .pf-ms-opt{display:flex;justify-content:flex-start;gap:8px;align-items:center;width:auto;margin:0;'
+      + 'padding:5px 6px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1.2;text-transform:none;text-align:left;font-weight:400;letter-spacing:normal}'
+      + '.pf-ms-pop .pf-ms-opt:hover{background:var(--surface-2)}'
+      + '.pf-ms-pop .pf-ms-opt input{flex:none;margin:0;width:15px;height:15px;pointer-events:none}'
+      + '.pf-ms-pop .pf-ms-opt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '.pf-ms-pop .pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
     document.head.appendChild(st);
   }
 
@@ -66,13 +66,18 @@
       var term = (search.value || '').toLowerCase().trim();
       var shown = items.filter(function (it) { return !term || String(it.label).toLowerCase().indexOf(term) >= 0; });
       if (!shown.length) { list.innerHTML = '<div class="pf-ms-empty">Nada encontrado</div>'; return; }
+      // <div> (não <label>): evita qualquer CSS global de <label> dos filtros.
+      // O checkbox é só visual (pointer-events:none); o clique na linha é que alterna.
       list.innerHTML = shown.map(function (it) {
-        return '<label class="pf-ms-opt" title="' + esc(it.label) + '"><input type="checkbox" value="' + esc(it.value) + '"'
-          + (selected[it.value] ? ' checked' : '') + '><span>' + esc(it.label) + '</span></label>';
+        return '<div class="pf-ms-opt" data-v="' + esc(it.value) + '" title="' + esc(it.label) + '">'
+          + '<input type="checkbox" tabindex="-1"' + (selected[it.value] ? ' checked' : '') + '>'
+          + '<span>' + esc(it.label) + '</span></div>';
       }).join('');
-      list.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
-        cb.addEventListener('change', function () {
-          if (cb.checked) selected[cb.value] = true; else delete selected[cb.value];
+      list.querySelectorAll('.pf-ms-opt').forEach(function (row) {
+        row.addEventListener('click', function () {
+          var v = row.getAttribute('data-v'), on = !selected[v];
+          if (on) selected[v] = true; else delete selected[v];
+          var cb = row.querySelector('input'); if (cb) cb.checked = on;
           updateButton();
           if (opts.onChange) opts.onChange(selectedArray());
         });
