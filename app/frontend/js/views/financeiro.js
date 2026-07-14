@@ -48,6 +48,7 @@ async function initView_financeiro() {
   var filters = { company: '', building: '', from: '', to: '', status: '' };
   var pf = await window.ProcessFilters.mount($('fin-filters'), {
     storageKey: 'financeiro',
+    multiStatus: true,   // Financeiro pode filtrar por vários status ao mesmo tempo
     onChange: function (values) { filters = values; render(); },
   });
   filters = pf.getValues();
@@ -92,7 +93,7 @@ async function initView_financeiro() {
       if (filters.company && filters.company.length && filters.company.map(String).indexOf(String(p.company_prc)) < 0) return false;
       if (filters.building && filters.building.length
         && filters.building.map(function (b) { return String(b).toUpperCase(); }).indexOf(String(p.building_prc || '').toUpperCase()) < 0) return false;
-      if (filters.status !== '' && Number(p.status_step_prc) !== Number(filters.status)) return false;
+      if (filters.status && filters.status.length && filters.status.map(Number).indexOf(Number(p.status_step_prc)) < 0) return false;
       if (filters.urgent !== '' && !!p.is_urgent_prc !== (filters.urgent === '1')) return false;
       if (filters.from || filters.to) {
         var d = isoDay(p.due_date_prc);

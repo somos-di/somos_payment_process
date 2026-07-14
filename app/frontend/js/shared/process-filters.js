@@ -113,22 +113,28 @@
       var saved = {};
       try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (e) { saved = {}; }
 
+      var statusMulti = !!opts.multiStatus;   // Status multi-seleção (opt-in; ex.: Financeiro)
       var companyMS = makeMultiSelect('Empresa', { allLabel: 'Todas', onChange: onCompanyChange });
       var buildingMS = makeMultiSelect('Obra', { allLabel: 'Todas', onChange: emit });
+      var statusMS = statusMulti ? makeMultiSelect('Status', { allLabel: 'Todos', onChange: emit }) : null;
 
-      // demais campos continuam simples (data/status/urgente)
-      var rest = document.createElement('span'); rest.style.display = 'contents';
-      rest.innerHTML =
+      // De / Até (sempre); Status (multi opt-in ou single); Urgente
+      var dates = document.createElement('span'); dates.style.display = 'contents';
+      dates.innerHTML =
         '<label class="pf-field">De<input type="date" data-pf="from"></label>'
-        + '<label class="pf-field">Até<input type="date" data-pf="to"></label>'
-        + '<label class="pf-field">Status<select data-pf="status"><option value="">Todos</option></select></label>'
-        + '<label class="pf-field">Urgente<select data-pf="urgent">'
+        + '<label class="pf-field">Até<input type="date" data-pf="to"></label>';
+      var statusSingle = document.createElement('span'); statusSingle.style.display = 'contents';
+      if (!statusMulti) statusSingle.innerHTML = '<label class="pf-field">Status<select data-pf="status"><option value="">Todos</option></select></label>';
+      var urgentWrap = document.createElement('span'); urgentWrap.style.display = 'contents';
+      urgentWrap.innerHTML = '<label class="pf-field">Urgente<select data-pf="urgent">'
         + '<option value="">Todos</option><option value="1">Sim</option><option value="0">Não</option></select></label>';
 
       container.innerHTML = '';
       container.appendChild(companyMS.el);
       container.appendChild(buildingMS.el);
-      container.appendChild(rest);
+      container.appendChild(dates);
+      if (statusMulti) container.appendChild(statusMS.el); else container.appendChild(statusSingle);
+      container.appendChild(urgentWrap);
 
       var el = {};
       container.querySelectorAll('[data-pf]').forEach(function (c) { el[c.getAttribute('data-pf')] = c; });
@@ -138,8 +144,10 @@
       companyMS.setOptions((companies || []).map(function (c) { return { value: String(c.codigo), label: c.nome }; }));
 
       var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
-      el.status.innerHTML = '<option value="">Todos</option>' + Object.keys(steps).map(function (id) {
-        return '<option value="' + esc(id) + '">' + esc(steps[id]) + '</option>';
+      var statusOpts = Object.keys(steps).map(function (id) { return { value: String(id), label: steps[id] }; });
+      if (statusMulti) statusMS.setOptions(statusOpts);
+      else el.status.innerHTML = '<option value="">Todos</option>' + statusOpts.map(function (op) {
+        return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
       }).join('');
 
       // Obra = união das obras das empresas selecionadas (dedup por código).
@@ -164,7 +172,9 @@
       function getValues() {
         return {
           company: companyMS.getValues(), building: buildingMS.getValues(),
-          from: el.from.value, to: el.to.value, status: el.status.value, urgent: el.urgent.value,
+          from: el.from.value, to: el.to.value,
+          status: statusMulti ? statusMS.getValues() : el.status.value,
+          urgent: el.urgent.value,
         };
       }
       function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) {  } }
@@ -174,16 +184,18 @@
       await refreshBuildings(asArray(saved.building));
       el.from.value = saved.from || '';
       el.to.value = saved.to || '';
-      el.status.value = saved.status || '';
+      if (statusMulti) statusMS.setValues(asArray(saved.status)); else el.status.value = saved.status || '';
       el.urgent.value = saved.urgent || '';
 
-      ['from', 'to', 'status', 'urgent'].forEach(function (k) { el[k].addEventListener('change', emit); });
+      (statusMulti ? ['from', 'to', 'urgent'] : ['from', 'to', 'status', 'urgent'])
+        .forEach(function (k) { el[k].addEventListener('change', emit); });
 
       return {
         getValues: getValues,
         clear: function () {
           companyMS.clear(); buildingMS.clear(); buildingMS.setDisabled(true);
-          el.from.value = ''; el.to.value = ''; el.status.value = ''; el.urgent.value = '';
+          el.from.value = ''; el.to.value = ''; el.urgent.value = '';
+          if (statusMulti) statusMS.clear(); else el.status.value = '';
           try { localStorage.removeItem(storageKey); } catch (e) {  }
           if (opts.onChange) opts.onChange(getValues());
         },
