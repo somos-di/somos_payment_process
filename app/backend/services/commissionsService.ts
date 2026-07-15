@@ -18,12 +18,13 @@ export class CommissionsService {
   // Máquina de estados: a RPC valida ação × status + visibilidade/papel no banco.
   transition(
     token: string, uuid: string, action: string,
-    opts: { note?: string; nfUrl?: string; boletoUrl?: string } = {},
+    opts: { note?: string; nfUrl?: string; boletoUrl?: string; sellerEmail?: string; sellerPhone?: string } = {},
   ): Promise<{ uuid_com: string; status_step: number }> {
     return unwrap(userClient(token).rpc('commission_transition', {
       p_uuid: uuid, p_action: action,
       p_note: opts.note ?? null,
       p_nf_url: opts.nfUrl ?? null, p_boleto_url: opts.boletoUrl ?? null,
+      p_seller_email: opts.sellerEmail ?? null, p_seller_phone: opts.sellerPhone ?? null,
     })) as Promise<{ uuid_com: string; status_step: number }>;
   }
 
