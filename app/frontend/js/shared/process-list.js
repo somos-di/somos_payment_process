@@ -492,6 +492,30 @@
         }
       }
 
+      // remove UMA linha aprovada da lista em memória (splice + ajuste do total paginado)
+      function removeRowLocal(uuid) {
+        var idx = indexOfUuid(uuid);
+        if (idx >= 0) { rows.splice(idx, 1); if (paged && total != null) total = Math.max(0, total - 1); }
+        delete selected[uuid];
+      }
+
+      // modalzinho de progresso (usado pela ação em lote com runBatch)
+      function openProgress(title, count) {
+        var o = document.createElement('div'); o.className = 'modal-overlay';
+        o.innerHTML = '<div class="modal-box" style="width:420px"><div class="modal-title">' + esc(title) + '</div>'
+          + '<div style="margin-top:10px;font-size:13px;color:var(--muted)" data-lbl>0 de ' + count + '</div>'
+          + '<div style="height:10px;border-radius:6px;background:var(--surface-2);overflow:hidden;margin-top:8px">'
+          + '<div data-bar style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div></div>';
+        document.body.appendChild(o);
+        return {
+          update: function (done) {
+            o.querySelector('[data-lbl]').textContent = done + ' de ' + count;
+            o.querySelector('[data-bar]').style.width = Math.round((done / count) * 100) + '%';
+          },
+          close: function () { o.remove(); },
+        };
+      }
+
       if (batch) {
         var batchBtn = host.querySelector('#pl-batch');
         batchBtn.addEventListener('click', async function () {
@@ -501,11 +525,36 @@
           if (!(await uiConfirm(msg, false))) return;
           batchBtn.disabled = true;
           var ok = 0, fail = 0, firstErr = '';
-          for (var i = 0; i < picked.length; i++) {
-            try { await batch.run(picked[i]); ok++; var idx = indexOfUuid(picked[i].uuid_prc); if (idx >= 0) { rows.splice(idx, 1); if (paged && total != null) total = Math.max(0, total - 1); } delete selected[picked[i].uuid_prc]; }
-            catch (e) { fail++; if (!firstErr) firstErr = e.message; }
+
+          if (typeof batch.runBatch === 'function') {
+            // LOTE: manda em blocos (1 requisição por bloco) + barra de progresso.
+            var chunkSize = batch.chunkSize || 20;
+            var prog = openProgress(batch.progressTitle || 'Aprovando processos…', picked.length);
+            try {
+              for (var b = 0; b < picked.length; b += chunkSize) {
+                var chunk = picked.slice(b, b + chunkSize);
+                var res = await batch.runBatch(chunk);
+                (res || []).forEach(function (r) {
+                  if (r.ok) { ok++; removeRowLocal(r.uuid); }
+                  else { fail++; if (!firstErr) firstErr = r.error || 'erro'; delete selected[r.uuid]; }
+                });
+                prog.update(Math.min(picked.length, b + chunkSize));
+              }
+            } catch (e) { fail += 1; if (!firstErr) firstErr = e.message; }
+            finally {
+              prog.close();
+              if (typeof batch.afterAll === 'function') batch.afterAll();
+              updateBatchBtn(); render();
+            }
+          } else {
+            // fallback: loop item-a-item (comportamento antigo)
+            for (var i = 0; i < picked.length; i++) {
+              try { await batch.run(picked[i]); ok++; removeRowLocal(picked[i].uuid_prc); }
+              catch (e) { fail++; if (!firstErr) firstErr = e.message; }
+            }
+            updateBatchBtn(); render();
           }
-          updateBatchBtn(); render();
+
           toast(ok + ' aprovado(s)' + (fail ? ' · ' + fail + ' com erro' : ''), fail === 0);
           if (fail) await uiAlert('Alguns processos não foram aprovados. Primeiro erro: ' + firstErr);
         });
@@ -611,7 +660,15 @@
       batchAction: {
         label: 'Aprovar selecionados',
         confirm: 'Aprovar os {n} processos selecionados? A aprovação segue as mesmas regras (nível/elegibilidade) de cada processo.',
-        run: approveOne,
+        progressTitle: 'Aprovando processos…',
+        chunkSize: 20,
+        // LOTE: 1 requisição por bloco -> o backend aprova em paralelo (perto do Supabase).
+        runBatch: function (chunk) {
+          return window.API.post('/processes/approve-batch', { uuids: chunk.map(function (p) { return p.uuid_prc; }) });
+        },
+        // cache invalidado UMA vez ao fim (não por item)
+        afterAll: function () { invalidateFlowCaches(); window.Store.invalidate('pending_approvals'); },
+        run: approveOne,   // fallback item-a-item
       },
       extraFilters: [
         {
