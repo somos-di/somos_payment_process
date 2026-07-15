@@ -6,6 +6,8 @@ import { UuidParamSchema } from '../validators/common.js';
 
 // ações do fluxo e o payload esperado de cada uma
 const NoteSchema = z.object({ note: z.string().trim().max(500).optional() });
+// cancelamento exige MOTIVO (vai para o histórico)
+const CancelSchema = z.object({ note: z.string().trim().min(1).max(500) });
 // nullish: o front pode mandar a URL, ausente OU null (ex.: boleto não anexado).
 // A trilha também pode editar e-mail/celular do vendedor ao validar (etapa 1).
 const SetNfSchema = z.object({
@@ -92,7 +94,8 @@ export class CommissionsController {
       const b = SetNfSchema.parse(body);
       opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined;
       opts.sellerEmail = b.seller_email ?? undefined; opts.sellerPhone = b.seller_phone ?? undefined;
-    } else if (action === 'pendency' || action === 'cancel') { opts.note = NoteSchema.parse(body).note; }
+    } else if (action === 'cancel') { opts.note = CancelSchema.parse(body).note; }
+    else if (action === 'pendency') { opts.note = NoteSchema.parse(body).note; }
 
     const data = await this.service.transition(req.accessToken!, uuid, action, opts);
     return reply.send({ success: true, data });

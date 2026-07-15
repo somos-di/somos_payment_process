@@ -90,19 +90,32 @@ export class DataService {
     return unwrap(userClient(token).rpc(fn, args || {}));
   }
 
-  // upload de anexo (boleto/NF) -> bucket no Storage; devolve URL pública.
-  async uploadAttachment(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+  // grava um objeto no bucket de Storage e devolve a URL pública. Faz o enforcement
+  // autoritativo do tamanho real (o teto de base64 no controller é só uma barreira grosseira).
+  private async putObject(objectName: string, base64: string, contentType: string): Promise<{ url: string }> {
     const s = getSettings();
     const buf = Buffer.from(base64, 'base64');
-    // enforcement autoritativo do tamanho real (o base64 no controller é só um teto grosseiro)
     if (buf.length > MAX_FILE_BYTES) {
       throw new AppError(`Arquivo excede o limite de ${Math.floor(MAX_FILE_BYTES / 1024 / 1024)} MB`, 400, 'file_too_large');
     }
-    const name = `${Date.now()}_${filename.replace(/[^\w.\-]/g, '_')}`;
     const up = await adminClient().storage.from(s.attachmentsBucket)
-      .upload(name, buf, { contentType: contentType || 'application/octet-stream', upsert: true });
+      .upload(objectName, buf, { contentType: contentType || 'application/octet-stream', upsert: true });
     if (up.error) throw new AppError(up.error.message, 400, 'storage');
-    const pub = adminClient().storage.from(s.attachmentsBucket).getPublicUrl(name);
+    const pub = adminClient().storage.from(s.attachmentsBucket).getPublicUrl(objectName);
     return { url: pub.data.publicUrl };
+  }
+
+  private safeName(filename: string): string {
+    return `${Date.now()}_${filename.replace(/[^\w.\-]/g, '_')}`;
+  }
+
+  // upload de anexo (boleto/NF) -> raiz do bucket; devolve URL pública.
+  uploadAttachment(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+    return this.putObject(this.safeName(filename), base64, contentType);
+  }
+
+  // upload do XLSX de origem do lançamento em massa -> pasta bulk-imports/ (registro/auditoria).
+  uploadBulkImport(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+    return this.putObject(`bulk-imports/${this.safeName(filename)}`, base64, contentType);
   }
 }
