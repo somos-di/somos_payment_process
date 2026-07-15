@@ -90,6 +90,29 @@ export class ProcessesService {
     return unwrap(userClient(token).rpc('my_pending_approvals', {}));
   }
 
+  // APROVAÇÃO EM LOTE: aprova vários processos numa única requisição do navegador.
+  // Cada aprovação é a MESMA RPC approve_process (valida elegibilidade/nível no banco,
+  // por processo). Roda em PARALELO com concorrência limitada (perto do Supabase, sem
+  // os N round-trips do navegador). Devolve resultado por processo (ordem preservada).
+  async approveBatch(
+    token: string, uuids: string[],
+  ): Promise<Array<{ uuid: string; ok: boolean; error?: string }>> {
+    const CONCURRENCY = 8;
+    const out: Array<{ uuid: string; ok: boolean; error?: string }> = new Array(uuids.length);
+    const runOne = async (uuid: string, i: number): Promise<void> => {
+      try {
+        await this.action(token, 'approve_process', uuid);
+        out[i] = { uuid, ok: true };
+      } catch (e) {
+        out[i] = { uuid, ok: false, error: (e as { message?: string }).message || 'erro' };
+      }
+    };
+    for (let start = 0; start < uuids.length; start += CONCURRENCY) {
+      await Promise.all(uuids.slice(start, start + CONCURRENCY).map((u, j) => runOne(u, start + j)));
+    }
+    return out;
+  }
+
   // Ações de fluxo (approve/close): a RPC valida a autorização no banco
   // (elegibilidade/visibilidade) — ver seção 6 do SQL.
   action(token: string, fn: string, uuid: string) {

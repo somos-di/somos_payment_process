@@ -7,6 +7,7 @@ export function registerProcessesRoutes(app: FastifyInstance, processes_center: 
   app.get('/processes/:uuid', processes_center.get);
   app.post('/processes/full', processes_center.createFull); // processo + parcelas (Solicitar)
   app.post('/processes/bulk', processes_center.createBulk); // lançamento em massa
+  app.post('/processes/approve-batch', processes_center.approveBatch); // aprovação em lote (static > :uuid/:action)
   app.post('/processes/:uuid/log', processes_center.logEvent); // registra evento no histórico (static > :action)
   app.post('/processes/:uuid/correct', processes_center.correct); // correção: edita dados/parcelas (+reenviar)
   app.post('/processes/:uuid/admin-edit', processes_center.adminEdit); // gestão (admin): edita qualquer campo (static > :action)

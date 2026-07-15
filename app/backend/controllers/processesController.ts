@@ -34,6 +34,8 @@ const REASON_ACTIONS: Record<string, string> = {
   reject: 'reject_process', 'financeiro-reject': 'financeiro_reject',
 };
 const ReasonSchema = z.object({ reason: z.string().trim().min(1).max(500) });
+// aprovação em lote: lista de uuids (a RPC valida cada um por processo)
+const ApproveBatchSchema = z.object({ uuids: z.array(z.string().uuid()).min(1).max(200) });
 
 export class ProcessesController {
   constructor(
@@ -50,6 +52,13 @@ export class ProcessesController {
     this.correct = this.correct.bind(this);
     this.setInstallments = this.setInstallments.bind(this);
     this.adminEdit = this.adminEdit.bind(this);
+    this.approveBatch = this.approveBatch.bind(this);
+  }
+
+  async approveBatch(req: FastifyRequest, reply: FastifyReply) {
+    const { uuids } = ApproveBatchSchema.parse(req.body);
+    const data = await this.service.approveBatch(req.accessToken!, uuids);
+    return reply.send({ success: true, data });
   }
 
   async adminEdit(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {
