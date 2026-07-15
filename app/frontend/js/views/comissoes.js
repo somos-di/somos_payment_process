@@ -148,6 +148,12 @@ async function initView_comissoes() {
       + '<label class="com-dz" for="com-bol"><b>Clique para enviar</b><small>PDF/imagem</small></label>'
       + '<input id="com-bol" type="file" hidden><div class="com-file" id="com-bol-name">' + (boletoUrl ? 'Boleto já anexado' : '') + '</div></div>'
       + '</div>'
+      + '<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + '<div><label style="font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px">E-mail do Vendedor</label>'
+      + '<input id="com-email" maxlength="200" placeholder="Opcional" value="' + esc(c.seller_email_com || '') + '"></div>'
+      + '<div><label style="font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px">Celular do Vendedor</label>'
+      + '<input id="com-phone" maxlength="50" placeholder="Opcional" value="' + esc(c.seller_phone_com || '') + '"></div>'
+      + '</div>'
       + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button><button class="btn btn-primary" data-ok>Salvar e avançar</button></div>', 520);
     function up(inputId, nameId, set) {
       o.querySelector('#' + inputId).addEventListener('change', async function () {
@@ -162,9 +168,13 @@ async function initView_comissoes() {
     o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
     o.querySelector('[data-ok]').addEventListener('click', async function () {
       if (!nfUrl) { toast('Anexe a Nota Fiscal para validar.'); return; }
+      var email = (o.querySelector('#com-email').value || '').trim();
+      var phone = (o.querySelector('#com-phone').value || '').trim();
       o.remove();
-      try { await post(c.uuid_com, 'validate', { nf_url: nfUrl, boleto_url: boletoUrl }); toast('Validado e enviado ao Financeiro.', true); await done(); }
-      catch (e) { toast('Erro: ' + e.message); }
+      try {
+        await post(c.uuid_com, 'validate', { nf_url: nfUrl, boleto_url: boletoUrl, seller_email: email || null, seller_phone: phone || null });
+        toast('Validado e enviado ao Financeiro.', true); await done();
+      } catch (e) { toast('Erro: ' + e.message); }
     });
   }
 
