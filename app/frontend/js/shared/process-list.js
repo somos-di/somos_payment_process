@@ -540,8 +540,11 @@
     }
   };
 
-  function applyProcessFilters(s, kind, term, filters) {
-    if (kind) s = s.eq('kind_prc', Number(kind));
+  function applyProcessFilters(s, kind, term, filters, reembolso) {
+    // Reembolso agrupa TODOS os subtipos: filtra pela palavra "reembolso" no tipo
+    // (Reembolso, Reembolso Alimentação, Reembolso Combustível…). Demais tipos = kind exato.
+    if (reembolso) s = s.ilike('tipo_nome', '%reembolso%');
+    else if (kind) s = s.eq('kind_prc', Number(kind));
     var f = filters || {};
     var comps = Array.isArray(f.company) ? f.company : (f.company ? [f.company] : []);
     var builds = Array.isArray(f.building) ? f.building : (f.building ? [f.building] : []);
@@ -564,20 +567,20 @@
     return s;
   }
 
-  window.fetchProcessesPage = function (kind) {
+  window.fetchProcessesPage = function (kind, reembolso) {
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
       return window.SB.select('v_processes', function (s) {
-        s = applyProcessFilters(s, kind, args.term, args.filters);
+        s = applyProcessFilters(s, kind, args.term, args.filters, reembolso);
         return s.order('id_prc', { ascending: false }).range(page * pageSize, page * pageSize + pageSize - 1);
       });
     };
   };
 
-  window.fetchProcessesCount = function (kind) {
+  window.fetchProcessesCount = function (kind, reembolso) {
     return function (args) {
       return window.SB.count('v_processes', function (s) {
-        return applyProcessFilters(s, kind, args.term, args.filters);
+        return applyProcessFilters(s, kind, args.term, args.filters, reembolso);
       });
     };
   };

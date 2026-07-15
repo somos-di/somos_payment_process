@@ -114,7 +114,7 @@ async function initView_comissoes() {
     if (act === 'validate') return openNfModal(c);
     if (act === 'finalize') return confirmThen('FINALIZAR esta comissão? Encerra o processo (sem integração).', function () { return post(c.uuid_com, 'finalize'); });
     if (act === 'pendency') return promptThen('Devolver para correção? Volta para a trilha (SOMOS/PARTINI).', function (note) { return post(c.uuid_com, 'pendency', { note: note }); });
-    if (act === 'cancel') return promptThen('Cancelar esta comissão? Esta ação é irreversível.', function (note) { return post(c.uuid_com, 'cancel', { note: note }); }, true);
+    if (act === 'cancel') return promptThen('Cancelar esta comissão? Esta ação é irreversível.', function (note) { return post(c.uuid_com, 'cancel', { note: note }); }, true, true);
   }
 
   async function confirmThen(msg, fn) {
@@ -126,13 +126,15 @@ async function initView_comissoes() {
       try { await fn(); toast('Feito.', true); await done(); } catch (e) { toast('Erro: ' + e.message); }
     });
   }
-  async function promptThen(msg, fn, danger) {
+  async function promptThen(msg, fn, danger, requireNote) {
     var o = overlay('<div class="modal-title">' + esc(msg) + '</div>'
-      + '<textarea data-note rows="3" maxlength="500" placeholder="Motivo (opcional)…" style="margin-top:10px"></textarea>'
+      + '<textarea data-note rows="3" maxlength="500" placeholder="Motivo ' + (requireNote ? '(obrigatório)' : '(opcional)') + '…" style="margin-top:10px"></textarea>'
       + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button><button class="btn ' + (danger ? 'btn-danger' : 'btn-primary') + '" data-ok>Confirmar</button></div>');
     o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
     o.querySelector('[data-ok]').addEventListener('click', async function () {
-      var note = o.querySelector('[data-note]').value.trim(); o.remove();
+      var note = o.querySelector('[data-note]').value.trim();
+      if (requireNote && !note) { toast('Informe o motivo.'); return; }
+      o.remove();
       try { await fn(note); toast('Feito.', true); await done(); } catch (e) { toast('Erro: ' + e.message); }
     });
   }

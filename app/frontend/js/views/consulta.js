@@ -13,13 +13,16 @@ async function initView_consulta() {
 
   var kind = get('kind') ? Number(get('kind')) : null;
   var kinds = (window.CONFIG.PROCESS_KINDS) || {};
-  title.textContent = kind ? (kinds[kind] || 'Processos') : 'Todos os Processos';
+  // Reembolso agrupa todos os subtipos (Reembolso, Reembolso Alimentação, …): identifica
+  // pela palavra "reembolso" no nome do tipo e filtra por nome em vez de kind exato.
+  var isReembolso = kind ? /reembolso/i.test(kinds[kind] || '') : false;
+  title.textContent = kind ? (isReembolso ? 'Reembolso' : (kinds[kind] || 'Processos')) : 'Todos os Processos';
   sub.textContent = 'Consulta de processos de pagamento.';
 
   await window.ProcessList.mount(host, {
     emptyText: 'Nenhum processo encontrado para este tipo.',
     pageSize: 50,
-    fetchCount: window.fetchProcessesCount(kind || null),
-    fetchPage: window.fetchProcessesPage(kind || null),
+    fetchCount: window.fetchProcessesCount(kind || null, isReembolso),
+    fetchPage: window.fetchProcessesPage(kind || null, isReembolso),
   });
 }
