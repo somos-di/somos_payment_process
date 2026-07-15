@@ -27,3 +27,5 @@ CLAUDE.md
 
 # resíduo da migração antiga (node_modules travado pelo dev server; apague manualmente)
 payment_process/
+
+rebuild.txt
