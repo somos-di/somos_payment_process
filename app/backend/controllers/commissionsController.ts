@@ -84,7 +84,8 @@ export class CommissionsController {
 
     const body = (req.body ?? {}) as Record<string, unknown>;
     const opts: { note?: string; nfUrl?: string; boletoUrl?: string } = {};
-    if (action === 'set-nf') { const b = SetNfSchema.parse(body); opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined; }
+    // etapa 1 (trilha): validar carrega a NF (obrigatória) + boleto opcional
+    if (action === 'validate' || action === 'set-nf') { const b = SetNfSchema.parse(body); opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined; }
     else if (action === 'pendency' || action === 'cancel') { opts.note = NoteSchema.parse(body).note; }
 
     const data = await this.service.transition(req.accessToken!, uuid, action, opts);

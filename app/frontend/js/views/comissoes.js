@@ -58,22 +58,18 @@ async function initView_comissoes() {
   var me = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || {};
   var isAdmin = !!me.is_admin, isTrack = !!(me.is_commission || me.is_admin), isFin = !!(me.is_financeiro || me.is_admin);
 
-  // ações disponíveis por status (espelha a máquina de estados da RPC) FILTRADAS pelo papel
+  // Fluxo de 2 etapas:
+  //  ETAPA 1 — TRILHA (SOMOS/PARTINI): avalia + anexa a NF num passo só (status 1) e
+  //            corrige quando devolvida (status 5). Ao ir p/ o Financeiro (3), fica só-leitura.
+  //  ETAPA 2 — FINANCEIRO (status 3): finaliza OU devolve p/ correção (volta à trilha).
   function actionsFor(c) {
     var s = Number(c.status_step_com), a = [];
-    // TRILHA age só nos SEUS passos: validar (1), anexar NF (2), corrigir/reanexar (5).
-    // Ao ir para o Financeiro (3) a trilha fica BLOQUEADA (só visualização).
-    if (isTrack) {
-      if (s === 1) a.push('validate');
-      if (s === 2 || s === 5) a.push('set-nf');                  // 5 = Pendência: reanexar e reenviar (correção)
-      if (s === 1 || s === 2 || s === 5) a.push('cancel');
-    }
-    // FINANCEIRO age na validação financeira (3): finalizar OU devolver p/ correção (pendência).
+    if (isTrack && (s === 1 || s === 2 || s === 5)) { a.push('validate'); a.push('cancel'); }
     if (isFin && s === 3) { a.push('finalize'); a.push('pendency'); a.push('cancel'); }
     return a;
   }
-  var LABEL = { validate: 'Validar', 'set-nf': 'Anexar NF', finalize: 'Finalizar (Financeiro)', resolve: 'Resolver', pendency: 'Pendência', cancel: 'Cancelar' };
-  var CLS = { validate: 'btn-primary', 'set-nf': 'btn-primary', finalize: 'btn-primary', resolve: 'btn-primary', pendency: 'btn-light', cancel: 'btn-danger' };
+  var LABEL = { validate: 'Validar e anexar NF', finalize: 'Finalizar (Financeiro)', pendency: 'Devolver p/ correção', cancel: 'Cancelar' };
+  var CLS = { validate: 'btn-primary', finalize: 'btn-primary', pendency: 'btn-light', cancel: 'btn-danger' };
 
   function render() {
     var data = filtered();
@@ -103,7 +99,7 @@ async function initView_comissoes() {
       actionsFor(c).forEach(function (act) {
         var b = document.createElement('button');
         b.className = 'btn ' + (CLS[act] || 'btn-light'); b.style.marginLeft = '6px';
-        b.textContent = (act === 'set-nf' && Number(c.status_step_com) === 5) ? 'Anexar NF e reenviar' : LABEL[act];
+        b.textContent = (act === 'validate' && Number(c.status_step_com) === 5) ? 'Corrigir e reenviar' : LABEL[act];
         b.addEventListener('click', function (e) { e.stopPropagation(); runAction(c, act); });
         cell.appendChild(b);
       });
@@ -114,11 +110,10 @@ async function initView_comissoes() {
   async function done() { window.Store.invalidate('commissions'); window.Store.invalidate('comm_history'); await reload(); }
 
   function runAction(c, act) {
-    if (act === 'validate') return confirmThen('Validar esta comissão e solicitar a Nota Fiscal?', function () { return post(c.uuid_com, 'validate'); });
-    if (act === 'resolve') return confirmThen('Resolver a pendência e voltar para "A validar"?', function () { return post(c.uuid_com, 'resolve'); });
-    if (act === 'set-nf') return openNfModal(c);
-    if (act === 'finalize') return confirmThen('Validar e FINALIZAR esta comissão? (encerra o processo — sem integração)', function () { return post(c.uuid_com, 'finalize'); });
-    if (act === 'pendency') return promptThen('Registrar pendência nesta comissão?', function (note) { return post(c.uuid_com, 'pendency', { note: note }); });
+    // ETAPA 1 (trilha): avaliar + anexar NF num passo só -> vai ao Financeiro. Também é a correção.
+    if (act === 'validate') return openNfModal(c);
+    if (act === 'finalize') return confirmThen('FINALIZAR esta comissão? Encerra o processo (sem integração).', function () { return post(c.uuid_com, 'finalize'); });
+    if (act === 'pendency') return promptThen('Devolver para correção? Volta para a trilha (SOMOS/PARTINI).', function (note) { return post(c.uuid_com, 'pendency', { note: note }); });
     if (act === 'cancel') return promptThen('Cancelar esta comissão? Esta ação é irreversível.', function (note) { return post(c.uuid_com, 'cancel', { note: note }); }, true);
   }
 
@@ -144,7 +139,7 @@ async function initView_comissoes() {
 
   function openNfModal(c) {
     var nfUrl = c.nf_url_com || null, boletoUrl = c.boleto_url_com || null;
-    var o = overlay('<div class="modal-title">Anexar Nota Fiscal</div>'
+    var o = overlay('<div class="modal-title">Validar e anexar Nota Fiscal</div>'
       + '<div class="com-modal-grid" style="margin-top:8px">'
       + '<div><b style="font-size:13px">Nota Fiscal (obrigatória)</b>'
       + '<label class="com-dz" for="com-nf"><b>Clique para enviar</b><small>PDF/imagem</small></label>'
@@ -166,9 +161,9 @@ async function initView_comissoes() {
     up('com-bol', 'com-bol-name', function (u) { boletoUrl = u; });
     o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
     o.querySelector('[data-ok]').addEventListener('click', async function () {
-      if (!nfUrl) { toast('Anexe a Nota Fiscal para avançar.'); return; }
+      if (!nfUrl) { toast('Anexe a Nota Fiscal para validar.'); return; }
       o.remove();
-      try { await post(c.uuid_com, 'set-nf', { nf_url: nfUrl, boleto_url: boletoUrl }); toast('NF anexada.', true); await done(); }
+      try { await post(c.uuid_com, 'validate', { nf_url: nfUrl, boleto_url: boletoUrl }); toast('Validado e enviado ao Financeiro.', true); await done(); }
       catch (e) { toast('Erro: ' + e.message); }
     });
   }
