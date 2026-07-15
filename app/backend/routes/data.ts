@@ -6,4 +6,5 @@ export function registerDataRoutes(app: FastifyInstance, data_center: DataContro
   app.post('/data/:resource', data_center.query);
   app.post('/rpc/:fn', data_center.rpc);
   app.post('/storage/upload', data_center.upload);
+  app.post('/storage/bulk-import', data_center.uploadBulk);
 }

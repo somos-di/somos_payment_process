@@ -69,6 +69,7 @@ async function initView_solicitar_massa() {
   }
 
   var importedRows = [];
+  var importedFile = null;   // xlsx bruto p/ salvar no Storage ao lançar
 
   async function buildInstructionsSheet(XLSX) {
     var kinds = [];
@@ -164,7 +165,7 @@ async function initView_solicitar_massa() {
 
   function showError(msg) { $('lm-erro-msg').textContent = msg; $('lm-erro').hidden = false; }
   function resetView() {
-    importedRows = []; $('lm-file').value = '';
+    importedRows = []; importedFile = null; $('lm-file').value = '';
     $('lm-preview').hidden = true; $('lm-progresso').hidden = true; $('lm-erro').hidden = true;
     $('lm-result').innerHTML = ''; $('lm-upload').hidden = false;
   }
@@ -213,6 +214,14 @@ async function initView_solicitar_massa() {
     var items = importedRows.map(buildItem);
     $('lm-prog-label').textContent = 'Enviando ' + items.length + ' processo(s)…';
     $('lm-prog-fill').style.width = '30%';
+
+    // salva o XLSX de origem no Storage (auditoria). Best-effort: não bloqueia o lançamento.
+    var savedUrl = null;
+    if (importedFile) {
+      try { var up = await window.SB.upload(importedFile, '/storage/bulk-import'); savedUrl = up && up.url; }
+      catch (e) { savedUrl = null; }
+    }
+
     try {
       var results = [];
       await window.Store.mutate('processes', async function () {
@@ -228,7 +237,9 @@ async function initView_solicitar_massa() {
         fail++; return '<tr><td>' + (i + 1) + '</td><td>' + esc(desc) + '</td><td><span class="badge red">✗ erro</span></td><td>' + parc + '</td><td>' + esc(r.error || '') + '</td></tr>';
       }).join('');
       $('lm-prog-label').textContent = 'Concluído';
-      $('lm-prog-cont').textContent = ok + ' ok · ' + fail + ' erro(s)';
+      $('lm-prog-cont').innerHTML = esc(ok + ' ok · ' + fail + ' erro(s)')
+        + (savedUrl ? ' · <a href="' + esc(savedUrl) + '" target="_blank" rel="noopener">planilha salva</a>'
+                    : ' · <span style="color:var(--muted)">planilha não salva</span>');
     } catch (e) {
       $('lm-prog-label').textContent = 'Falha';
       $('lm-prog-cont').textContent = e.message;
@@ -245,6 +256,7 @@ async function initView_solicitar_massa() {
     if (!/\.(xlsx|xls|csv)$/i.test(file.name)) { showError('Formato não suportado: envie um arquivo .xlsx, .xls ou .csv.'); return; }
     try {
       importedRows = await readSpreadsheet(file);
+      importedFile = file;   // guarda o binário p/ salvar no Storage no lançamento
       if (!importedRows.length) { showError('O arquivo não tem linhas de dados.'); return; }
       var header = Object.keys(importedRows[0]);
       var faltando = COLUMN_MAP.filter(function (m) {

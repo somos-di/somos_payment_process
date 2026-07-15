@@ -34,7 +34,8 @@
     },
     rpc: function (fn, args) { return window.API.post('/rpc/' + fn, { args: args || {} }); },
     
-    upload: function (file) {
+    // endpoint opcional: '/storage/upload' (padrão, anexos) ou '/storage/bulk-import' (xlsx do lote)
+    upload: function (file, endpoint) {
       return new Promise(function (resolve, reject) {
         // teto único de tamanho (todos os uploads passam por aqui): 14 MB.
         var MAX_FILE_BYTES = 14 * 1024 * 1024;
@@ -44,7 +45,7 @@
         var fr = new FileReader();
         fr.onload = function () {
           var b64 = String(fr.result).split(',')[1] || '';
-          window.API.post('/storage/upload', { filename: file.name, contentBase64: b64, contentType: file.type })
+          window.API.post(endpoint || '/storage/upload', { filename: file.name, contentBase64: b64, contentType: file.type })
             .then(resolve, reject);
         };
         fr.onerror = function () { reject(new Error('Falha ao ler o arquivo')); };

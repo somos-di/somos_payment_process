@@ -20,6 +20,7 @@ export class DataController {
     this.query = this.query.bind(this);
     this.rpc = this.rpc.bind(this);
     this.upload = this.upload.bind(this);
+    this.uploadBulk = this.uploadBulk.bind(this);
   }
 
   async query(req: FastifyRequest<{ Params: { resource: string } }>, reply: FastifyReply) {
@@ -41,6 +42,13 @@ export class DataController {
   async upload(req: FastifyRequest, reply: FastifyReply) {
     const { filename, contentBase64, contentType } = UploadSchema.parse(req.body);
     const data = await this.service.uploadAttachment(filename, contentBase64, contentType);
+    return reply.send({ success: true, data });
+  }
+
+  // salva o XLSX de origem do lançamento em massa no Storage (pasta bulk-imports/)
+  async uploadBulk(req: FastifyRequest, reply: FastifyReply) {
+    const { filename, contentBase64, contentType } = UploadSchema.parse(req.body);
+    const data = await this.service.uploadBulkImport(filename, contentBase64, contentType);
     return reply.send({ success: true, data });
   }
 }
