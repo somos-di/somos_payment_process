@@ -1,5 +1,4 @@
 import { AsyncHttpClient } from '../base/abstract.js';
-import { RUNTIME } from '../config/runtime.js';
 import type { AppSettings } from '../settings.js';
 
 export interface ReapprovalPayload {
@@ -10,15 +9,18 @@ export interface ReapprovalPayload {
   installmentId: number;
 }
 
-// Envia a solicitação de reaprovação para o webhook do n8n (mini app /reaprovals).
-// Sem auth (o n8n valida pelo path do webhook). Base vem das settings; path é fixo.
+// Envia a reaprovação para o webhook do n8n (mini app /reaprovals). Base única do n8n
+// (settings.n8nBaseUrl) + endpoint do fluxo (settings.reapproval.workflowEndPoint).
 export class ReapprovalGateway extends AsyncHttpClient {
+  private readonly endpoint: string;
+
   constructor(settings: AppSettings) {
-    super(settings.reapproval.baseUrl);
+    super(settings.n8nBaseUrl);
+    this.endpoint = settings.reapproval.workflowEndPoint;
   }
 
   async send(payload: ReapprovalPayload): Promise<{ message: string }> {
-    const data = (await this.post(RUNTIME.reapproval.webhookPath, payload)) as { message?: string } | null;
+    const data = (await this.post(this.endpoint, payload)) as { message?: string } | null;
     return { message: (data && data.message) || 'Reaprovação enviada.' };
   }
 }
