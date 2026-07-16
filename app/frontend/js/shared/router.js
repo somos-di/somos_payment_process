@@ -21,6 +21,7 @@ const ROUTES = {
     'um-aprovador': { title: 'Processos com 1 Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'gestao-processos': { title: 'Gestão de Processos', folder: 'admin', parentLabel: 'Administração', admin: true },
+    'reaprovals': { title: 'Reaprovações', folder: 'reaprovals', parentLabel: 'Administração', admin: true },
     'comissoes': { title: 'Pagamento de Comissões', folder: 'comissoes', parentLabel: 'Comissões', commission: true },
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', folder: 'comissoes', parentLabel: 'Comissões', admin: true },
 }

@@ -6,7 +6,7 @@
   window.Auth = {
     init: async function () {
       try {
-        user = await window.API.get('/auth/me'); 
+        user = await window.API.get('/auth/me');
         if (user && window.SB) window.SB.setUserId(user.id);
       } catch (e) { user = null; }
       emit();
@@ -27,9 +27,9 @@
       window.location.hash = window.CONFIG.HASH(window.CONFIG.ROUTES.LOGIN);
     },
 
-    
+
     expireLocal: function () {
-      if (user === null) return; 
+      if (user === null) return;
       user = null;
       if (window.SB) window.SB.setUserId(null);
       if (window.Store) window.Store.clear();

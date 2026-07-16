@@ -36,6 +36,9 @@ export interface AppSettings {
     xIntegration: string;
     timeoutMs: number;
   };
+  reapproval: {
+    baseUrl: string;   // base do webhook n8n de reaprovação (mini app /reaprovals)
+  };
 }
 
 let _s: AppSettings | null = null;
@@ -64,6 +67,9 @@ export function getSettings(): AppSettings {
       password: process.env.UAU_PASSWORD || '',
       xIntegration: process.env.UAU_X_INTEGRATION || '',
       timeoutMs: Number(process.env.UAU_TIMEOUT_MS || 30000),
+    },
+    reapproval: {
+      baseUrl: process.env.REAPROVAL_BASE_URL || '',
     },
   };
   return _s;

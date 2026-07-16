@@ -1,25 +1,135 @@
 <main>
   <style>
-    .gp-modal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
-    .gp-modal-grid .full { grid-column: 1 / -1; }
-    .gp-sec { grid-column: 1 / -1; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-bottom: 5px; border-bottom: 1px solid var(--border-2); margin: 8px 0 2px; }
-    .gp-search-wrap { position: relative; }
-    .gp-results { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-md); max-height: 220px; overflow: auto; display: none; }
-    .gp-results.show { display: block; }
-    .gp-results .it { padding: 8px 12px; cursor: pointer; font-size: 14px; }
-    .gp-results .it:hover { background: var(--surface-2); }
-    .gp-results .it small { display: block; color: var(--muted); font-size: 12px; }
-    .gp-parcelas { display: grid; gap: 8px; margin-top: 6px; }
-    .gp-parc-row { display: grid; grid-template-columns: 92px 1fr 1fr 34px; gap: 8px; align-items: center; }
-    .gp-parc-row .pl { font-size: 13px; color: var(--muted); }
-    .gp-parc-row .rm { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 17px; border-radius: 6px; }
-    .gp-parc-row .rm:hover { background: var(--danger-weak); color: var(--danger); }
-    .gp-parc-sum { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
-    .gp-parc-sum.bad { color: var(--danger); font-weight: 600; }
-    .gp-reason { border: 1px solid var(--danger); border-radius: 10px; padding: 12px 14px; margin-top: 4px; background: var(--danger-weak); }
-    .gp-reason label { display: block; font-size: 13px; font-weight: 700; color: #9f1239; margin-bottom: 6px; }
-    .gp-uau { font-size: 12.5px; color: var(--muted); }
-    @media (max-width: 640px) { .gp-modal-grid { grid-template-columns: 1fr; } }
+    .gp-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+    }
+
+    .gp-modal-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .gp-sec {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--border-2);
+      margin: 8px 0 2px;
+    }
+
+    .gp-search-wrap {
+      position: relative;
+    }
+
+    .gp-results {
+      position: absolute;
+      z-index: 30;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      max-height: 220px;
+      overflow: auto;
+      display: none;
+    }
+
+    .gp-results.show {
+      display: block;
+    }
+
+    .gp-results .it {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .gp-results .it:hover {
+      background: var(--surface-2);
+    }
+
+    .gp-results .it small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .gp-parcelas {
+      display: grid;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .gp-parc-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 1fr 34px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .gp-parc-row .pl {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .gp-parc-row .rm {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 17px;
+      border-radius: 6px;
+    }
+
+    .gp-parc-row .rm:hover {
+      background: var(--danger-weak);
+      color: var(--danger);
+    }
+
+    .gp-parc-sum {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .gp-parc-sum.bad {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .gp-reason {
+      border: 1px solid var(--danger);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 4px;
+      background: var(--danger-weak);
+    }
+
+    .gp-reason label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #9f1239;
+      margin-bottom: 6px;
+    }
+
+    .gp-uau {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .gp-modal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 
   <div class="section-title">Gestão de Processos</div>

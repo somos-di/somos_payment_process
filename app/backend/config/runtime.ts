@@ -4,6 +4,8 @@
 export const RUNTIME = {
   uauGateway: { tokenTtlMs: 25 * 60 * 1000 }, // token UAU ~25min
   sync: { insertBatchSize: 500 },
+  // caminho fixo do webhook de reaprovação no n8n (contrato do fluxo)
+  reapproval: { webhookPath: '/39cde56e-2692-473f-82a1-b148069a8329' },
 };
 
 // Constantes fixas da montagem do payload de integração (UauIntegrationService.buildPayload).

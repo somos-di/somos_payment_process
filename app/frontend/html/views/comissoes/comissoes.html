@@ -1,33 +1,78 @@
 <main>
   <style>
-    .com-modal-grid { display: grid; gap: 12px; }
-    .com-dz { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px 14px; text-align: center; cursor: pointer; background: var(--surface-2); font-size: 13px; color: var(--text-2); }
-    .com-dz:hover { border-color: var(--accent); background: var(--accent-weak); }
-    .com-dz b { color: var(--text); }
-    .com-file { font-size: 13px; color: var(--ok); }
+    .com-modal-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .com-dz {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px 14px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface-2);
+      font-size: 13px;
+      color: var(--text-2);
+    }
+
+    .com-dz:hover {
+      border-color: var(--accent);
+      background: var(--accent-weak);
+    }
+
+    .com-dz b {
+      color: var(--text);
+    }
+
+    .com-file {
+      font-size: 13px;
+      color: var(--ok);
+    }
   </style>
 
   <div class="section-title">Pagamento de Comissões</div>
-  <div class="section-sub" style="margin-bottom:16px">Fluxo de comissões (sem aprovação): a trilha valida e anexa a Nota Fiscal,
+  <div class="section-sub" style="margin-bottom:16px">Fluxo de comissões (sem aprovação): a trilha valida e anexa a Nota
+    Fiscal,
     o Financeiro finaliza. Clique numa comissão para ver os dados e o histórico. A visibilidade segue a trilha do
     empreendimento (SOMOS / PARTINI).</div>
 
   <div class="card" style="padding:0">
     <div class="pl-toolbar">
       <div class="pl-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </svg>
         <input id="com-search" placeholder="Buscar (empreendimento, vendedor, cliente, unidade)…">
       </div>
       <div class="pl-filters">
-        <label class="pf-field">Trilha<select id="com-trilha"><option value="">Todas</option><option value="SOMOS">SOMOS</option><option value="PARTINI">PARTINI</option></select></label>
-        <label class="pf-field">Status<select id="com-status"><option value="">Todos</option></select></label>
+        <label class="pf-field">Trilha<select id="com-trilha">
+            <option value="">Todas</option>
+            <option value="SOMOS">SOMOS</option>
+            <option value="PARTINI">PARTINI</option>
+          </select></label>
+        <label class="pf-field">Status<select id="com-status">
+            <option value="">Todos</option>
+          </select></label>
       </div>
       <div class="pl-toolbar-actions">
         <button class="btn btn-light" id="com-refresh" title="Recarregar">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar</button>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px">
+            <path d="M23 4v6h-6M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>Atualizar</button>
         <button class="btn btn-ghost" id="com-clear">Limpar filtros</button>
       </div>
     </div>
-    <div id="com-body" style="padding:6px 0"><div class="empty">Carregando…</div></div>
+    <div id="com-body" style="padding:6px 0">
+      <div class="empty">Carregando…</div>
+    </div>
   </div>
 </main>

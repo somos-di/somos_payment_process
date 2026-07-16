@@ -1,0 +1,30 @@
+<main>
+  <div class="section-title">Reaprovações</div>
+  <div class="section-sub" style="margin-bottom:16px">Envia uma solicitação de reaprovação para o fluxo (n8n).
+    Acesso restrito a administradores.</div>
+
+  <div class="card" style="padding:18px 20px;max-width:640px">
+    <div class="form-grid cols-2">
+      <div class="field"><label>Empresa (código)</label>
+        <input id="ra-company" type="number" min="1" step="1" placeholder="Ex.: 35" inputmode="numeric">
+      </div>
+      <div class="field"><label>Centro de Custo / Obra</label>
+        <input id="ra-costcenter" maxlength="100" placeholder="Ex.: RER11">
+      </div>
+      <div class="field"><label>Processo (Id)</label>
+        <input id="ra-process" type="number" min="1" step="1" inputmode="numeric">
+      </div>
+      <div class="field"><label>Parcela (Id)</label>
+        <input id="ra-installment" type="number" min="1" step="1" inputmode="numeric">
+      </div>
+      <div class="field full"><label>Aprovador (approverId)</label>
+        <input id="ra-approver" maxlength="200" placeholder="Identificador do aprovador">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+      <button class="btn btn-primary" id="ra-send">Enviar reaprovação</button>
+      <button class="btn btn-light" id="ra-clear">Limpar</button>
+      <span id="ra-status" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+  </div>
+</main>

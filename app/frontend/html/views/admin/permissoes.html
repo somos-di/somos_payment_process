@@ -1,101 +1,336 @@
 <main>
   <style>
-    
-    .pm-card { padding: 20px 22px; margin-top: 16px; display: grid; gap: 20px; }
-    .pm-grid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; max-width: 860px; }
-    .pm-field { display: flex; flex-direction: column; gap: 6px; }
-    .pm-field > label { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+    .pm-card {
+      padding: 20px 22px;
+      margin-top: 16px;
+      display: grid;
+      gap: 20px;
+    }
 
-    .pm-sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-    .pm-sec-title { font-size: 13px; font-weight: 700; color: var(--text-2); }
-    .pm-count { font-size: 12px; color: var(--muted); font-weight: 500; }
-    .pm-helpers { margin-left: auto; display: flex; gap: 8px; font-size: 12.5px; color: var(--muted-2); }
-    .pm-helpers a { color: var(--accent); cursor: pointer; user-select: none; }
-    .pm-helpers a:hover { text-decoration: underline; }
+    .pm-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      max-width: 860px;
+    }
 
-    .pm-checks { display: flex; flex-wrap: wrap; gap: 8px; max-height: 230px; overflow: auto;
-                 border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-2); }
-    .pm-check { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px;
-                border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
-                font-size: 13px; color: var(--text-2); cursor: pointer; user-select: none; white-space: nowrap;
-                transition: border-color .12s, background .12s, color .12s, box-shadow .12s; }
-    .pm-check:hover { border-color: var(--accent); }
-    .pm-check input { width: 15px; height: 15px; accent-color: var(--accent); margin: 0; flex: none; }
-    .pm-check:has(input:checked) { background: var(--accent-weak); border-color: var(--accent);
-                                   color: var(--accent); font-weight: 600; }
-    .pm-hint { color: var(--muted); font-size: 13px; padding: 6px 4px; }
+    .pm-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-    .pm-actions { display: flex; align-items: center; gap: 14px; }
-    #pm-msg { font-size: 13px; }
+    .pm-field>label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-2);
+    }
 
-    .pm-list-head { display: flex; align-items: baseline; gap: 10px; margin-top: 28px; }
-    .pm-emp { border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
-              box-shadow: var(--shadow); margin-top: 12px; overflow: hidden; }
-    .pm-emp-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-                   background: var(--surface-2); border-bottom: 1px solid var(--border); }
-    .pm-emp-ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
-                 background: var(--accent-weak); color: var(--accent); flex: none; }
-    .pm-emp-ic svg { width: 17px; height: 17px; }
-    .pm-emp-name { font-weight: 700; font-size: 14px; color: var(--text); }
-    .pm-emp-code { font-size: 12px; color: var(--muted); font-weight: 500; }
-    .pm-emp-total { margin-left: auto; }
+    .pm-sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
 
-    .pm-obra { display: flex; gap: 14px; padding: 12px 16px; align-items: flex-start; }
-    .pm-obra + .pm-obra { border-top: 1px dashed var(--border-2); }
-    .pm-obra-id { flex: 0 0 280px; min-width: 0; }
-    .pm-obra-name { font-size: 13px; font-weight: 600; color: var(--text-2); }
-    .pm-obra-code { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-    .pm-obra-tags { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 6px; }
+    .pm-sec-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-2);
+    }
 
-    .pm-tag { display: inline-flex; align-items: center; gap: 2px; background: var(--accent-weak);
-              color: var(--accent); border: 1px solid #c7dcfb; border-radius: 999px;
-              padding: 3px 4px 3px 11px; font-size: 12.5px; font-weight: 600; line-height: 1.4; }
-    .pm-tag button { border: 0; background: transparent; color: inherit; cursor: pointer;
-                     font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 999px; }
-    .pm-tag button:hover { background: var(--danger-weak); color: var(--danger); }
+    .pm-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
 
-    .pm-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
-                padding: 36px 20px; margin-top: 12px; background: var(--surface);
-                border: 1.5px dashed var(--border); border-radius: 12px; color: var(--muted); }
-    .pm-empty svg { width: 28px; height: 28px; color: var(--muted-2); }
-    .pm-empty b { font-size: 13.5px; color: var(--text-2); }
-    .pm-empty span { font-size: 12.5px; }
+    .pm-helpers {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--muted-2);
+    }
+
+    .pm-helpers a {
+      color: var(--accent);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .pm-helpers a:hover {
+      text-decoration: underline;
+    }
+
+    .pm-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 230px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--surface-2);
+    }
+
+    .pm-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      font-size: 13px;
+      color: var(--text-2);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: border-color .12s, background .12s, color .12s, box-shadow .12s;
+    }
+
+    .pm-check:hover {
+      border-color: var(--accent);
+    }
+
+    .pm-check input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      margin: 0;
+      flex: none;
+    }
+
+    .pm-check:has(input:checked) {
+      background: var(--accent-weak);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .pm-hint {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 6px 4px;
+    }
+
+    .pm-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #pm-msg {
+      font-size: 13px;
+    }
+
+    .pm-list-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pm-emp {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .pm-emp-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pm-emp-ic {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-weak);
+      color: var(--accent);
+      flex: none;
+    }
+
+    .pm-emp-ic svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .pm-emp-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .pm-emp-code {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .pm-emp-total {
+      margin-left: auto;
+    }
+
+    .pm-obra {
+      display: flex;
+      gap: 14px;
+      padding: 12px 16px;
+      align-items: flex-start;
+    }
+
+    .pm-obra+.pm-obra {
+      border-top: 1px dashed var(--border-2);
+    }
+
+    .pm-obra-id {
+      flex: 0 0 280px;
+      min-width: 0;
+    }
+
+    .pm-obra-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+    }
+
+    .pm-obra-code {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .pm-obra-tags {
+      flex: 1 1 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pm-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--accent-weak);
+      color: var(--accent);
+      border: 1px solid #c7dcfb;
+      border-radius: 999px;
+      padding: 3px 4px 3px 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .pm-tag button {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 999px;
+    }
+
+    .pm-tag button:hover {
+      background: var(--danger-weak);
+      color: var(--danger);
+    }
+
+    .pm-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+      padding: 36px 20px;
+      margin-top: 12px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+    }
+
+    .pm-empty svg {
+      width: 28px;
+      height: 28px;
+      color: var(--muted-2);
+    }
+
+    .pm-empty b {
+      font-size: 13.5px;
+      color: var(--text-2);
+    }
+
+    .pm-empty span {
+      font-size: 12.5px;
+    }
 
     @media (max-width: 820px) {
-      .pm-grid { grid-template-columns: 1fr; }
-      .pm-obra { flex-direction: column; gap: 8px; }
-      .pm-obra-id { flex: 1 1 auto; }
+      .pm-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pm-obra {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .pm-obra-id {
+        flex: 1 1 auto;
+      }
     }
   </style>
 
   <div class="section-title">Permissões — Empresa / Obra / Tipo</div>
-  <div class="section-sub">Concede a um grupo a <b>visibilidade</b> de processos por empresa, obra e tipo (as 3 regras de eliminação). Não torna o grupo aprovador.</div>
+  <div class="section-sub">Concede a um grupo a <b>visibilidade</b> de processos por empresa, obra e tipo (as 3 regras
+    de eliminação). Não torna o grupo aprovador.</div>
 
   <div class="card pm-card">
     <div class="pm-grid">
       <div class="pm-field"><label>Grupo</label><select id="pm-group"></select></div>
-      <div class="pm-field"><label>Empresa</label><select id="pm-empresa"><option value="">Selecione…</option></select></div>
+      <div class="pm-field"><label>Empresa</label><select id="pm-empresa">
+          <option value="">Selecione…</option>
+        </select></div>
     </div>
 
     <div>
       <div class="pm-sec-head">
         <span class="pm-sec-title">Obras</span><span class="pm-count" id="pm-obras-count"></span>
-        <div class="pm-helpers"><a id="pm-obras-all">marcar todas</a><span>·</span><a id="pm-obras-none">limpar</a></div>
+        <div class="pm-helpers"><a id="pm-obras-all">marcar todas</a><span>·</span><a id="pm-obras-none">limpar</a>
+        </div>
       </div>
-      <div class="pm-checks" id="pm-obras"><div class="pm-hint">Selecione uma empresa.</div></div>
+      <div class="pm-checks" id="pm-obras">
+        <div class="pm-hint">Selecione uma empresa.</div>
+      </div>
     </div>
 
     <div>
       <div class="pm-sec-head">
         <span class="pm-sec-title">Tipos de processo</span><span class="pm-count" id="pm-tipos-count"></span>
-        <div class="pm-helpers"><a id="pm-tipos-all">todos</a><span>·</span><a id="pm-tipos-nopj">todos menos PJ</a><span>·</span><a id="pm-tipos-none">limpar</a></div>
+        <div class="pm-helpers"><a id="pm-tipos-all">todos</a><span>·</span><a id="pm-tipos-nopj">todos menos
+            PJ</a><span>·</span><a id="pm-tipos-none">limpar</a></div>
       </div>
       <div class="pm-checks" id="pm-tipos"></div>
     </div>
 
     <div class="pm-actions">
       <button class="btn btn-primary" id="pm-add">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
         Adicionar permissões
       </button>
       <span id="pm-msg"></span>
@@ -106,5 +341,7 @@
     <div class="section-title" style="font-size:16px; margin:0">Permissões atuais do grupo</div>
     <span class="pm-count" id="pm-list-count"></span>
   </div>
-  <div id="pm-list"><div class="empty">Selecione um grupo.</div></div>
+  <div id="pm-list">
+    <div class="empty">Selecione um grupo.</div>
+  </div>
 </main>
