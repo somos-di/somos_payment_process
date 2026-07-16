@@ -9,11 +9,52 @@ async function initView_reaprovals() {
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4500);
   }
 
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function fmtDateTime(d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return String(d); }
+  }
+
   function clearForm() {
     ['ra-company', 'ra-costcenter', 'ra-process', 'ra-installment', 'ra-approver'].forEach(function (id) { $(id).value = ''; });
     $('ra-status').textContent = '';
   }
   $('ra-clear').addEventListener('click', clearForm);
+
+  // ── Histórico ──────────────────────────────────────────────────────────
+  var histRows = [];
+  function renderHist() {
+    var t = ($('ra-search').value || '').toLowerCase().trim();
+    var data = histRows.filter(function (r) {
+      return !t || [r.company_rap, r.cost_center_rap, r.process_rap, r.installment_rap, r.approver_rap, r.author_nome].join(' ').toLowerCase().indexOf(t) >= 0;
+    });
+    if (!data.length) { $('ra-hist').innerHTML = '<div class="empty">Nenhuma reaprovação enviada.</div>'; return; }
+    var html = '<div class="table-scroll"><table><thead><tr>'
+      + '<th>#</th><th>Data</th><th>Empresa</th><th>Obra</th><th>Processo</th><th>Parcela</th><th>Aprovador</th><th>Mensagem</th><th>Autor</th>'
+      + '</tr></thead><tbody>';
+    data.forEach(function (r) {
+      html += '<tr>'
+        + '<td>' + esc(r.id_rap) + '</td>'
+        + '<td>' + esc(fmtDateTime(r.created_at_rap)) + '</td>'
+        + '<td>' + esc(r.company_rap) + '</td>'
+        + '<td>' + esc(r.cost_center_rap || '—') + '</td>'
+        + '<td>' + esc(r.process_rap) + '</td>'
+        + '<td>' + esc(r.installment_rap) + '</td>'
+        + '<td>' + esc(r.approver_rap || '—') + '</td>'
+        + '<td>' + esc(r.message_rap || '—') + '</td>'
+        + '<td>' + esc(r.author_nome || '—') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    $('ra-hist').innerHTML = html;
+  }
+  async function loadHist() {
+    $('ra-hist').innerHTML = '<div class="empty">Carregando…</div>';
+    try { histRows = (await window.API.get('/reapprovals')) || []; renderHist(); }
+    catch (e) { window.viewError($('ra-hist'), e); }
+  }
+  $('ra-search').addEventListener('input', renderHist);
+  $('ra-refresh').addEventListener('click', loadHist);
 
   $('ra-send').addEventListener('click', async function () {
     var company = parseInt($('ra-company').value, 10);
@@ -40,9 +81,12 @@ async function initView_reaprovals() {
       $('ra-status').textContent = '';
       toast((res && res.message) || 'Reaprovação enviada com sucesso!', true);
       clearForm();
+      loadHist();   // atualiza o histórico com o envio recém-feito
     } catch (e) {
       $('ra-status').textContent = '';
       toast('Erro ao enviar: ' + e.message);
     } finally { btn.disabled = false; }
   });
+
+  await loadHist();
 }

@@ -27,4 +27,19 @@
       <span id="ra-status" style="font-size:13px;color:var(--muted)"></span>
     </div>
   </div>
+
+  <div class="section-title" style="margin-top:24px">Histórico</div>
+  <div class="section-sub" style="margin-bottom:12px">Reaprovações enviadas (mais recentes primeiro).</div>
+  <div class="card" style="padding:0">
+    <div class="pl-toolbar">
+      <div class="pl-search" style="flex:1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="ra-search" placeholder="Buscar (empresa, obra, processo, aprovador)…">
+      </div>
+      <div class="pl-toolbar-actions">
+        <button class="btn btn-light" id="ra-refresh" title="Recarregar">Atualizar</button>
+      </div>
+    </div>
+    <div id="ra-hist" style="padding:6px 0"><div class="empty">Carregando…</div></div>
+  </div>
 </main>

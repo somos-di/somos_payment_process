@@ -14,11 +14,16 @@ const CreateSchema = z.object({
 export class ReapprovalController {
   constructor(private readonly service: ReapprovalService) {
     this.create = this.create.bind(this);
+    this.list = this.list.bind(this);
   }
 
   async create(req: FastifyRequest, reply: FastifyReply) {
     const payload = CreateSchema.parse(req.body);
-    const data = await this.service.send(payload);
+    const data = await this.service.send(req.accessToken!, payload);
     return reply.send({ success: true, data });
+  }
+
+  async list(req: FastifyRequest, reply: FastifyReply) {
+    return reply.send({ success: true, data: await this.service.list(req.accessToken!) });
   }
 }
