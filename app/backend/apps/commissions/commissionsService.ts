@@ -1,4 +1,4 @@
-import { unwrap, userClient } from '../gateways/supabase.js';
+import { unwrap, userClient } from '../../gateways/supabase.js';
 
 // Domínio de COMISSÃO (mini app isolado). Sem aprovação/parcelas: só o fluxo
 // (validar → aguardando NF → anexar NF → validação financeira → finalizar) roteado

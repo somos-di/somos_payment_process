@@ -1,5 +1,5 @@
-import { unwrap, userClient } from '../gateways/supabase.js';
-import type { ReapprovalGateway, ReapprovalPayload } from '../gateways/reapproval.js';
+import { unwrap, userClient } from '../../gateways/supabase.js';
+import type { ReapprovalGateway, ReapprovalPayload } from './reapprovalGateway.js';
 
 // Orquestra a reaprovação: envia ao n8n (gateway) e REGISTRA no histórico
 // (payment.reapprovals via RPC definer, author = auth.uid(), gate is_admin).

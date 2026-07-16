@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { CommissionsController } from '../controllers/commissionsController.js';
+import type { CommissionsController } from './commissionsController.js';
 
 export function registerCommissionsRoutes(app: FastifyInstance, commissions_center: CommissionsController): void {
   app.get('/commissions', commissions_center.list);
