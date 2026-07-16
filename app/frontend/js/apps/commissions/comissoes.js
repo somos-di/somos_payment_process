@@ -239,9 +239,9 @@ async function initView_comissoes() {
       var hist = await window.Store.get('comm_history', c.uuid_com);
       o.querySelector('[data-pane="hist"] .col-body').innerHTML = (hist && hist.length)
         ? '<ul class="timeline">' + hist.map(function (x) {
-            return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_chs) + '</div>'
-              + '<div class="tl-meta">' + esc(x.user_nome || 'Sistema') + ' · ' + esc(fmtDateTime(x.created_at_chs)) + '</div></div></li>';
-          }).join('') + '</ul>'
+          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_chs) + '</div>'
+            + '<div class="tl-meta">' + esc(x.user_nome || 'Sistema') + ' · ' + esc(fmtDateTime(x.created_at_chs)) + '</div></div></li>';
+        }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
     } catch (e) { o.querySelector('[data-pane="hist"] .col-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }

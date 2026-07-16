@@ -1,7 +1,5 @@
 name: CI
 
-# Validação: roda em PR pra main e em pushes de qualquer branch que NÃO seja a main
-# (na main quem age é o Deploy/cd.yml, que reconstrói no droplet).
 on:
   pull_request:
     branches: [main]

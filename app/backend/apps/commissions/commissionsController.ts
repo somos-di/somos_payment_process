@@ -1,15 +1,14 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { NotFoundError } from '../../errors.js';
-import type { CommissionsService } from './commissionsService.js';
 import { UuidParamSchema } from '../../validators/common.js';
+import type { CommissionsService } from './commissionsService.js';
 
-// ações do fluxo e o payload esperado de cada uma
+
 const NoteSchema = z.object({ note: z.string().trim().max(500).optional() });
-// cancelamento exige MOTIVO (vai para o histórico)
+
 const CancelSchema = z.object({ note: z.string().trim().min(1).max(500) });
-// nullish: o front pode mandar a URL, ausente OU null (ex.: boleto não anexado).
-// A trilha também pode editar e-mail/celular do vendedor ao validar (etapa 1).
+
 const SetNfSchema = z.object({
   nf_url: z.string().max(2000).nullish(),
   boleto_url: z.string().max(2000).nullish(),
@@ -17,7 +16,7 @@ const SetNfSchema = z.object({
   seller_phone: z.string().max(50).nullish(),
 });
 const VALID_ACTIONS = new Set(['validate', 'set-nf', 'finalize', 'pendency', 'resolve', 'cancel']);
-// cadastro de empreendimento (admin): nome, empresa (SPE), obra, trilha (somos), ativo.
+
 const EmpreendimentoSchema = z.object({
   id: z.number().int().nullable().optional(),
   name: z.string().trim().min(1).max(200),
@@ -27,7 +26,7 @@ const EmpreendimentoSchema = z.object({
   active: z.boolean().optional(),
 });
 const RemoveSchema = z.object({ id: z.number().int() });
-// criação manual de comissão (trilha/admin): empreendimento (empresa+obra) + dados da venda.
+
 const optText = z.string().trim().max(200).optional();
 const CreateSchema = z.object({
   company: z.string().trim().min(1),
@@ -89,7 +88,7 @@ export class CommissionsController {
 
     const body = (req.body ?? {}) as Record<string, unknown>;
     const opts: { note?: string; nfUrl?: string; boletoUrl?: string; sellerEmail?: string; sellerPhone?: string } = {};
-    // etapa 1 (trilha): validar carrega a NF (obrigatória) + boleto e edição de e-mail/celular
+
     if (action === 'validate' || action === 'set-nf') {
       const b = SetNfSchema.parse(body);
       opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined;

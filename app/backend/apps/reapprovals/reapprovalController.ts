@@ -2,7 +2,6 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { ReapprovalService } from './reapprovalService.js';
 
-// mesmo contrato do app de origem: aprovador + empresa + obra(centro de custo) + processo + parcela
 const CreateSchema = z.object({
   approverId: z.string().trim().min(1).max(200),
   companyId: z.number().int().positive(),

@@ -67,7 +67,7 @@
         await window.Store.commit(
           function () { return window.API.post('/processes/' + uuid + '/installments', { installments: payload }); },
           function () {
-            window.Store.invalidateKey('installments', uuid); 
+            window.Store.invalidateKey('installments', uuid);
             window.Store.patch('financeiro', 'uuid_prc', uuid, { soma_parcelas: payloadSum, qtd_parcelas: payload.length, parcelas_fora_ordem: outOfOrder });
             return ['installments'];
           });

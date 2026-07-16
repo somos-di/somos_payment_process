@@ -185,7 +185,7 @@
           urgent: el.urgent.value,
         };
       }
-      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) {  } }
+      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) { } }
       function emit() { persist(); if (opts.onChange) opts.onChange(getValues()); }
 
       companyMS.setValues(asArray(saved.company));
@@ -204,7 +204,7 @@
           companyMS.clear(); buildingMS.clear(); buildingMS.setDisabled(true);
           el.from.value = ''; el.to.value = ''; el.urgent.value = '';
           if (statusMulti) statusMS.clear(); else el.status.value = '';
-          try { localStorage.removeItem(storageKey); } catch (e) {  }
+          try { localStorage.removeItem(storageKey); } catch (e) { }
           if (opts.onChange) opts.onChange(getValues());
         },
       };

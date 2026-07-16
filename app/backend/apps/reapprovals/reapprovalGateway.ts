@@ -9,8 +9,6 @@ export interface ReapprovalPayload {
   installmentId: number;
 }
 
-// Envia a reaprovação para o webhook do n8n (mini app /reaprovals). Base única do n8n
-// (settings.n8nBaseUrl) + endpoint do fluxo (settings.reapproval.workflowEndPoint).
 export class ReapprovalGateway extends AsyncHttpClient {
   private readonly endpoint: string;
 

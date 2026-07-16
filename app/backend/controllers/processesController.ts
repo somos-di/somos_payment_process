@@ -17,7 +17,7 @@ const CorrectSchema = z.object({
   installments: z.array(InstallmentSchema).optional(), // ausente = não mexe nas parcelas
   resend: z.boolean().default(false),
 });
-// GESTÃO (admin): motivo OBRIGATÓRIO; a autorização (is_admin) vive na RPC.
+// GESTÃO (admin): motivo OBRIGATÓRIO; a autorização (is_admin) vive na RPC
 const AdminEditSchema = z.object({
   process: boundedRecord,
   installments: z.array(InstallmentSchema).optional(),

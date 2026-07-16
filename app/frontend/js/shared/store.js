@@ -49,7 +49,7 @@
 
     warm: function (entity, param) {
       _warm.set(entity, (param === undefined ? null : param));
-      return this.get(entity, param).catch(function () {});
+      return this.get(entity, param).catch(function () { });
     },
 
     invalidate: function (entity, _seen) {
@@ -65,7 +65,7 @@
 
       if (_warm.has(entity)) {
         var p = _warm.get(entity);
-        Promise.resolve().then(function () { self.get(entity, p).catch(function () {}); });
+        Promise.resolve().then(function () { self.get(entity, p).catch(function () { }); });
       }
     },
 

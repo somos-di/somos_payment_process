@@ -1,9 +1,5 @@
 import { unwrap, userClient } from '../../gateways/supabase.js';
 
-// Domínio de COMISSÃO (mini app isolado). Sem aprovação/parcelas: só o fluxo
-// (validar → aguardando NF → anexar NF → validação financeira → finalizar) roteado
-// por empreendimento (empresa + obra). Escreve EM NOME do usuário (userClient) -> RLS
-// + auth.uid() valem nas RPCs. Comissões são criadas por automação externa (INSERT).
 export class CommissionsService {
   private readonly view = 'v_commissions';
 
@@ -15,7 +11,6 @@ export class CommissionsService {
     return unwrap(userClient(token).from(this.view).select('*').eq('uuid_com', uuid).single());
   }
 
-  // Máquina de estados: a RPC valida ação × status + visibilidade/papel no banco.
   transition(
     token: string, uuid: string, action: string,
     opts: { note?: string; nfUrl?: string; boletoUrl?: string; sellerEmail?: string; sellerPhone?: string } = {},
@@ -28,8 +23,6 @@ export class CommissionsService {
     })) as Promise<{ uuid_com: string; status_step: number }>;
   }
 
-  // CRIAÇÃO MANUAL de comissão (trilha/admin). A RPC valida trilha/empreendimento e
-  // grava author = auth.uid(); entra em "A validar" (status 1). Mesmo destino da automação.
   create(
     token: string,
     c: {
@@ -49,7 +42,6 @@ export class CommissionsService {
     })) as Promise<{ uuid_com: string }>;
   }
 
-  // CADASTRO de empreendimento (admin). A RPC exige is_admin e grava o author = auth.uid().
   upsertEmpreendimento(
     token: string,
     e: { id?: number | null; name: string; company: string; building: string; somos: boolean; active?: boolean },

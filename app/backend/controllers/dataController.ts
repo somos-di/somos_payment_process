@@ -6,12 +6,12 @@ import { MAX_UPLOAD_B64 } from '../validators/common.js';
 const QuerySchema = z.object({
   ops: z.array(z.array(z.any())).optional().default([]),
   count: z.boolean().optional().default(false),
-  head: z.boolean().optional().default(false), // só o total (META), sem trafegar linhas
+  head: z.boolean().optional().default(false), // só o total e sem trafegar linhas
 });
 const RpcSchema = z.object({ args: z.record(z.any()).optional().default({}) });
 const UploadSchema = z.object({
   filename: z.string().min(1).max(255),
-  contentBase64: z.string().min(1).max(MAX_UPLOAD_B64), // rejeita payload gigante cedo; tamanho real conferido no service
+  contentBase64: z.string().min(1).max(MAX_UPLOAD_B64), // rejeita payload gigante cedo, tamanho real conferido no service
   contentType: z.string().max(150).optional().default(''),
 });
 

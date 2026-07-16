@@ -13,12 +13,12 @@ export class CacheManager {
     this.ttlSec = Math.max(1, Math.ceil(ttlMs / 1000));
   }
 
-  // true quando há Redis configurado (sem ele, não há cache: warm é no-op).
+  // true quando há Redis configurado (sem ele, não há cache
   get enabled(): boolean {
     return this.redis !== null;
   }
 
-  // Grava/sobrescreve uma chave (usado pelo warm no boot e no refresh do sync).
+  // Grava/sobrescreve uma chave (usado pelo warm no boot e no refresh do sync
   async set<T>(key: string, value: T): Promise<void> {
     if (!this.redis) return;
     try { await this.redis.set(key, JSON.stringify(value), 'EX', this.ttlSec); } catch { /* ignore */ }

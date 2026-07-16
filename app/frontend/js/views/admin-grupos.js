@@ -25,7 +25,7 @@ async function initView_admin_grupos() {
   }
 
   var groups = [], users = [];
-  var userGroups = {}; 
+  var userGroups = {};
   var currentUser = null;
 
   try {
@@ -96,8 +96,8 @@ async function initView_admin_grupos() {
       if (!userGroups[userId]) userGroups[userId] = new Set();
       if (add) userGroups[userId].add(groupId); else userGroups[userId].delete(groupId);
       var b = $('ag-membadge'); if (b) b.textContent = userGroups[userId].size + ' grupo(s)';
-      renderUserList(); 
-      var only = $('ag-only'); if (only && only.checked && !add) renderGroupList(); 
+      renderUserList();
+      var only = $('ag-only'); if (only && only.checked && !add) renderGroupList();
       toast(add ? 'Adicionado ao grupo.' : 'Removido do grupo.', true);
     } catch (err) { cb.checked = !add; toast('Erro: ' + err.message); }
     finally { cb.disabled = false; }
@@ -180,7 +180,7 @@ async function initView_admin_grupos() {
         });
         groups.push(created);
         groups.sort(function (a, b) { return String(a.name_grp).localeCompare(b.name_grp); });
-        window.Store.invalidate('groups'); 
+        window.Store.invalidate('groups');
         if (currentUser) renderGroupList();
         toast('Grupo "' + created.name_grp + '" criado. Agora conceda as permissões (Empresa/Obra/Tipo).', true);
         close();

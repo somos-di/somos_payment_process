@@ -7,7 +7,7 @@
 
     var label = (name && name !== String(step)) ? name : (steps[step] || name || ('Status ' + step));
 
-    var cls = ({ 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
+    var cls = ((window.CONFIG && window.CONFIG.STATUS_COLORS) || {})[step] || '';
     return '<span class="badge ' + cls + '">' + esc(label) + '</span>';
   }
   function btn(label, cls, fn) { var b = document.createElement('button'); b.className = 'btn ' + cls; b.style.marginLeft = '6px'; b.textContent = label; b.addEventListener('click', fn); return b; }
@@ -105,11 +105,11 @@
       });
     },
     load: function (key) {
-      try { var s = JSON.parse(localStorage.getItem(key) || 'null'); if (s && typeof s.col === 'string') return s; } catch (e) {  }
+      try { var s = JSON.parse(localStorage.getItem(key) || 'null'); if (s && typeof s.col === 'string') return s; } catch (e) { }
       return { col: '', asc: true };
     },
     save: function (key, sort) {
-      try { if (sort.col) localStorage.setItem(key, JSON.stringify(sort)); else localStorage.removeItem(key); } catch (e) {  }
+      try { if (sort.col) localStorage.setItem(key, JSON.stringify(sort)); else localStorage.removeItem(key); } catch (e) { }
     },
   };
 
@@ -162,8 +162,8 @@
         { label: 'Valor', col: 'value_prc', type: 'num' },
         { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
         { label: 'Status', col: 'status_nome', type: 'text' },
-      // colunas extras opcionais por tela (ex.: Nº UAU no Financeiro). Cada uma:
-      // { label, col, type?, render?(p) }. Entram no cabeçalho, no corpo e no sort.
+        // colunas extras opcionais por tela (ex.: Nº UAU no Financeiro). Cada uma:
+        // { label, col, type?, render?(p) }. Entram no cabeçalho, no corpo e no sort.
       ].concat(opts.extraColumns || []);
       var SORT_TYPES = {}; SORT_COLS.forEach(function (c) { SORT_TYPES[c.col] = c.type || 'text'; });
       var sortKey = 'sort:' + (opts.storageKey || (window.location.hash || 'view'));
@@ -180,7 +180,7 @@
           (list || []).forEach(function (a) {
             (approversByUuid[a.process_app] = approversByUuid[a.process_app] || []).push(a.approver_name || '—');
           });
-        } catch (e) {  }
+        } catch (e) { }
       }
 
       function approversCell(p) {
@@ -485,7 +485,7 @@
           (function (i, elx, k) {
             elx.addEventListener('change', function () {
               extraValues[i] = elx.value;
-              try { localStorage.setItem(k, extraValues[i]); } catch (e) {  }
+              try { localStorage.setItem(k, extraValues[i]); } catch (e) { }
               render();
             });
           })(ei, extraEls[ei], key);
@@ -578,7 +578,7 @@
         if (paged) { page = 0; total = null; }
         extraEls.forEach(function (el, i) {
           extraValues[i] = ''; if (el) el.value = '';
-          try { localStorage.removeItem(extraStorageKeys[i]); } catch (e) {  }
+          try { localStorage.removeItem(extraStorageKeys[i]); } catch (e) { }
         });
         selected = {}; updateBatchBtn();
         pf.clear();
