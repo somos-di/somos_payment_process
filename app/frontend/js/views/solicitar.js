@@ -17,7 +17,7 @@ async function initView_solicitar() {
     { n: 3, t: 'Parcelamento', d: 'Definição dos vencimentos.' },
     { n: 4, t: 'Anexos', d: 'Upload de documentos.' },
   ];
-  var step = 1, installments = [], appropriationMap = {}, attachments = { boleto: null, nf: null }, userId = null, deptId = null;
+  var step = 1, installments = [], appropriationMap = {}, appropriationOptions = [], attachments = { boleto: null, nf: null }, userId = null, deptId = null;
 
   function renderStepper() {
     $('sol-stepper').innerHTML = STEPS.map(function (s) {
@@ -97,8 +97,7 @@ async function initView_solicitar() {
   $('sol-empresa').addEventListener('change', async function () {
     var company = this.value;
     var building = $('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
-    $('sol-apropriacao').disabled = true; $('sol-apropriacao').innerHTML = '<option value="">Selecione uma obra</option>';
-    appropriationMap = {};
+    resetAppropriation('Selecione uma obra');
     if (company) {
       try {
         var buildings = await window.Store.get('obras', company);
@@ -109,23 +108,53 @@ async function initView_solicitar() {
   });
   $('sol-obra').addEventListener('change', async function () {
     var company = $('sol-empresa').value, building = this.value;
-    var ap = $('sol-apropriacao'); ap.disabled = true; ap.innerHTML = '<option value="">Carregando…</option>'; appropriationMap = {};
+    resetAppropriation('Carregando…');
     if (building) {
       try {
         var rows = await window.Store.get('compositions_lk', company + '|' + building);
-        var seen = {}; var opts = [];
+        var seen = {};
         rows.forEach(function (r) {
           var key = r.codigo_composicao + '|' + r.codigo_insumo;
           if (seen[key] || !r.codigo_composicao || !r.codigo_insumo) return; seen[key] = 1;
           appropriationMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
-          opts.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
+          appropriationOptions.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
         });
-        ap.innerHTML = '<option value="">Selecione uma apropriação</option>' + opts.map(function (o) { return '<option value="' + esc(o.k) + '">' + esc(o.t) + '</option>'; }).join('');
-        ap.disabled = false;
-      } catch (e) { ap.innerHTML = '<option value="">Erro</option>'; ap.disabled = false; }
+        var apin = $('sol-apropriacao-input');
+        apin.disabled = false; apin.placeholder = 'Busque a composição / insumo (' + appropriationOptions.length + ')…';
+      } catch (e) { $('sol-apropriacao-input').placeholder = 'Erro ao carregar'; }
+    } else {
+      $('sol-apropriacao-input').placeholder = 'Selecione empresa e obra primeiro';
     }
     show();
   });
+
+  // Apropriação: BUSCA client-side nas composições já carregadas (filtradas por empresa+obra).
+  var apin = $('sol-apropriacao-input'), apres = $('sol-apropriacao-results');
+  function resetAppropriation(placeholder) {
+    appropriationMap = {}; appropriationOptions = [];
+    $('sol-apropriacao').value = ''; apin.value = ''; apin.disabled = true;
+    apin.placeholder = placeholder || 'Selecione empresa e obra primeiro';
+    apres.classList.remove('show');
+  }
+  function renderAppropriation(term) {
+    term = (term || '').toLowerCase().trim();
+    var list = appropriationOptions.filter(function (o) {
+      return !term || o.t.toLowerCase().indexOf(term) >= 0 || o.k.toLowerCase().indexOf(term) >= 0;
+    }).slice(0, 100);
+    apres.innerHTML = list.length
+      ? list.map(function (o) { return '<div class="it" data-k="' + esc(o.k) + '">' + esc(o.t) + '</div>'; }).join('')
+      : '<div class="it">Nada encontrado</div>';
+    apres.classList.add('show');
+    apres.querySelectorAll('.it[data-k]').forEach(function (it) {
+      it.addEventListener('click', function () {
+        $('sol-apropriacao').value = it.getAttribute('data-k'); apin.value = it.textContent;
+        apres.classList.remove('show'); show();
+      });
+    });
+  }
+  apin.addEventListener('focus', function () { if (!apin.disabled) renderAppropriation(apin.value); });
+  apin.addEventListener('input', function () { $('sol-apropriacao').value = ''; renderAppropriation(apin.value); show(); });
+  document.addEventListener('click', function (e) { if (!apin.contains(e.target) && !apres.contains(e.target)) apres.classList.remove('show'); });
 
   var pin = $('sol-pessoa-input'), pres = $('sol-pessoa-results'), tmr = null;
   async function searchSuppliers(term) {
@@ -205,7 +234,7 @@ async function initView_solicitar() {
   $('sol-save').addEventListener('click', function () {
     var rows = [
       ['Empresa', optionText($('sol-empresa'))], ['Obra', optionText($('sol-obra'))], ['Fornecedor', pin.value || '—'],
-      ['Apropriação', optionText($('sol-apropriacao'))], ['Tipo de Processo', optionText($('sol-tipo'))],
+      ['Apropriação', apin.value || '—'], ['Tipo de Processo', optionText($('sol-tipo'))],
       ['Urgente', $('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText($('sol-tipodoc'))],
       ['Nº Documento', $('sol-numdoc').value || '—'], ['Data de Emissão', $('sol-emissao').value || '—'],
       ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal($('sol-valor').value) || 0)], ['Parcelas', String(installments.length)],
