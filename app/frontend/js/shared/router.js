@@ -21,9 +21,9 @@ const ROUTES = {
     'um-aprovador': { title: 'Processos com 1 Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'com-aprovador': { title: 'Processos com Aprovador', folder: 'admin', parentLabel: 'Administração', admin: true },
     'gestao-processos': { title: 'Gestão de Processos', folder: 'admin', parentLabel: 'Administração', admin: true },
-    'reaprovals': { title: 'Reaprovações', folder: 'reaprovals', parentLabel: 'Administração', admin: true },
-    'comissoes': { title: 'Pagamento de Comissões', folder: 'comissoes', parentLabel: 'Comissões', commission: true },
-    'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', folder: 'comissoes', parentLabel: 'Comissões', admin: true },
+    'reaprovals': { title: 'Reaprovações', appDir: 'reapprovals', parentLabel: 'Administração', admin: true },
+    'comissoes': { title: 'Pagamento de Comissões', appDir: 'commissions', parentLabel: 'Comissões', commission: true },
+    'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
 }
 
 const loadedScripts = new Set()
@@ -200,7 +200,10 @@ async function loadView(route, params) {
     window.routeParams = params
 
     try {
-        const html = await fetch(window.CONFIG.VIEW_TEMPLATE(meta.folder, route)).then(function (r) {
+        // MINI APPS ficam em html/apps/<appDir>/ e js/apps/<appDir>/; o core segue em html/views + js/views.
+        const htmlUrl = meta.appDir ? ('html/apps/' + meta.appDir + '/' + route + '.html') : window.CONFIG.VIEW_TEMPLATE(meta.folder, route)
+        const jsUrl = meta.appDir ? ('js/apps/' + meta.appDir + '/' + route + '.js') : ('js/views/' + route + '.js')
+        const html = await fetch(htmlUrl).then(function (r) {
             if (!r.ok) throw new Error('HTTP ' + r.status)
             return r.text()
         })
@@ -210,7 +213,7 @@ async function loadView(route, params) {
         if (!partial) throw new Error('A página legada não tem <main>')
         content.innerHTML = partial.innerHTML
 
-        await loadScriptOnce('js/views/' + route + '.js')
+        await loadScriptOnce(jsUrl)
         if (stale()) return
 
         const initFnName = 'initView_' + route.replace(/-/g, '_')

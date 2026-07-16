@@ -3,22 +3,17 @@ import { CacheWarmer } from '../cache/cacheWarmer.js';
 import { AdminController } from '../controllers/adminController.js';
 import { AuthController } from '../controllers/authController.js';
 import { CatalogController } from '../controllers/catalogController.js';
-import { CommissionsController } from '../controllers/commissionsController.js';
 import { DataController } from '../controllers/dataController.js';
 import { ProcessesController } from '../controllers/processesController.js';
-import { ReapprovalController } from '../controllers/reapprovalController.js';
 import { SyncController } from '../controllers/syncController.js';
 import { createRedisClient } from '../gateways/redis.js';
-import { ReapprovalGateway } from '../gateways/reapproval.js';
 import { UauGateway } from '../gateways/uau.js';
 import type { ControllersContainer } from '../routes/index.js';
 import { AdminService } from '../services/adminService.js';
 import { AuthService } from '../services/authService.js';
 import { CatalogService } from '../services/catalogService.js';
-import { CommissionsService } from '../services/commissionsService.js';
 import { DataService } from '../services/dataService.js';
 import { ProcessesService } from '../services/processesService.js';
-import { ReapprovalService } from '../services/reapprovalService.js';
 import { UauSyncService } from '../services/syncUauData/sync.js';
 import { UauIntegrationService } from '../services/uauIntegrationService.js';
 import { getSettings } from '../settings.js';
@@ -29,11 +24,11 @@ export interface Container {
   warmer: CacheWarmer;        // usado no boot (main.ts) para aquecer o cache
 }
 
-// instancia gateways, services e controllers. quaisquer novas entidades entram aqui
+// Instancia gateways/services/controllers do CORE (pagamento). Os MINI APPS
+// (comissões, reaprovações) têm DI própria em apps/<app>/ (via initApps) e não entram aqui.
 export function createContainer(): Container {
   const settings = getSettings();
   const uau = new UauGateway(settings);
-  const reapprovalGateway = new ReapprovalGateway(settings);
   const cache = new CacheManager(createRedisClient(), settings.cacheTtlMs);
   const warmer = new CacheWarmer(cache);
 
@@ -44,8 +39,6 @@ export function createContainer(): Container {
   const dataService = new DataService(cache);
   const adminService = new AdminService();
   const catalogService = new CatalogService(cache);
-  const commissionsService = new CommissionsService();
-  const reapprovalService = new ReapprovalService(reapprovalGateway);
 
   const controllers: ControllersContainer = {
     processes: new ProcessesController(processesService, uauIntegrationService),
@@ -54,8 +47,6 @@ export function createContainer(): Container {
     data: new DataController(dataService),
     admin: new AdminController(adminService),
     catalog: new CatalogController(catalogService),
-    commissions: new CommissionsController(commissionsService),
-    reapproval: new ReapprovalController(reapprovalService),
   };
   return { controllers, authService, warmer };
 }

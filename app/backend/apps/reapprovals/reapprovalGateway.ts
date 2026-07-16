@@ -1,5 +1,5 @@
-import { AsyncHttpClient } from '../base/abstract.js';
-import type { AppSettings } from '../settings.js';
+import { AsyncHttpClient } from '../../base/abstract.js';
+import type { AppSettings } from '../../settings.js';
 
 export interface ReapprovalPayload {
   approverId: string;

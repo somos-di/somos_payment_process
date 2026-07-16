@@ -1,8 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { NotFoundError } from '../errors.js';
-import type { CommissionsService } from '../services/commissionsService.js';
-import { UuidParamSchema } from '../validators/common.js';
+import { NotFoundError } from '../../errors.js';
+import type { CommissionsService } from './commissionsService.js';
+import { UuidParamSchema } from '../../validators/common.js';
 
 // ações do fluxo e o payload esperado de cada uma
 const NoteSchema = z.object({ note: z.string().trim().max(500).optional() });
