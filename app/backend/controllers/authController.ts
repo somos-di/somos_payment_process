@@ -16,7 +16,6 @@ export class AuthController {
   }
 
   // inicia o SSO Microsoft. guarda o estado PKCE num cookie curto e redireciona
-  // o browser pra tela de login da Microsoft.
   async oauthStart(_req: FastifyRequest, reply: FastifyReply) {
     const s = getSettings();
     const redirectTo = `${s.publicUrl}/api/v1/auth/callback`;

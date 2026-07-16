@@ -29,7 +29,7 @@ async function initView_sync() {
     try {
       var d = await window.API.post('/sync/' + id);
       setStatus('tr[data-id="' + id + '"]', 'OK · ' + d.rows + ' linhas', 'ok');
-      window.Store.clear(); 
+      window.Store.clear();
     } catch (e) {
       setStatus('tr[data-id="' + id + '"]', e.message, 'red');
     } finally { if (btn) btn.disabled = false; }
@@ -49,7 +49,7 @@ async function initView_sync() {
         setStatus(selector, 'OK · ' + x.rows + ' linhas', 'ok');
       });
       msgEl.textContent = 'Sincronização concluída.';
-      window.Store.clear(); 
+      window.Store.clear();
     } catch (e) {
       msgEl.textContent = 'Erro: ' + e.message;
     } finally { allBtn.disabled = false; }

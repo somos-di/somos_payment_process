@@ -64,8 +64,7 @@ async function initView_financeiro() {
 
   // classe do badge por status (espelha o mapa do process-list): erro/cancelado em
   // vermelho, integrado/uau em verde, financeiro em amarelo, etc.
-  var STATUS_CLS = { 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' };
-  function statusCls(step) { return STATUS_CLS[step] || ''; }
+  function statusCls(step) { return ((window.CONFIG && window.CONFIG.STATUS_COLORS) || {})[step] || ''; }
   // ações do financeiro (devolver / parcelas / enviar UAU) só valem em ANÁLISE
   // FINANCEIRA (6) ou ERRO (8); os demais status entram como monitoramento (read-only).
   function isActionable(p) { return p.status_step_prc === window.CONFIG.STATUS.financeiro || p.status_step_prc === window.CONFIG.STATUS.erro; }

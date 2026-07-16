@@ -4,6 +4,6 @@ async function initView_minhas_aprovacoes() {
     load: function () { return window.Store.get('my_approvals'); },
     refreshKeys: ['my_approvals'],
     dateField: 'due_date_prc',
-    
+
   });
 }

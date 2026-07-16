@@ -8,7 +8,7 @@ const PermSchema = z.object({ group: z.number().int(), company: z.string().min(1
 const GroupSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(200).optional(),
-  restrictLaunch: z.boolean().optional().default(false), // grupo LANÇADOR (restringe tipos de lançamento)
+  restrictLaunch: z.boolean().optional().default(false), // grupo LANÇADOR (restringe tipos de lançamento
 });
 
 export class AdminController {

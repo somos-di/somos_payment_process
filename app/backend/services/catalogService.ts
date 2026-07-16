@@ -14,4 +14,25 @@ export class CatalogService {
     // catálogo global (igual p/ todos): cacheável sem chave de usuário.
     return this.cache ? this.cache.wrap('catalog:status', load) : load();
   }
+
+  processKinds(): Promise<Record<number, string>> {
+    const load = async (): Promise<Record<number, string>> => {
+      const rows = await unwrap(
+        adminClient().from('process_kinds').select('id_pkn,name_pkn').order('name_pkn'),
+      ) as Array<{ id_pkn: number; name_pkn: string }>;
+      const m: Record<number, string> = {};
+      for (const r of rows) m[r.id_pkn] = r.name_pkn;
+      return m;
+    };
+    return this.cache ? this.cache.wrap('catalog:process_kinds', load) : load();
+  }
+
+  async bootstrap(): Promise<{
+    steps: Record<number, string>;
+    status: Record<string, number>;
+    processKinds: Record<number, string>;
+  }> {
+    const [cat, processKinds] = await Promise.all([this.statusCatalog(), this.processKinds()]);
+    return { steps: cat.byId, status: cat.byKey, processKinds };
+  }
 }

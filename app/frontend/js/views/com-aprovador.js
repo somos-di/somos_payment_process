@@ -3,7 +3,7 @@ async function initView_com_aprovador() {
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function statusBadge(step, name) {
-    var cls = ({ 0: 'red', 1: 'blue', 2: 'red', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' })[step] || '';
+    var cls = ((window.CONFIG && window.CONFIG.STATUS_COLORS) || {})[step] || '';
     return '<span class="badge ' + cls + '">' + esc(name || ('Status ' + step)) + '</span>';
   }
   var SLOW_DAYS = ((window.CONFIG.PARAMS || {}).comAprovador || {}).slowDays || 5;

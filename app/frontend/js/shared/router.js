@@ -247,29 +247,17 @@ function warmState() {
 
 
 
-async function loadStatusCatalog() {
-    try {
-        const catalog = await window.API.get('/catalog/status')
-        if (catalog && catalog.byId) window.CONFIG.STEPS = catalog.byId
-        if (catalog && catalog.byKey) window.CONFIG.STATUS = catalog.byKey
-    } catch (e) {  }
-}
-
-
-async function loadProcessKinds() {
-    try {
-        const rows = await window.Store.get('process_kinds')
-        if (Array.isArray(rows) && rows.length) {
-            const m = {}
-            rows.forEach(function (r) { m[r.id_pkn] = r.name_pkn })
-            window.CONFIG.PROCESS_KINDS = m
-        }
-    } catch (e) {  }
-}
-
 async function loadCatalogs() {
-    if (!window.Store || !window.Auth || !window.Auth.isAuthenticated()) return
-    await Promise.all([loadStatusCatalog(), loadProcessKinds()])
+    if (!window.Auth || !window.Auth.isAuthenticated()) return
+    try {
+        const b = await window.API.get('/catalog/bootstrap')
+        if (b) {
+            if (b.steps) window.CONFIG.STEPS = b.steps
+            if (b.status) window.CONFIG.STATUS = b.status
+            if (b.processKinds) window.CONFIG.PROCESS_KINDS = b.processKinds
+        }
+    } catch (e) { }
+    if (typeof window.buildConsultaTabs === 'function') window.buildConsultaTabs()
 }
 
 async function bootstrapAuth() {

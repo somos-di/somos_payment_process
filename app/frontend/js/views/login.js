@@ -11,13 +11,13 @@ window.initView_login = async function initView_login() {
         return
     }
 
-    
+
     var params = window.routeParams
     if (params && typeof params.get === 'function' && params.get('error') === 'oauth') {
         errEl.textContent = 'Falha no login com Microsoft. Tente novamente.'
     }
 
-    
+
     var msBtn = document.getElementById('login-ms')
     if (msBtn) {
         msBtn.addEventListener('click', function () {

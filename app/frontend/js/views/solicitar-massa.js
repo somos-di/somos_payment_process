@@ -239,7 +239,7 @@ async function initView_solicitar_massa() {
       $('lm-prog-label').textContent = 'Concluído';
       $('lm-prog-cont').innerHTML = esc(ok + ' ok · ' + fail + ' erro(s)')
         + (savedUrl ? ' · <a href="' + esc(savedUrl) + '" target="_blank" rel="noopener">planilha salva</a>'
-                    : ' · <span style="color:var(--muted)">planilha não salva</span>');
+          : ' · <span style="color:var(--muted)">planilha não salva</span>');
     } catch (e) {
       $('lm-prog-label').textContent = 'Falha';
       $('lm-prog-cont').textContent = e.message;
