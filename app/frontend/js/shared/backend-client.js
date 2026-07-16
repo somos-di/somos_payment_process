@@ -1,5 +1,5 @@
 (function () {
-  
+
   function Spec() { this.__ops = []; }
   ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 'is'].forEach(function (m) {
     Spec.prototype[m] = function (col, val) { this.__ops.push([m, col, val]); return this; };
@@ -10,7 +10,7 @@
   Spec.prototype.limit = function (n) { this.__ops.push(['limit', n]); return this; };
   Spec.prototype.range = function (a, b) { this.__ops.push(['range', a, b]); return this; };
 
-  var _userId = null; 
+  var _userId = null;
 
   window.SB = {
     setUserId: function (id) { _userId = id || null; },
@@ -19,7 +19,7 @@
       try { var me = await window.API.get('/auth/me'); _userId = me ? me.id : null; } catch (e) { _userId = null; }
       return _userId;
     },
-    
+
     select: async function (resource, build) {
       var spec = new Spec();
       if (build) build(spec);
@@ -33,7 +33,7 @@
       return (res && res.count != null) ? res.count : 0;
     },
     rpc: function (fn, args) { return window.API.post('/rpc/' + fn, { args: args || {} }); },
-    
+
     // endpoint opcional: '/storage/upload' (padrão, anexos) ou '/storage/bulk-import' (xlsx do lote)
     upload: function (file, endpoint) {
       return new Promise(function (resolve, reject) {

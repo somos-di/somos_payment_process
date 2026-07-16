@@ -6,7 +6,7 @@ import './_env.js';
 test('createContainer: monta todos os controllers, o authService e o warmer', () => {
   const c = createContainer();
   assert.ok(c.controllers, 'controllers ausente');
-  for (const k of ['processes', 'sync', 'auth', 'data', 'admin', 'catalog', 'commissions']) {
+  for (const k of ['processes', 'sync', 'auth', 'data', 'admin', 'catalog', 'commissions', 'reapproval']) {
     assert.ok((c.controllers as unknown as Record<string, unknown>)[k], `controller ausente: ${k}`);
   }
   assert.ok(c.authService, 'authService ausente');

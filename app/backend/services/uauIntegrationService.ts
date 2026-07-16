@@ -1,6 +1,12 @@
 import { buildUauPayloadParams as P } from '../config/runtime.js';
 import { AppError } from '../errors.js';
 import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
+import { getSettings } from '../settings.js';
+
+// junta base + endpoint normalizando as barras (evita '//' ou base sem '/')
+function joinUrl(base: string, endpoint: string): string {
+  return base.replace(/\/+$/, '') + '/' + endpoint.replace(/^\/+/, '');
+}
 
 // ── Helpers de formatação do payload (puros, sem estado) ────────────────────
 const fmtDateTime = (d?: string | null): string =>            // 'YYYY-MM-DD HH:mm:ss'
@@ -40,10 +46,11 @@ export class UauIntegrationService {
       throw new AppError('Processo com pendência; resolva antes de integrar: ' + alerts.join(' '), 422, 'validation');
     }
 
-    const webhookUrl = process.env.INTEGRATION_WEBHOOK_URL;
-    if (!webhookUrl) {
-      throw new AppError('Integração não configurada: defina INTEGRATION_WEBHOOK_URL no ambiente.', 500, 'config');
+    const s = getSettings();
+    if (!s.n8nBaseUrl || !s.integration.webhookEndpoint) {
+      throw new AppError('Integração não configurada: defina N8N_BASE_URL e INTEGRATION_WEBHOOK_ENDPOINT no ambiente.', 500, 'config');
     }
+    const webhookUrl = joinUrl(s.n8nBaseUrl, s.integration.webhookEndpoint);
 
     const payload = await this.buildPayload(uuid);
     let resp: Response;

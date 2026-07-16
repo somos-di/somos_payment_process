@@ -36,6 +36,10 @@ export interface AppSettings {
     xIntegration: string;
     timeoutMs: number;
   };
+  // n8n: base ÚNICA do host + endpoint por fluxo (integração e reaprovação)
+  n8nBaseUrl: string;
+  integration: { webhookEndpoint: string };   // webhook do "Integrar" (Financeiro)
+  reapproval: { workflowEndPoint: string };    // webhook do mini app /reaprovals
 }
 
 let _s: AppSettings | null = null;
@@ -65,6 +69,9 @@ export function getSettings(): AppSettings {
       xIntegration: process.env.UAU_X_INTEGRATION || '',
       timeoutMs: Number(process.env.UAU_TIMEOUT_MS || 30000),
     },
+    n8nBaseUrl: process.env.N8N_BASE_URL || '',
+    integration: { webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '' },
+    reapproval: { workflowEndPoint: process.env.REAPROVAL_WORKFLOW_ENDPOINT || '' },
   };
   return _s;
 }

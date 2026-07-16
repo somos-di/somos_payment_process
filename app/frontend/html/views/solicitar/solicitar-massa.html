@@ -1,54 +1,208 @@
 <main>
   <style>
-    
-    .lm-steps { display: grid; grid-template-columns: 400px 1fr; gap: 16px; align-items: stretch; }
-    .lm-step { padding: 20px 22px; display: flex; flex-direction: column; }
-    .lm-step-head { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
-    .lm-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-weak);
-                   color: var(--accent); font-weight: 700; font-size: 13px; display: grid; place-items: center; flex: none; }
-    .lm-step-head b { display: block; font-size: 14.5px; color: var(--text); }
-    .lm-step-head span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+    .lm-steps {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
 
-    .lm-hints { margin: 0 0 16px; padding-left: 18px; font-size: 13px; color: var(--text-2); display: grid; gap: 7px; }
-    .lm-hints li::marker { color: var(--accent); }
-    .lm-step .btn { align-self: flex-start; margin-top: auto; }
+    .lm-step {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+    }
 
-    .dropzone-lote { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
-                     gap: 8px; border: 1.5px dashed var(--border); border-radius: 12px; padding: 34px 24px;
-                     text-align: center; cursor: pointer; background: var(--surface-2);
-                     transition: border-color .12s, background .12s; }
-    .dropzone-lote:hover { border-color: var(--accent); background: var(--accent-weak); }
-    .dropzone-lote.dragover { border-color: var(--accent); border-style: solid; background: var(--accent-weak);
-                              box-shadow: 0 0 0 3px var(--accent-weak); }
-    .dropzone-lote svg { width: 32px; height: 32px; color: var(--accent); }
-    .lm-dz-sub { font-size: 12.5px; color: var(--muted); }
+    .lm-step-head {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
 
-    .lm-error { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px;
-                border: 1px solid #f5c6d1; background: var(--danger-weak); color: #9f1239;
-                border-radius: 12px; padding: 13px 16px; font-size: 13.5px; }
-    .lm-error svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+    .lm-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-weak);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      display: grid;
+      place-items: center;
+      flex: none;
+    }
 
-    .lm-panel { margin-top: 16px; padding: 0; overflow: hidden; }
-    .lm-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-                     flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border); }
-    .lm-panel-head b { font-size: 14.5px; }
-    .lm-panel-sub { font-size: 12.5px; color: var(--muted); }
-    .lm-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .lm-step-head b {
+      display: block;
+      font-size: 14.5px;
+      color: var(--text);
+    }
 
-    .lote-scroll { max-height: 420px; overflow: auto; }
-    .lote-scroll table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 1; white-space: nowrap; }
+    .lm-step-head span {
+      display: block;
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
 
-    .lm-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-                        flex-wrap: wrap; padding: 14px 18px 0; }
-    .progress { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 10px 18px 14px; }
-    .progress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+    .lm-hints {
+      margin: 0 0 16px;
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--text-2);
+      display: grid;
+      gap: 7px;
+    }
 
-    @media (max-width: 980px) { .lm-steps { grid-template-columns: 1fr; } }
+    .lm-hints li::marker {
+      color: var(--accent);
+    }
+
+    .lm-step .btn {
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    .dropzone-lote {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      padding: 34px 24px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface-2);
+      transition: border-color .12s, background .12s;
+    }
+
+    .dropzone-lote:hover {
+      border-color: var(--accent);
+      background: var(--accent-weak);
+    }
+
+    .dropzone-lote.dragover {
+      border-color: var(--accent);
+      border-style: solid;
+      background: var(--accent-weak);
+      box-shadow: 0 0 0 3px var(--accent-weak);
+    }
+
+    .dropzone-lote svg {
+      width: 32px;
+      height: 32px;
+      color: var(--accent);
+    }
+
+    .lm-dz-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .lm-error {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 16px;
+      border: 1px solid #f5c6d1;
+      background: var(--danger-weak);
+      color: #9f1239;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 13.5px;
+    }
+
+    .lm-error svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      margin-top: 1px;
+    }
+
+    .lm-panel {
+      margin-top: 16px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .lm-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lm-panel-head b {
+      font-size: 14.5px;
+    }
+
+    .lm-panel-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .lm-panel-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .lote-scroll {
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    .lote-scroll table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-2);
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    .lm-progress-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 18px 0;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      overflow: hidden;
+      margin: 10px 18px 14px;
+    }
+
+    .progress>span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width .2s;
+    }
+
+    @media (max-width: 980px) {
+      .lm-steps {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 
   <div class="section-title">Solicitar em Massa</div>
   <div class="section-sub" style="margin-bottom:16px">Crie vários processos de uma vez a partir de uma planilha
-    <b>.xlsx</b> (ou .csv).</div>
+    <b>.xlsx</b> (ou .csv).
+  </div>
 
   <div class="lm-steps" id="lm-upload">
     <div class="card lm-step">
@@ -57,12 +211,18 @@
         <div><b>Baixe o modelo</b><span>Planilha com o cabeçalho correto</span></div>
       </div>
       <ul class="lm-hints">
-        <li>A aba <b>Instruções</b> explica o preenchimento de cada coluna e lista os <b>IDs dos tipos de processo</b>.</li>
+        <li>A aba <b>Instruções</b> explica o preenchimento de cada coluna e lista os <b>IDs dos tipos de processo</b>.
+        </li>
         <li>Datas em <b>dd/mm/aaaa</b> ou <b>aaaa-mm-dd</b> · valores como <b>1.000,00</b>.</li>
         <li>Uma linha por processo; as parcelas mensais são geradas pela quantidade informada.</li>
       </ul>
       <button class="btn btn-light" id="lm-modelo">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M7 10l5 5 5-5" />
+          <path d="M12 15V3" />
+        </svg>
         Baixar modelo (.xlsx)
       </button>
     </div>
@@ -70,10 +230,16 @@
     <div class="card lm-step">
       <div class="lm-step-head">
         <span class="lm-step-num">2</span>
-        <div><b>Importe a planilha preenchida</b><span>Os IDs são conferidos nos catálogos e os nomes aparecem na pré-visualização</span></div>
+        <div><b>Importe a planilha preenchida</b><span>Os IDs são conferidos nos catálogos e os nomes aparecem na
+            pré-visualização</span></div>
       </div>
       <label class="dropzone-lote" for="lm-file">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="M8 17l4-4 4 4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2" />
+          <path d="M12 12v9" />
+          <path d="M8 17l4-4 4 4" />
+        </svg>
         <div><b>Clique para enviar</b> ou arraste o arquivo aqui</div>
         <div class="lm-dz-sub">.xlsx, .xls ou .csv — use o modelo do passo 1.</div>
       </label>
@@ -82,7 +248,11 @@
   </div>
 
   <div class="lm-error" id="lm-erro" hidden>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4M12 16h.01" />
+    </svg>
     <span id="lm-erro-msg"></span>
   </div>
 
@@ -90,7 +260,8 @@
     <div class="lm-panel-head">
       <div>
         <b id="lm-preview-title"></b>
-        <div class="lm-panel-sub">Nomes resolvidos dos catálogos — itens <b style="color:var(--danger)">não encontrados</b> serão rejeitados pelas regras de visibilidade.</div>
+        <div class="lm-panel-sub">Nomes resolvidos dos catálogos — itens <b style="color:var(--danger)">não
+            encontrados</b> serão rejeitados pelas regras de visibilidade.</div>
       </div>
       <div class="lm-panel-actions">
         <button class="btn btn-light" id="lm-limpar">Limpar</button>
