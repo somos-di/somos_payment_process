@@ -8,7 +8,7 @@
 
     function currentRoute() {
         var h = (window.location.hash || '').replace(/^#\/?/, '');
-        return (h.split('?')[0] || (window.CONFIG && window.CONFIG.ROUTES.DEFAULT) || 'dashboard');
+        return (h.split('?')[0] || (window.CONFIG && window.CONFIG.ROUTES.DEFAULT) || 'consulta');
     }
 
     function routeOfHref(href) {

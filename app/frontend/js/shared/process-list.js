@@ -635,7 +635,7 @@
   };
 
   function invalidateFlowCaches() {
-    ['my_approvals', 'financeiro', 'financeiro_integrados', 'history', 'dashboard', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
+    ['my_approvals', 'financeiro', 'financeiro_integrados', 'history', 'no_approver'].forEach(function (e) { window.Store.invalidate(e); });
   }
   window.invalidateFlowCaches = invalidateFlowCaches;
 

@@ -65,12 +65,4 @@
       return q.order('nome').limit(100);
     });
   });
-
-  S.register('dashboard', async function () {
-    var all = await SB.select('processes', function (q) { return q.eq('active_prc', true); });
-    var S = window.CONFIG.STATUS;
-    var pend = all.filter(function (p) { return p.status_step_prc === S.aguardando; }).length;
-    var aguard = all.filter(function (p) { return p.status_step_prc === S.aguardando && p.approving_status_prc === 1; }).length;
-    return { total: all.length, pendentes: pend, aguardando: aguard, rows: all };
-  });
 })();

@@ -3,7 +3,6 @@ const LOGIN_ROUTE = window.CONFIG.ROUTES.LOGIN
 
 const ROUTES = {
     'login': { title: 'Entrar', folder: 'auth', public: true },
-    'dashboard': { title: 'Dashboard', folder: 'dashboard', parentLabel: 'Início' },
     'solicitar': { title: 'Novo Processo', folder: 'solicitar', parentLabel: 'Solicitar' },
     'solicitar-massa': { title: 'Solicitar em Massa', folder: 'solicitar', parentLabel: 'Solicitar' },
     'meus-lancamentos': { title: 'Meus Lançamentos', folder: 'solicitar', parentLabel: 'Solicitar' },
@@ -12,7 +11,7 @@ const ROUTES = {
     'consulta': { title: 'Processos', folder: 'consulta', parentLabel: 'Consulta' },
     'aprovacoes': { title: 'Aprovações Pendentes', folder: 'aprovar', parentLabel: 'Aprovar' },
     'minhas-aprovacoes': { title: 'Minhas Aprovações', folder: 'aprovar', parentLabel: 'Aprovar' },
-    'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento' },
+    'financeiro': { title: 'Financeiro', folder: 'departamento', parentLabel: 'Departamento', financeiro: true },
     'financeiro-integrados': { title: 'Processos Integrados', folder: 'departamento', parentLabel: 'Departamento', financeiro: true },
     'sync': { title: 'Sincronização UAU', folder: 'sync', parentLabel: 'Integração', admin: true },
     'admin-grupos': { title: 'Grupos & Usuários', folder: 'admin', parentLabel: 'Administração', admin: true },

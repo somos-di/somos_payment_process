@@ -2,7 +2,7 @@
     window.CONFIG = {
 
         API_BASE: (window.__API_BASE__ || '/api/v1'),
-        ROUTES: { DEFAULT: 'dashboard', LOGIN: 'login' },
+        ROUTES: { DEFAULT: 'consulta', LOGIN: 'login' },
         AUTH: { REFRESH_LEEWAY_SECONDS: 30 },
 
         PARAMS: {

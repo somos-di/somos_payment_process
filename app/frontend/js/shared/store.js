@@ -1,7 +1,7 @@
 (function () {
 
   var DEPENDENTS = {
-    processes: ['dashboard', 'no_approver', 'pending_approvals'],
+    processes: ['no_approver', 'pending_approvals'],
     supply_rules: ['eligible_approvers', 'no_approver'],
     company_rules: ['eligible_approvers', 'no_approver'],
     building_permission: ['eligible_approvers', 'no_approver'],
