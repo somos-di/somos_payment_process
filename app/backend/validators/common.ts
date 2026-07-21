@@ -14,8 +14,8 @@ export type UuidParam = z.infer<typeof UuidParamSchema>;
 // Teto de SEGURANÇA por campo de texto livre: o front ainda aplica limites por campo
 // (menores); este é a rede que impede um POST manual com megabytes de texto.
 export const MAX_TEXT_FIELD = 5000;
-// Arquivo: 14 MiB. Cabe com folga no bodyLimit de 20MB após o base64 (~+34%).
-export const MAX_FILE_BYTES = 14 * 1024 * 1024;
+// Arquivo: 50 MiB. Cabe no bodyLimit de 70MB após o base64 (~+34%).
+export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 // Teto grosseiro do base64 correspondente (rejeita cedo, antes de decodificar).
 export const MAX_UPLOAD_B64 = Math.ceil(MAX_FILE_BYTES / 3) * 4 + 1024;
 
