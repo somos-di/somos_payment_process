@@ -25,3 +25,6 @@ class SupabaseGateway:
             raise Exception(f"Failed to fetch process: {e.message}") from e
 
         return response.data
+
+    async def close(self) -> None:
+        self._supabase_client.remove_all_channels()
