@@ -183,6 +183,20 @@ class SupabaseGateway:
             for r in (resp.data or [])
         ]
 
+    async def get_process_uuid(self, user_jwt: str, id_prc: int) -> str | None:
+        client = await self._client(user_jwt)
+        try:
+            resp = await (
+                client.table("processes")
+                .select("uuid_prc")
+                .eq("id_prc", id_prc)
+                .maybe_single()
+                .execute()
+            )
+        except APIError as e:
+            raise RuntimeError(f"Falha ao buscar o processo: {e.message}") from e
+        return (resp.data or {}).get("uuid_prc")
+
     def close(self) -> None:
         # clients são por-request (efêmeros); nada persistente para fechar.
         return None
