@@ -20,7 +20,8 @@ async def lifespan(_: object):
         yield
 
     finally:
-        gateways.supabase.close()
+        if gateways.supabase is not None:
+            gateways.supabase.close()
 
 
 def get_supabase_gateway() -> SupabaseGateway:
