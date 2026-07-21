@@ -2,7 +2,7 @@ import json
 from typing import AsyncIterator
 
 from constants.system_prompt import SYSTEM_PROMPT
-from gateways import get_azure_gateway, get_mcp_gateway
+from gateways import get_azure_gateway, get_conversation_gateway, get_mcp_gateway
 
 from .streaming import ToolCallAccumulator
 from .tool_mapper import to_openai_tool, tool_result_to_text
@@ -14,17 +14,18 @@ def _system_prompt(mcp_instructions: str | None) -> str:
     return SYSTEM_PROMPT
 
 
-async def stream_turn(history: list[dict], user_message: str, user_jwt: str) -> AsyncIterator[str]:
+async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) -> AsyncIterator[str]:
     azure = get_azure_gateway()
     mcp = get_mcp_gateway()
+    conversations = get_conversation_gateway()
 
     async with mcp.session(user_jwt) as (session, init):
         tools = [to_openai_tool(t) for t in (await session.list_tools()).tools]
-        messages: list[dict] = [
-            {"role": "system", "content": _system_prompt(getattr(init, "instructions", None))},
-            *history,
-            {"role": "user", "content": user_message},
-        ]
+
+        messages = await conversations.load(conversation_id)
+        if messages is None:
+            messages = [{"role": "system", "content": _system_prompt(getattr(init, "instructions", None))}]
+        messages.append({"role": "user", "content": user_message})
 
         while True:
             calls = ToolCallAccumulator()
@@ -46,9 +47,13 @@ async def stream_turn(history: list[dict], user_message: str, user_jwt: str) -> 
                     finish_reason = choice.finish_reason
 
             if finish_reason != "tool_calls" or not calls:
+                if assistant_text:
+                    messages.append({"role": "assistant", "content": assistant_text})
                 break
 
             await _resolve_tool_round(session, messages, assistant_text, calls.ordered())
+
+        await conversations.save(conversation_id, messages)
 
 
 async def _resolve_tool_round(session, messages: list[dict], assistant_text: str, ordered_calls: list[dict]) -> None:

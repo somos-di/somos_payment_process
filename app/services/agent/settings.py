@@ -12,6 +12,9 @@ class AppSettings(BaseSettings):
 
     supabase_mcp_url: str = "http://localhost:8000/mcp"
 
+    redis_url: str = "redis://localhost:6379"
+    conversation_ttl_seconds: int = 7200
+
     supabase_url: str
     supabase_anon_key: SecretStr
 

@@ -59,10 +59,14 @@ services:
       - ./app/services/agent/.env
     environment:
       SUPABASE_MCP_URL: http://supabase_mcp:8000/mcp
+      REDIS_URL: redis://redis:6379
     expose:
       - "8100"
     depends_on:
-      - supabase_mcp
+      supabase_mcp:
+        condition: service_started
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - somos

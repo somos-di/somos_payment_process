@@ -38,7 +38,7 @@ async def chat(body: ChatRequest, request: Request):
 
     async def sse():
         try:
-            async for token in stream_turn(body.history, body.message, user_jwt):
+            async for token in stream_turn(body.conversation_id, body.message, user_jwt):
                 yield f"data: {json.dumps({'delta': token}, ensure_ascii=False)}\n\n"
             yield "event: done\ndata: {}\n\n"
         except Exception as exc:

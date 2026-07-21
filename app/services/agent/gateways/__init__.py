@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from settings import get_app_settings
 
 from .azure_openai import AzureOpenAIGateway
+from .conversations import ConversationGateway
 from .mcp import McpGateway
 from .supabase_auth import SupabaseAuthGateway
 
@@ -11,6 +12,7 @@ class GatewayContainer:
     azure: AzureOpenAIGateway | None = None
     mcp: McpGateway | None = None
     auth: SupabaseAuthGateway | None = None
+    conversations: ConversationGateway | None = None
 
 
 gateways = GatewayContainer()
@@ -22,6 +24,7 @@ async def lifespan(_: object):
     gateways.azure = AzureOpenAIGateway(settings)
     gateways.mcp = McpGateway(settings)
     gateways.auth = SupabaseAuthGateway(settings)
+    gateways.conversations = ConversationGateway(settings)
 
     try:
         yield
@@ -30,6 +33,8 @@ async def lifespan(_: object):
             await gateways.azure.close()
         if gateways.auth is not None:
             await gateways.auth.close()
+        if gateways.conversations is not None:
+            await gateways.conversations.close()
 
 
 def get_azure_gateway() -> AzureOpenAIGateway:
@@ -48,3 +53,9 @@ def get_auth_gateway() -> SupabaseAuthGateway:
     if gateways.auth is None:
         raise RuntimeError("Auth gateway não inicializado.")
     return gateways.auth
+
+
+def get_conversation_gateway() -> ConversationGateway:
+    if gateways.conversations is None:
+        raise RuntimeError("Conversation gateway não inicializado.")
+    return gateways.conversations

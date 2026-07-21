@@ -3,4 +3,4 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     message: str
-    history: list[dict] = Field(default_factory=list)
+    conversation_id: str = Field(default="default")

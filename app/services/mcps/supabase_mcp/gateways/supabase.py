@@ -66,12 +66,13 @@ class SupabaseGateway:
             raise RuntimeError(f"Falha ao buscar tipos de documento: {e.message}") from e
         return resp.data or []
 
-    async def get_companies(self, user_jwt: str) -> list[dict]:
+    async def get_companies(self, user_jwt: str, search: str | None = None, limit: int = 10) -> list[dict]:
         client = await self._client(user_jwt)
         try:
-            resp = await (
-                client.table("v_empresas").select("codigo,nome").order("nome").execute()
-            )
+            query = client.table("v_empresas").select("codigo,nome")
+            if search:
+                query = query.ilike("nome", f"%{search}%")
+            resp = await query.order("nome").limit(limit).execute()
         except APIError as e:
             raise RuntimeError(f"Falha ao buscar empresas: {e.message}") from e
         return resp.data or []
@@ -81,7 +82,7 @@ class SupabaseGateway:
         try:
             resp = await (
                 client.table("v_obras")
-                .select("codigo,nome,empresa")
+                .select("codigo,nome")
                 .eq("empresa", company)
                 .order("nome")
                 .execute()
@@ -90,19 +91,28 @@ class SupabaseGateway:
             raise RuntimeError(f"Falha ao buscar obras: {e.message}") from e
         return resp.data or []
 
-    async def get_appropriations(self, user_jwt: str, company: str, building: str) -> list[dict]:
-        """Apropriação = par composição + insumo disponível para a empresa/obra.
-        `codigo_composicao` vira composition_prc; `codigo_insumo` vira supply_prc."""
+    async def get_appropriations(
+        self,
+        user_jwt: str,
+        company: str,
+        building: str,
+        search: str | None = None,
+        limit: int = 10,
+    ) -> list[dict]:
         client = await self._client(user_jwt)
         try:
-            resp = await (
+            query = (
                 client.table("compositions")
                 .select("codigo_composicao,descricao_composicao,codigo_insumo,descricao_insumo")
                 .eq("empresa_cins", int(company))
-                .ilike("obra_cins", building)
-                .limit(2000)
-                .execute()
+                .eq("obra_cins", building)
             )
+            if search:
+                query = query.or_(
+                    f"descricao_composicao.ilike.%{search}%,descricao_insumo.ilike.%{search}%,"
+                    f"codigo_composicao.ilike.%{search}%,codigo_insumo.ilike.%{search}%"
+                )
+            resp = await query.limit(2000).execute()
         except APIError as e:
             raise RuntimeError(f"Falha ao buscar composições: {e.message}") from e
         except ValueError as e:
@@ -115,8 +125,9 @@ class SupabaseGateway:
             if not comp or not ins or (comp, ins) in seen:
                 continue
             seen.add((comp, ins))
-            out.append(r)
-        return out
+            label = f"{r.get('descricao_composicao') or comp} / {r.get('descricao_insumo') or ins}"
+            out.append({"composition": comp, "supply": ins, "label": label})
+        return out[:limit]
 
     async def search_suppliers(self, user_jwt: str, term: str | None = None) -> list[dict]:
         client = await self._client(user_jwt)
@@ -160,6 +171,17 @@ class SupabaseGateway:
         except APIError as e:
             raise RuntimeError(f"Falha ao criar o processo: {e.message}") from e
         return resp.data or {}
+
+    async def get_eligible_approvers(self, user_jwt: str, process_uuid: str) -> list[dict]:
+        client = await self._client(user_jwt)
+        try:
+            resp = await client.rpc("eligible_approvers", {"p_uuid": process_uuid}).execute()
+        except APIError as e:
+            raise RuntimeError(f"Falha ao buscar aprovadores elegíveis: {e.message}") from e
+        return [
+            {"name": r.get("name"), "email": r.get("email"), "group": r.get("group_name")}
+            for r in (resp.data or [])
+        ]
 
     def close(self) -> None:
         # clients são por-request (efêmeros); nada persistente para fechar.
