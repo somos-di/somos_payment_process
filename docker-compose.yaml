@@ -11,6 +11,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    networks:
+      - somos
 
   backend:
     build: ./app/backend
@@ -26,6 +28,8 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - somos
 
   frontend:
     build: ./app/frontend
@@ -36,3 +40,33 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - somos
+
+  supabase_mcp:
+    build: ./app/services/mcps/supabase_mcp
+    env_file:
+      - ./app/services/mcps/supabase_mcp/.env
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - somos
+
+  agent:
+    build: ./app/services/agent
+    env_file:
+      - ./app/services/agent/.env
+    environment:
+      SUPABASE_MCP_URL: http://supabase_mcp:8000/mcp
+    expose:
+      - "8100"
+    depends_on:
+      - supabase_mcp
+    restart: unless-stopped
+    networks:
+      - somos
+
+networks:
+  somos:
+    name: somos_net

@@ -8,7 +8,7 @@ def get_user_jwt() -> str:
     o modelo NUNCA vê o token (não é argumento de tool). Com o JWT, o gateway age
     como o usuário e a RLS do Supabase limita o que ele enxerga/cria.
     """
-    headers = get_http_headers()
+    headers = get_http_headers(include={"authorization"})
     auth = headers.get("authorization") or headers.get("Authorization") or ""
     if not auth.lower().startswith("bearer "):
         raise ValueError("Requisição sem Authorization Bearer (JWT do usuário).")

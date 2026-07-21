@@ -42,7 +42,6 @@ class SupabaseGateway:
         client.postgrest.auth(user_jwt)  # age como o usuário -> RLS aplica
         return client
 
-    # ---------------------------------------------------------------- LOOKUPS
     # Tudo que o agente precisa para montar um processo, filtrado como no app.
 
     async def get_launchable_kinds(self, user_jwt: str) -> list[dict]:
@@ -147,7 +146,6 @@ class SupabaseGateway:
             return None
         return (resp.data or {}).get("department_usr")
 
-    # ---------------------------------------------------------------- CRIAÇÃO
 
     async def create_process(self, user_jwt: str, process: dict, installments: list[dict]) -> dict:
         """Cria processo + parcelas via RPC (author = auth.uid(); valida tipo permitido)."""
