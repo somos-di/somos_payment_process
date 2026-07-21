@@ -77,6 +77,17 @@ async def get_eligible_approvers(
     return rows or "Ninguém elegível para aprovar (ou processo fora do seu acesso)."
 
 
+async def get_process_uuid(
+    id_prc: int,
+    supabase_gateway: SupabaseGateway = Depends(get_supabase_gateway),
+    user_jwt: str = Depends(get_user_jwt),
+) -> dict | str:
+    uuid = await supabase_gateway.get_process_uuid(user_jwt, id_prc)
+    if not uuid:
+        return "Processo não encontrado (ou fora do seu acesso)."
+    return {"uuid_prc": uuid}
+
+
 tools = (
     Tool.from_function(
         get_process_kinds,
@@ -129,7 +140,14 @@ tools = (
     Tool.from_function(
         get_eligible_approvers,
         name="get_eligible_approvers",
-        description="Lista quem pode/falta aprovar um processo. Passe o process_uuid (o uuid_prc devolvido por create_process).",
+        description="Lista quem pode/falta aprovar um processo. Passe o process_uuid (o uuid_prc). Se só tiver o número visível (id_prc), resolva antes com get_process_uuid.",
+        tags=_TAGS,
+        annotations=_READ_ONLY,
+    ),
+    Tool.from_function(
+        get_process_uuid,
+        name="get_process_uuid",
+        description="Resolve o uuid_prc de um processo a partir do número visível id_prc (ex.: 224). Use antes de get_eligible_approvers quando o usuário citar o processo pelo número.",
         tags=_TAGS,
         annotations=_READ_ONLY,
     ),

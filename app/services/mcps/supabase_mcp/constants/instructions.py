@@ -33,9 +33,11 @@ FLUXO
    ser >= 10 dias a partir de hoje.
 8. Mostre um RESUMO e só então chame create_process com os IDs + issue_date + parcelas.
 
-APÓS CRIAR
-- create_process devolve uuid_prc. Use get_eligible_approvers(process_uuid=uuid_prc) para
-  dizer quem pode/falta aprovar.
+APROVADORES / CONSULTAS
+- create_process devolve uuid_prc.
+- Para saber quem pode/falta aprovar, use get_eligible_approvers(process_uuid=uuid_prc).
+- Se o usuário citar o processo pelo NÚMERO (id_prc, ex.: "processo 224"), primeiro chame
+  get_process_uuid(id_prc) para obter o uuid_prc e só então get_eligible_approvers.
 
 REGRAS
 - Datas YYYY-MM-DD; valores como número. Soma das parcelas = valor total.
