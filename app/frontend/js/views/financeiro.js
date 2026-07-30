@@ -178,8 +178,8 @@ async function initView_financeiro() {
         var popupElement = document.createElement('div'); popupElement.className = 'fin-alert-pop';
         popupElement.innerHTML = '<b>Alertas do processo #' + escapeHtml(p.id_prc) + '</b><ul>' + alerts.map(function (alert) { return '<li>' + escapeHtml(alert) + '</li>'; }).join('') + '</ul>';
         document.body.appendChild(popupElement);
-        var r = item.getBoundingClientRect();
-        popupElement.style.top = (r.bottom + 6) + 'px'; popupElement.style.left = Math.max(8, r.right - 380) + 'px';
+        var bounds = alertElement.getBoundingClientRect();
+        popupElement.style.top = (bounds.bottom + 6) + 'px'; popupElement.style.left = Math.max(8, bounds.right - 380) + 'px';
         setTimeout(function () {
           document.addEventListener('click', function close() { popupElement.remove(); document.removeEventListener('click', close); });
         }, 0);

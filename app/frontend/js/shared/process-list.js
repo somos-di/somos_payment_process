@@ -316,7 +316,7 @@
                 : button(visibleAction.label, visibleAction.cls || 'btn-primary', handler));
             });
             if (approversAt >= visibleActions.length) cell.appendChild(approversBtn);
-            item.addEventListener('click', function () { window.openProcessDetail(process); });
+            row.addEventListener('click', function () { window.openProcessDetail(process); });
           });
         }
         updatePager();
