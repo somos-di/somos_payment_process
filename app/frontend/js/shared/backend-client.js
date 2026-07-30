@@ -23,16 +23,16 @@
     select: async function (resource, build) {
       var spec = new Spec();
       if (build) build(spec);
-      return window.API.post('/data/' + resource, { ops: spec.__ops });
+      return window.API.post('/data/' + resource, { operations: spec.__ops });
     },
 
     count: async function (resource, build) {
       var spec = new Spec();
       if (build) build(spec);
-      var response = await window.API.postFull('/data/' + resource, { ops: spec.__ops, count: true, head: true });
+      var response = await window.API.postFull('/data/' + resource, { operations: spec.__ops, count: true, head: true });
       return (response && response.count != null) ? response.count : 0;
     },
-    rpc: function (fn, args) { return window.API.post('/rpc/' + fn, { args: args || {} }); },
+    rpc: function (fn, args) { return window.API.post('/rpc/' + fn, { rpcArguments: args || {} }); },
 
     upload: function (file, endpoint) {
       return new Promise(function (resolve, reject) {
