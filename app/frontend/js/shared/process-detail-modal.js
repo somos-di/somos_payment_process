@@ -76,13 +76,13 @@
 
     document.body.appendChild(o);
 
-    try { await window.API.post('/processes/' + process.uuid_prc + '/log', { action: 'Visualizado' }); window.Store.invalidate('history'); } catch (error) { }
+    try { window.Store.invalidate('history'); } catch (error) { }
     try {
-      var h = await window.Store.get('history', process.uuid_prc);
-      o.querySelector('[data-pane="hist"] .col-body').innerHTML = h.length
-        ? '<ul class="timeline">' + h.map(function (hItem) {
-          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(hItem.action_hst) + '</div>'
-            + '<div class="tl-meta">' + escapeHtml(hItem.user_nome || 'Sistema') + ' · ' + escapeHtml(fmtDT(hItem.created_at_hst)) + '</div></div></li>';
+      var historyEntries = await window.Store.get('history', process.uuid_prc);
+      o.querySelector('[data-pane="hist"] .col-body').innerHTML = historyEntries.length
+        ? '<ul class="timeline">' + historyEntries.map(function (historyEntry) {
+          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(historyEntry.action_hst) + '</div>'
+            + '<div class="tl-meta">' + escapeHtml(historyEntry.user_nome || 'Sistema') + ' · ' + escapeHtml(fmtDT(historyEntry.created_at_hst)) + '</div></div></li>';
         }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
     } catch (error) { }
