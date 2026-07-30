@@ -9,6 +9,7 @@
             comAprovador: { slowDays: 5 },
         },
         PROCESS_KINDS: {},
+        MESSAGE_KINDS: {},
         STEPS: {},
         STATUS: {},
         STATUS_COLORS: { 0: 'red', 1: 'blue', 2: 'violet', 3: 'red', 4: 'blue', 6: 'warn', 7: 'ok', 8: 'red', 9: 'ok' },

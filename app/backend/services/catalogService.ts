@@ -1,7 +1,8 @@
 import type { CacheManager } from '../cache/cacheManager.js';
 import { adminClient, unwrap } from '../gateways/supabase.js';
+import { toMessageKindMap } from '../models/messagesKind.js';
 import { toStatusCatalog } from '../models/statusKind.js';
-import type { CatalogBootstrap, ProcessKindMap, ProcessKindRow, StatusCatalog } from '../types/catalog.js';
+import type { CatalogBootstrap, MessageKindMap, ProcessKindMap, ProcessKindRow, StatusCatalog } from '../types/catalog.js';
 
 export class CatalogService {
   constructor(private readonly cache?: CacheManager) { }
@@ -25,8 +26,17 @@ export class CatalogService {
     return this.cache ? this.cache.wrap('catalog:process_kinds', load) : load();
   }
 
+  messageKinds(): Promise<MessageKindMap> {
+    const load = async (): Promise<MessageKindMap> => toMessageKindMap(
+      await unwrap(adminClient().from('messages_kind').select('id_msk,name_msk').order('id_msk')) as unknown[],
+    );
+    return this.cache ? this.cache.wrap('catalog:message_kinds', load) : load();
+  }
+
   async bootstrap(): Promise<CatalogBootstrap> {
-    const [statusCatalog, processKinds] = await Promise.all([this.statusCatalog(), this.processKinds()]);
-    return { steps: statusCatalog.byId, status: statusCatalog.byKey, processKinds };
+    const [statusCatalog, processKinds, messageKinds] = await Promise.all([
+      this.statusCatalog(), this.processKinds(), this.messageKinds(),
+    ]);
+    return { steps: statusCatalog.byId, status: statusCatalog.byKey, processKinds, messageKinds };
   }
 }

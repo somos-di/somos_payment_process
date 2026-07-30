@@ -25,12 +25,12 @@ export function createContainer(): Container {
   const warmer = new CacheWarmer(cache);
 
   const processesService = new ProcessesService();
-  const uauIntegrationService = new UauIntegrationService();
+  const catalogService = new CatalogService(cache);
+  const uauIntegrationService = new UauIntegrationService(catalogService);
   const uauSyncService = new UauSyncService(uauGateway, warmer);
   const authService = new AuthService();
   const dataService = new DataService(cache);
   const adminService = new AdminService();
-  const catalogService = new CatalogService(cache);
 
   const controllers: ControllersContainer = {
     processes: new ProcessesController(processesService, uauIntegrationService),

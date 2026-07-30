@@ -81,7 +81,9 @@
       var historyEntries = await window.Store.get('history', process.uuid_prc);
       o.querySelector('[data-pane="hist"] .col-body').innerHTML = historyEntries.length
         ? '<ul class="timeline">' + historyEntries.map(function (historyEntry) {
-          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(historyEntry.action_hst) + '</div>'
+          var kindColor = /^#[0-9a-fA-F]{3,8}$/.test(historyEntry.kind_color || '') ? historyEntry.kind_color : '';
+          var kindStyle = kindColor ? ' style="--kind:' + kindColor + '"' : '';
+          return '<li' + kindStyle + '><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(historyEntry.action_hst) + '</div>'
             + '<div class="tl-meta">' + escapeHtml(historyEntry.user_nome || 'Sistema') + ' · ' + escapeHtml(fmtDT(historyEntry.created_at_hst)) + '</div></div></li>';
         }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
