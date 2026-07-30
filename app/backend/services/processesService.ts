@@ -111,7 +111,7 @@ export class ProcessesService {
     return unwrap(userClient(token).rpc('cancel_process', { p_uuid: uuid, p_reason: reason }));
   }
 
-  log(token: string, uuid: string, action: string) {
-    return unwrap(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: action }));
+  log(token: string, uuid: string, action: string, kind?: number) {
+    return unwrap(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: action, p_kind: kind ?? 1 }));
   }
 }

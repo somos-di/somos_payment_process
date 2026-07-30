@@ -4,6 +4,7 @@ import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
 import type { InstallmentRow, ProcessValueRow } from '../types/process.js';
 import type { UauIntegrationResult, UauPayload } from '../types/uau.js';
+import type { CatalogService } from './catalogService.js';
 
 function joinUrl(base: string, endpoint: string): string {
   return base.replace(/\/+$/, '') + '/' + endpoint.replace(/^\/+/, '');
@@ -25,6 +26,15 @@ const formatMonthYear = (date?: string | null): string => {
 };
 
 export class UauIntegrationService {
+  constructor(private readonly catalog: CatalogService) { }
+
+  private async logError(token: string, uuid: string, message: string): Promise<void> {
+    try {
+      const kinds = await this.catalog.messageKinds();
+      await unwrap(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: message, p_kind: kinds.error }));
+    } catch { }
+  }
+
   async sendToUau(token: string, uuid: string): Promise<UauIntegrationResult> {
     const visible = await userClient(token)
       .from('processes').select('uuid_prc').eq('uuid_prc', uuid).maybeSingle();
@@ -50,10 +60,12 @@ export class UauIntegrationService {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
     } catch (error) {
+      await this.logError(token, uuid, 'Falha ao integrar com UAU: ' + ((error as { message?: string }).message || error));
       throw new AppError('Não consegui chamar o webhook de integração: ' + ((error as { message?: string }).message || error), 502, 'integration');
     }
     if (!response.ok) {
       const body = await response.text().catch(() => '');
+      await this.logError(token, uuid, 'Integração UAU retornou ' + response.status);
       throw new AppError('Webhook de integração retornou ' + response.status + ': ' + body.slice(0, 200), 502, 'integration');
     }
     await unwrap(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));

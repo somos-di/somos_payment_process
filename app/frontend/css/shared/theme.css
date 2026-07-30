@@ -1020,17 +1020,18 @@ tbody tr:hover td {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--kind, var(--accent));
   box-shadow: 0 0 0 3px var(--surface);
 }
 
 .timeline li:first-child .tl-dot {
-  background: var(--ok, #16a34a);
+  background: var(--kind, var(--ok, #16a34a));
 }
 
 .timeline .tl-card {
   background: var(--surface-2);
   border: 1px solid var(--border-2);
+  border-left: 3px solid var(--kind, var(--border-2));
   border-radius: 10px;
   padding: 9px 12px;
 }

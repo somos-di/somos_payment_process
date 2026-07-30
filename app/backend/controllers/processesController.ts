@@ -12,7 +12,7 @@ const SolicitationSchema = z.object({
   installments: z.array(InstallmentSchema).default([]),
 });
 const BulkSchema = z.object({ items: z.array(SolicitationSchema).min(1).max(1000) });
-const LogSchema = z.object({ action: z.string().min(1).max(200) });
+const LogSchema = z.object({ action: z.string().min(1).max(200), kind: z.number().int().positive().optional() });
 const CorrectSchema = z.object({
   process: boundedRecord,
   installments: z.array(InstallmentSchema).optional(),
@@ -80,8 +80,8 @@ export class ProcessesController {
 
   async logEvent(request: FastifyRequest<UuidRoute>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse({ uuid: request.params.uuid });
-    const { action } = LogSchema.parse(request.body);
-    await this.service.log(request.accessToken!, uuid, action);
+    const { action, kind } = LogSchema.parse(request.body);
+    await this.service.log(request.accessToken!, uuid, action, kind);
     return reply.send({ success: true });
   }
 

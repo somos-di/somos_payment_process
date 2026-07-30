@@ -15,8 +15,11 @@ export interface ProcessKindRow {
 
 export type ProcessKindMap = Record<number, string>;
 
+export type MessageKindMap = Record<string, number>;
+
 export interface CatalogBootstrap {
   steps: Record<number, string>;
   status: Record<string, number>;
   processKinds: ProcessKindMap;
+  messageKinds: MessageKindMap;
 }

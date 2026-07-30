@@ -249,6 +249,7 @@ async function loadCatalogs() {
             if (b.steps) window.CONFIG.STEPS = b.steps
             if (b.status) window.CONFIG.STATUS = b.status
             if (b.processKinds) window.CONFIG.PROCESS_KINDS = b.processKinds
+            if (b.messageKinds) window.CONFIG.MESSAGE_KINDS = b.messageKinds
         }
     } catch (error) { }
     if (typeof window.buildConsultaTabs === 'function') window.buildConsultaTabs()
