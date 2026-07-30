@@ -1,14 +1,14 @@
 (function () {
   var user = null;
   var listeners = new Set();
-  function emit() { listeners.forEach(function (cb) { try { cb(user); } catch (e) { console.error('auth listener', e); } }); }
+  function emit() { listeners.forEach(function (listener) { try { listener(user); } catch (error) { console.error('auth listener', error); } }); }
 
   window.Auth = {
     init: async function () {
       try {
         user = await window.API.get('/auth/me');
         if (user && window.SB) window.SB.setUserId(user.id);
-      } catch (e) { user = null; }
+      } catch (error) { user = null; }
       emit();
     },
     signIn: async function (email, password) {
@@ -19,7 +19,7 @@
       return user;
     },
     signOut: async function () {
-      try { await window.API.post('/auth/logout'); } catch (e) { }
+      try { await window.API.post('/auth/logout'); } catch (error) { }
       user = null;
       if (window.SB) window.SB.setUserId(null);
       if (window.Store) window.Store.clear();
@@ -37,6 +37,6 @@
     },
     getUser: function () { return user; },
     isAuthenticated: function () { return user !== null; },
-    onChange: function (cb) { listeners.add(cb); return function () { listeners.delete(cb); }; },
+    onChange: function (callback) { listeners.add(callback); return function () { listeners.delete(callback); }; },
   };
 })();

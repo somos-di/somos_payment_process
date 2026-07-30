@@ -1,6 +1,5 @@
-
 export const RUNTIME = {
-  uauGateway: { tokenTtlMs: 25 * 60 * 1000 }, // token UAU ~25min
+  uauGateway: { tokenTtlMs: 25 * 60 * 1000 },
   sync: { insertBatchSize: 15000 },
 };
 

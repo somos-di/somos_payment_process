@@ -2,16 +2,13 @@
     function reflectAdmin(user) {
         const show = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="admin"], .menu-group[data-group="integracao"]')
-            .forEach(function (g) { g.style.display = show })
-        // itens só para financeiro (grupos "Financeiro Integração*") ou admin
+            .forEach(function (item) { item.style.display = show })
         const finShow = (user && (user.is_financeiro || user.is_admin)) ? '' : 'none'
-        document.querySelectorAll('[data-fin-only]').forEach(function (el) { el.style.display = finShow })
-        // grupo Comissões: trilha, financeiro ou admin
+        document.querySelectorAll('[data-fin-only]').forEach(function (item) { item.style.display = finShow })
         const commShow = (user && (user.is_commission || user.is_financeiro || user.is_admin)) ? '' : 'none'
-        document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (g) { g.style.display = commShow })
-        // itens marcados como só-admin (ex.: cadastro de empreendimentos)
+        document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (item) { item.style.display = commShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
-        document.querySelectorAll('[data-admin-only]').forEach(function (el) { el.style.display = admOnly })
+        document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }
 
     function reflectUser(user) {
@@ -32,9 +29,9 @@
     }
 
     function setupLogout() {
-        const btn = document.getElementById('logout-btn')
-        if (btn) {
-            btn.addEventListener('click', function () {
+        const button = document.getElementById('logout-btn')
+        if (button) {
+            button.addEventListener('click', function () {
                 if (window.Auth) window.Auth.signOut()
             })
         }

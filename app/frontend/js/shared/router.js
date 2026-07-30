@@ -40,22 +40,22 @@ function populateSolicitationLaunchers() {
     const groups = window.getSolicitationGroups()
     let totalItems = 0
     let html = ''
-    groups.forEach(function (g, gIdx) {
+    groups.forEach(function (group, gIdx) {
         const subId = 'sub-sol-' + gIdx
-        const groupItemCount = g.subgroups.reduce(function (sum, s) { return sum + s.items.length }, 0)
+        const groupItemCount = group.subgroups.reduce(function (sum, subgroup) { return sum + subgroup.items.length }, 0)
         totalItems += groupItemCount
 
-        const subgroupsHtml = g.subgroups.map(function (sg, sgIdx) {
-            const itemsHtml = sg.items.map(function (it) {
-                const globalIdx = window.SOLICITATION_LAUNCHERS.indexOf(it)
+        const subgroupsHtml = group.subgroups.map(function (subgroup, sgIdx) {
+            const itemsHtml = subgroup.items.map(function (item) {
+                const globalIdx = window.SOLICITATION_LAUNCHERS.indexOf(item)
                 return '<a class="nav-item sol-launcher" href="javascript:void(0)" data-launcher-idx="'
-                    + globalIdx + '">' + escapeText(it.menuLabel) + '</a>'
+                    + globalIdx + '">' + escapeText(item.menuLabel) + '</a>'
             }).join('')
-            const labelHtml = sg.subgroup
+            const labelHtml = subgroup.subgroup
                 ? '<div class="sol-subgroup-label">'
                 + '<span class="sg-dot" style="background:' + colorForGroup(sgIdx) + '"></span>'
-                + '<span class="sg-label">' + escapeText(sg.subgroup) + '</span>'
-                + '<span class="sg-count">' + sg.items.length + '</span>'
+                + '<span class="sg-label">' + escapeText(subgroup.subgroup) + '</span>'
+                + '<span class="sg-count">' + subgroup.items.length + '</span>'
                 + '</div>'
                 : ''
             return labelHtml + itemsHtml
@@ -65,7 +65,7 @@ function populateSolicitationLaunchers() {
             + '<div class="subfolder open" id="' + subId + '">'
             + '<div class="subfolder-head">'
             + '<span class="gdot" style="background:' + colorForGroup(gIdx) + '"></span>'
-            + '<span class="gl">' + escapeText(g.group) + '</span>'
+            + '<span class="gl">' + escapeText(group.group) + '</span>'
             + '<span class="gc">' + groupItemCount + '</span>'
             + '<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>'
             + '</div>'
@@ -79,25 +79,25 @@ function populateSolicitationLaunchers() {
     body.innerHTML = html
     if (countEl) countEl.textContent = String(totalItems)
 
-    body.querySelectorAll('.subfolder-head').forEach(function (h) {
-        h.addEventListener('click', function () { h.parentElement.classList.toggle('open') })
+    body.querySelectorAll('.subfolder-head').forEach(function (item) {
+        item.addEventListener('click', function () { item.parentElement.classList.toggle('open') })
     })
-    body.querySelectorAll('.sol-launcher').forEach(function (a) {
-        a.addEventListener('click', function () {
-            const idx = Number(a.getAttribute('data-launcher-idx'))
-            const cfg = window.SOLICITATION_LAUNCHERS[idx]
-            if (!cfg || typeof window.openSolicitationModal !== 'function') return
-            window.openSolicitationModal(cfg).catch(function (err) {
-                if (err && err.message === 'cancelled') return
-                console.warn('solicitation-modal: falha', err)
+    body.querySelectorAll('.sol-launcher').forEach(function (item) {
+        item.addEventListener('click', function () {
+            const index = Number(item.getAttribute('data-launcher-idx'))
+            const config = window.SOLICITATION_LAUNCHERS[index]
+            if (!config || typeof window.openSolicitationModal !== 'function') return
+            window.openSolicitationModal(config).catch(function (error) {
+                if (error && error.message === 'cancelled') return
+                console.warn('solicitation-modal: falha', error)
             })
         })
     })
 }
 
-function colorForGroup(idx) {
+function colorForGroup(index) {
     const palette = ['var(--accent)', 'var(--warn)', 'var(--ok)', 'var(--violet)']
-    return palette[idx % palette.length]
+    return palette[index % palette.length]
 }
 
 function escapeText(s) {
@@ -133,13 +133,13 @@ function parseHash() {
     }
 }
 
-async function loadScriptOnce(src) {
-    if (loadedScripts.has(src)) return
+async function loadScriptOnce(scriptUrl) {
+    if (loadedScripts.has(scriptUrl)) return
     return new Promise(function (resolve, reject) {
         const s = document.createElement('script')
-        s.src = src
-        s.onload = function () { loadedScripts.add(src); resolve() }
-        s.onerror = function () { reject(new Error('Falha ao carregar ' + src)) }
+        s.src = scriptUrl
+        s.onload = function () { loadedScripts.add(scriptUrl); resolve() }
+        s.onerror = function () { reject(new Error('Falha ao carregar ' + scriptUrl)) }
         document.head.appendChild(s)
     })
 }
@@ -168,14 +168,12 @@ async function loadView(route, params) {
     }
 
     if (meta.admin) {
-        const u = window.Auth && window.Auth.getUser()
-        if (!u || !u.is_admin) {
+        const user = window.Auth && window.Auth.getUser()
+        if (!user || !user.is_admin) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }
     }
-    // rota de financeiro: só membros dos grupos "Financeiro Integração*" (is_financeiro)
-    // ou admin. A RLS ainda limita as LINHAS por grupo; este gate é o de acesso à tela.
     if (meta.financeiro) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_financeiro && !u.is_admin)) {
@@ -183,8 +181,6 @@ async function loadView(route, params) {
             return
         }
     }
-    // rota de comissões: trilha (is_commission), Financeiro (is_financeiro) ou admin.
-    // A RLS limita as LINHAS (trilha vê a sua; financeiro vê todas); este gate é o de acesso à tela.
     if (meta.commission) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_commission && !u.is_financeiro && !u.is_admin)) {
@@ -199,7 +195,6 @@ async function loadView(route, params) {
     window.routeParams = params
 
     try {
-        // MINI APPS ficam em html/apps/<appDir>/ e js/apps/<appDir>/; o core segue em html/views + js/views.
         const htmlUrl = meta.appDir ? ('html/apps/' + meta.appDir + '/' + route + '.html') : window.CONFIG.VIEW_TEMPLATE(meta.folder, route)
         const jsUrl = meta.appDir ? ('js/apps/' + meta.appDir + '/' + route + '.js') : ('js/views/' + route + '.js')
         const html = await fetch(htmlUrl).then(function (r) {
@@ -221,9 +216,9 @@ async function loadView(route, params) {
             throw new Error('JS desta view não expõe ' + initFnName + '().')
         }
         await initFn()
-    } catch (err) {
+    } catch (error) {
         if (stale()) return
-        content.innerHTML = '<div class="view-error">Falha ao carregar a view: ' + escapeText(err.message) + '</div>'
+        content.innerHTML = '<div class="view-error">Falha ao carregar a view: ' + escapeText(error.message) + '</div>'
     }
 }
 
@@ -255,7 +250,7 @@ async function loadCatalogs() {
             if (b.status) window.CONFIG.STATUS = b.status
             if (b.processKinds) window.CONFIG.PROCESS_KINDS = b.processKinds
         }
-    } catch (e) { }
+    } catch (error) { }
     if (typeof window.buildConsultaTabs === 'function') window.buildConsultaTabs()
 }
 

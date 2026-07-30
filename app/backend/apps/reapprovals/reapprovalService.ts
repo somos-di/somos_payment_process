@@ -1,10 +1,11 @@
 import { unwrap, userClient } from '../../gateways/supabase.js';
-import type { ReapprovalGateway, ReapprovalPayload } from './reapprovalGateway.js';
+import type { ReapprovalPayload, ReapprovalResult } from '../../types/reapprovals.js';
+import type { ReapprovalGateway } from './reapprovalGateway.js';
 
 export class ReapprovalService {
   constructor(private readonly gateway: ReapprovalGateway) { }
 
-  async send(token: string, payload: ReapprovalPayload): Promise<{ message: string }> {
+  async send(token: string, payload: ReapprovalPayload): Promise<ReapprovalResult> {
     const { message } = await this.gateway.send(payload);
     try {
       await unwrap(userClient(token).rpc('reapproval_log', {
@@ -12,7 +13,7 @@ export class ReapprovalService {
         p_process: payload.processId, p_installment: payload.installmentId,
         p_approver: payload.approverId, p_message: message,
       }));
-    } catch { /* ignore */ }
+    } catch { }
     return { message };
   }
 

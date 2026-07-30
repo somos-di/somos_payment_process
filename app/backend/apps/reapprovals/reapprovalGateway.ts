@@ -1,13 +1,6 @@
 import { AsyncHttpClient } from '../../base/abstract.js';
-import type { AppSettings } from '../../settings.js';
-
-export interface ReapprovalPayload {
-  approverId: string;
-  companyId: number;
-  costCenterId: string;
-  processId: number;
-  installmentId: number;
-}
+import type { ReapprovalPayload, ReapprovalResult } from '../../types/reapprovals.js';
+import type { AppSettings } from '../../types/settings.js';
 
 export class ReapprovalGateway extends AsyncHttpClient {
   private readonly endpoint: string;
@@ -17,7 +10,7 @@ export class ReapprovalGateway extends AsyncHttpClient {
     this.endpoint = settings.reapproval.workflowEndPoint;
   }
 
-  async send(payload: ReapprovalPayload): Promise<{ message: string }> {
+  async send(payload: ReapprovalPayload): Promise<ReapprovalResult> {
     const data = (await this.post(this.endpoint, payload)) as { message?: string } | null;
     return { message: (data && data.message) || 'Reaprovação enviada.' };
   }

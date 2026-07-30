@@ -33,17 +33,17 @@ async def chat(body: ChatRequest, request: Request):
     refresh = request.cookies.get(settings.refresh_cookie)
     try:
         user_jwt = await get_auth_gateway().get_fresh_jwt(access, refresh)
-    except PermissionError as exc:
-        return JSONResponse(status_code=401, content={"error": str(exc)})
+    except PermissionError as error:
+        return JSONResponse(status_code=401, content={"error": str(error)})
 
     async def sse():
         try:
             async for token in stream_turn(body.conversation_id, body.message, user_jwt):
                 yield f"data: {json.dumps({'delta': token}, ensure_ascii=False)}\n\n"
             yield "event: done\ndata: {}\n\n"
-        except Exception as exc:
+        except Exception as error:
             logger.exception("Falha no /chat")
-            yield f"data: {json.dumps({'error': str(exc)}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'error': str(error)}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         sse(),

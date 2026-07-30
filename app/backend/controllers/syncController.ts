@@ -7,11 +7,11 @@ export class SyncController {
     this.syncOne = this.syncOne.bind(this);
     this.syncAll = this.syncAll.bind(this);
   }
-  async syncOne(req: FastifyRequest, reply: FastifyReply) {
-    const { id } = IdParamSchema.parse(req.params);
+  async syncOne(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = IdParamSchema.parse(request.params);
     return reply.send({ success: true, data: await this.service.syncById(id) });
   }
-  async syncAll(_req: FastifyRequest, reply: FastifyReply) {
+  async syncAll(_request: FastifyRequest, reply: FastifyReply) {
     return reply.send({ success: true, data: await this.service.syncAll() });
   }
 }

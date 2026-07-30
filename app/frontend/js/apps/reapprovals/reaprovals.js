@@ -1,67 +1,64 @@
-// Mini app REAPROVAÇÕES (admin): envia a solicitação ao backend, que repassa ao
-// webhook do n8n. Tudo passa pelo backend (POST /reapprovals, gated a admin no servidor).
 async function initView_reaprovals() {
-  var $ = function (id) { return document.getElementById(id); };
-  function toast(msg, ok) {
-    var t = document.createElement('div'); t.textContent = msg;
+  var selectElement = function (id) { return document.getElementById(id); };
+  function toast(message, isSuccess) {
+    var t = document.createElement('div'); t.textContent = message;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
-      + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
+      + (isSuccess ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4500);
   }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function fmtDateTime(d) {
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function formatDateTime(d) {
     if (!d) return '—';
     try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
-    catch (e) { return String(d); }
+    catch (error) { return String(d); }
   }
 
   function clearForm() {
-    ['ra-company', 'ra-costcenter', 'ra-process', 'ra-installment', 'ra-approver'].forEach(function (id) { $(id).value = ''; });
-    $('ra-status').textContent = '';
+    ['ra-company', 'ra-costcenter', 'ra-process', 'ra-installment', 'ra-approver'].forEach(function (item) { selectElement(item).value = ''; });
+    selectElement('ra-status').textContent = '';
   }
-  $('ra-clear').addEventListener('click', clearForm);
+  selectElement('ra-clear').addEventListener('click', clearForm);
 
-  // ── Histórico ──────────────────────────────────────────────────────────
   var histRows = [];
   function renderHist() {
-    var t = ($('ra-search').value || '').toLowerCase().trim();
-    var data = histRows.filter(function (r) {
-      return !t || [r.company_rap, r.cost_center_rap, r.process_rap, r.installment_rap, r.approver_rap, r.author_nome].join(' ').toLowerCase().indexOf(t) >= 0;
+    var t = (selectElement('ra-search').value || '').toLowerCase().trim();
+    var data = histRows.filter(function (histRow) {
+      return !t || [histRow.company_rap, histRow.cost_center_rap, histRow.process_rap, histRow.installment_rap, histRow.approver_rap, histRow.author_nome].join(' ').toLowerCase().indexOf(t) >= 0;
     });
-    if (!data.length) { $('ra-hist').innerHTML = '<div class="empty">Nenhuma reaprovação enviada.</div>'; return; }
+    if (!data.length) { selectElement('ra-hist').innerHTML = '<div class="empty">Nenhuma reaprovação enviada.</div>'; return; }
     var html = '<div class="table-scroll"><table><thead><tr>'
       + '<th>#</th><th>Data</th><th>Empresa</th><th>Obra</th><th>Processo</th><th>Parcela</th><th>Aprovador</th><th>Mensagem</th><th>Autor</th>'
       + '</tr></thead><tbody>';
-    data.forEach(function (r) {
+    data.forEach(function (entry) {
       html += '<tr>'
-        + '<td>' + esc(r.id_rap) + '</td>'
-        + '<td>' + esc(fmtDateTime(r.created_at_rap)) + '</td>'
-        + '<td>' + esc(r.company_rap) + '</td>'
-        + '<td>' + esc(r.cost_center_rap || '—') + '</td>'
-        + '<td>' + esc(r.process_rap) + '</td>'
-        + '<td>' + esc(r.installment_rap) + '</td>'
-        + '<td>' + esc(r.approver_rap || '—') + '</td>'
-        + '<td>' + esc(r.message_rap || '—') + '</td>'
-        + '<td>' + esc(r.author_nome || '—') + '</td></tr>';
+        + '<td>' + escapeHtml(entry.id_rap) + '</td>'
+        + '<td>' + escapeHtml(formatDateTime(entry.created_at_rap)) + '</td>'
+        + '<td>' + escapeHtml(entry.company_rap) + '</td>'
+        + '<td>' + escapeHtml(entry.cost_center_rap || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.process_rap) + '</td>'
+        + '<td>' + escapeHtml(entry.installment_rap) + '</td>'
+        + '<td>' + escapeHtml(entry.approver_rap || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.message_rap || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.author_nome || '—') + '</td></tr>';
     });
     html += '</tbody></table></div>';
-    $('ra-hist').innerHTML = html;
+    selectElement('ra-hist').innerHTML = html;
   }
   async function loadHist() {
-    $('ra-hist').innerHTML = '<div class="empty">Carregando…</div>';
+    selectElement('ra-hist').innerHTML = '<div class="empty">Carregando…</div>';
     try { histRows = (await window.API.get('/reapprovals')) || []; renderHist(); }
-    catch (e) { window.viewError($('ra-hist'), e); }
+    catch (error) { window.viewError(selectElement('ra-hist'), error); }
   }
-  $('ra-search').addEventListener('input', renderHist);
-  $('ra-refresh').addEventListener('click', loadHist);
+  selectElement('ra-search').addEventListener('input', renderHist);
+  selectElement('ra-refresh').addEventListener('click', loadHist);
 
-  $('ra-send').addEventListener('click', async function () {
-    var company = parseInt($('ra-company').value, 10);
-    var process = parseInt($('ra-process').value, 10);
-    var installment = parseInt($('ra-installment').value, 10);
-    var costCenter = $('ra-costcenter').value.trim();
-    var approver = $('ra-approver').value.trim();
+  selectElement('ra-send').addEventListener('click', async function () {
+    var company = parseInt(selectElement('ra-company').value, 10);
+    var process = parseInt(selectElement('ra-process').value, 10);
+    var installment = parseInt(selectElement('ra-installment').value, 10);
+    var costCenter = selectElement('ra-costcenter').value.trim();
+    var approver = selectElement('ra-approver').value.trim();
 
     if (!(company > 0)) { toast('Informe a empresa (código válido).'); return; }
     if (!costCenter) { toast('Informe o centro de custo / obra.'); return; }
@@ -69,23 +66,23 @@ async function initView_reaprovals() {
     if (!(installment > 0)) { toast('Informe o Id da parcela.'); return; }
     if (!approver) { toast('Informe o aprovador.'); return; }
 
-    var btn = this; btn.disabled = true; $('ra-status').textContent = 'Enviando…';
+    var button = this; button.disabled = true; selectElement('ra-status').textContent = 'Enviando…';
     try {
-      var res = await window.API.post('/reapprovals', {
+      var response = await window.API.post('/reapprovals', {
         approverId: approver,
         companyId: company,
         costCenterId: costCenter,
         processId: process,
         installmentId: installment,
       });
-      $('ra-status').textContent = '';
-      toast((res && res.message) || 'Reaprovação enviada com sucesso!', true);
+      selectElement('ra-status').textContent = '';
+      toast((response && response.message) || 'Reaprovação enviada com sucesso!', true);
       clearForm();
-      loadHist();   // atualiza o histórico com o envio recém-feito
-    } catch (e) {
-      $('ra-status').textContent = '';
-      toast('Erro ao enviar: ' + e.message);
-    } finally { btn.disabled = false; }
+      loadHist();
+    } catch (error) {
+      selectElement('ra-status').textContent = '';
+      toast('Erro ao enviar: ' + error.message);
+    } finally { button.disabled = false; }
   });
 
   await loadHist();

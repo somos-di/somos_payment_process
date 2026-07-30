@@ -8,60 +8,49 @@ import { requireAuth } from './middlewares/requireAuth.js';
 import { registerProtectedRoutes, registerPublicRoutes } from './routes/index.js';
 import { getSettings } from './settings.js';
 
-const s = getSettings();
+const settings = getSettings();
 const { controllers, authService, warmer } = createContainer();
 
-// bodyLimit alto p/ upload de anexo em base64 (boleto/NF)
-const app = Fastify({ logger: { level: 'info' }, trustProxy: s.trustProxy, bodyLimit: 70 * 1024 * 1024 });
+const app = Fastify({ logger: { level: 'info' }, trustProxy: settings.trustProxy, bodyLimit: 70 * 1024 * 1024 });
 
-// CORS_ORIGIN aceita lista separada por vírgula (ex.: http://localhost:3000,http://localhost:5500).
-// Fallback SEM origem configurada = false (nega cross-origin): nunca refletir qualquer
-// origem com credentials:true — same-origin (nginx proxy /api) não precisa de CORS.
-const corsOrigins = s.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean).filter((o) => o !== '*');
+const corsOrigins = settings.corsOrigin.split(',').map((origin) => origin.trim()).filter(Boolean).filter((origin) => origin !== '*');
 await app.register(cors, { origin: corsOrigins.length ? corsOrigins : false, credentials: true });
 await app.register(cookie);
 
-// Rate limiting / anti-brute-force. Chaveia por USUÁRIO (sub do JWT no cookie),
-// caindo pra IP quando anônimo — assim 1 usuário não derruba os outros e não dá
-// pra burlar trocando de IP atrás de NAT. Global: 200 req/min (override por rota,
-// ex.: /auth/login mais estrito). Registrado antes das rotas.
 await app.register(rateLimit, {
   global: true,
   max: 200,
   timeWindow: '1 minute',
-  keyGenerator: (req) => {
-    const tok = req.cookies?.[s.cookieName];
-    if (tok) {
-      try { return JSON.parse(Buffer.from(tok.split('.')[1], 'base64').toString()).sub || req.ip; } catch { /* fallback */ }
+  keyGenerator: (request) => {
+    const sessionToken = request.cookies?.[settings.cookieName];
+    if (sessionToken) {
+      try { return JSON.parse(Buffer.from(sessionToken.split('.')[1], 'base64').toString()).sub || request.ip; } catch { }
     }
-    return req.ip;
+    return request.ip;
   },
 });
 
 app.setErrorHandler(errorHandler);
 app.get('/health', async () => ({ ok: true }));
 
-// públicas (sem auth)
-await app.register(async (api) => { registerPublicRoutes(api, controllers); }, { prefix: '/api/v1' });
+await app.register(async (scopedApp) => { registerPublicRoutes(scopedApp, controllers); }, { prefix: '/api/v1' });
 
-// protegidas (default-deny: requireAuth como preHandler do plugin)
-await app.register(async (api) => {
-  api.addHook('preHandler', requireAuth(authService));
-  registerProtectedRoutes(api, controllers);
+await app.register(async (scopedApp) => {
+  scopedApp.addHook('preHandler', requireAuth(authService));
+  registerProtectedRoutes(scopedApp, controllers);
 }, { prefix: '/api/v1' });
 
-const shutdown = async (sig: string) => {
-  app.log.info({ sig }, 'shutdown'); try { await app.close(); } catch (e) { app.log.error(e); } process.exit(0);
+const shutdown = async (signal: string) => {
+  app.log.info({ signal }, 'shutdown'); try { await app.close(); } catch (error) { app.log.error(error); } process.exit(0);
 };
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
-app.listen({ port: s.port, host: s.host })
+app.listen({ port: settings.port, host: settings.host })
   .then(() => {
-    app.log.info(`backend on http://${s.host}:${s.port}`);
-    // aquece o cache global no boot (não-bloqueante; falha não derruba o serviço)
+    app.log.info(`backend on http://${settings.host}:${settings.port}`);
     warmer.warmAll()
       .then(() => app.log.info('cache aquecido no boot'))
-      .catch((e) => app.log.warn({ err: e }, 'falha ao aquecer o cache no boot'));
+      .catch((error) => app.log.warn({ err: error }, 'falha ao aquecer o cache no boot'));
   })
-  .catch((e) => { app.log.error(e); process.exit(1); });
+  .catch((error) => { app.log.error(error); process.exit(1); });

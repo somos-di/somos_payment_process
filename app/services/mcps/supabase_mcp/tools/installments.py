@@ -19,12 +19,12 @@ async def split_installments(total: float, count: int, first_due_date: str) -> l
         raise ValueError("count deve ser >= 1")
     first = date.fromisoformat(first_due_date)
     base_value = math.floor(total / count * 100) / 100
-    acc = 0.0
+    accumulated = 0.0
     result: list[dict] = []
-    for i in range(count):
-        value = round(total - acc, 2) if i == count - 1 else base_value
-        acc = round(acc + value, 2)
-        result.append({"due_date": _add_months(first, i).isoformat(), "value": value})
+    for index in range(count):
+        value = round(total - accumulated, 2) if index == count - 1 else base_value
+        accumulated = round(accumulated + value, 2)
+        result.append({"due_date": _add_months(first, index).isoformat(), "value": value})
     return result
 
 

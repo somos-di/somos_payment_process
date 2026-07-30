@@ -124,6 +124,24 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.mobile-top {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-name {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.mobile-menu-btn {
+  color: var(--text);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--surface-3);
+}
+
 .crumb {
   color: var(--muted);
 }

@@ -1,10 +1,7 @@
-# Processo de Pagamento — backend (Fastify) + frontend (nginx, proxy /api).
-# Suba com:  docker compose up --build
-# Requer app/backend/.env (copie de app/backend/.env.example).
 services:
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--save", "", "--appendonly", "no"]  # cache puro, sem persistência
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -21,7 +18,7 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: "4000"
-      REDIS_URL: redis://redis:6379   # DNS interno do compose (ignora o do .env)
+      REDIS_URL: redis://redis:6379
     expose:
       - "4000"
     depends_on:
@@ -34,8 +31,6 @@ services:
   frontend:
     build: ./app/frontend
     ports:
-      # bind só no loopback: quem expõe pra internet é o reverse proxy do host
-      # (nginx/Caddy) com TLS. Local (Windows/Mac) o localhost:8080 segue funcionando.
       - "127.0.0.1:8080:80"
     depends_on:
       - backend

@@ -3,8 +3,8 @@
     var activeFlyout = null;
     var activeFlyoutHeader = null;
 
-    function $(sel, root) { return (root || document).querySelector(sel); }
-    function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+    function selectElement(selector, root) { return (root || document).querySelector(selector); }
+    function $all(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
 
     function currentRoute() {
         var h = (window.location.hash || '').replace(/^#\/?/, '');
@@ -19,7 +19,7 @@
     function openGroup(group, exclusive) {
         if (!group) return;
         if (exclusive) {
-            $all('.menu-group.open').forEach(function (g) { if (g !== group) g.classList.remove('open'); });
+            $all('.menu-group.open').forEach(function (item) { if (item !== group) item.classList.remove('open'); });
         }
         group.classList.add('open');
     }
@@ -27,20 +27,20 @@
     function toggleGroup(group) {
         if (!group) return;
         var isOpen = group.classList.contains('open');
-        $all('.menu-group.open').forEach(function (g) { g.classList.remove('open'); });
+        $all('.menu-group.open').forEach(function (item) { item.classList.remove('open'); });
         if (!isOpen) group.classList.add('open');
     }
 
     function syncActiveGroup() {
         var route = currentRoute();
-        $all('.menu-group').forEach(function (g) { g.classList.remove('has-active-child'); });
+        $all('.menu-group').forEach(function (item) { item.classList.remove('has-active-child'); });
 
         var match = null;
-        $all('.menu-group').some(function (g) {
-            var hit = $all('.menu-item', g).some(function (it) {
-                return routeOfHref(it.getAttribute('href')) === route;
+        $all('.menu-group').some(function (menuGroup) {
+            var matchedItem = $all('.menu-item', menuGroup).some(function (menuItem) {
+                return routeOfHref(menuItem.getAttribute('href')) === route;
             });
-            if (hit) { match = g; return true; }
+            if (matchedItem) { match = menuGroup; return true; }
             return false;
         });
 
@@ -70,9 +70,9 @@
         var flyout = document.createElement('div');
         flyout.className = 'flyout-menu';
         var html = '<div class="flyout-title">' + escapeText(groupName) + '</div>';
-        items.forEach(function (it) {
-            var href = it.getAttribute('href') || '#';
-            var label = (it.querySelector('.label') || {}).textContent || it.textContent;
+        items.forEach(function (item) {
+            var href = item.getAttribute('href') || '#';
+            var label = (item.querySelector('.label') || {}).textContent || item.textContent;
             var isActive = routeOfHref(href) === route ? ' active' : '';
             html += '<a class="flyout-item' + isActive + '" href="' + href + '">' + escapeText(label.trim()) + '</a>';
         });
@@ -93,10 +93,10 @@
 
         activeFlyout = flyout;
 
-        flyout.addEventListener('click', function (e) {
-            var item = e.target.closest('.flyout-item');
+        flyout.addEventListener('click', function (event) {
+            var item = event.target.closest('.flyout-item');
             if (!item) return;
-            e.preventDefault();
+            event.preventDefault();
             var href = item.getAttribute('href');
             if (href) window.location.hash = href;
             closeFlyout();
@@ -110,7 +110,7 @@
 
     function setCollapsed(next) {
         collapsed = next;
-        var sidebar = $('#sidebar');
+        var sidebar = selectElement('#sidebar');
         if (sidebar) sidebar.classList.toggle('collapsed', collapsed);
         closeFlyout();
         closeUserPopup();
@@ -118,14 +118,14 @@
     }
 
     function closeUserPopup() {
-        var p = $('#user-menu-popup');
+        var p = selectElement('#user-menu-popup');
         if (p) p.classList.remove('visible');
     }
 
     function setupMobile() {
-        var menuBtn = $('#mobile-menu-btn');
-        var sidebar = $('#sidebar');
-        var backdrop = $('#sidebar-backdrop');
+        var menuBtn = selectElement('#mobile-menu-btn');
+        var sidebar = selectElement('#sidebar');
+        var backdrop = selectElement('#sidebar-backdrop');
         if (!menuBtn || !sidebar || !backdrop) return;
         menuBtn.addEventListener('click', function () {
             sidebar.classList.add('show');
@@ -138,17 +138,17 @@
     }
 
     window.setupShell = function () {
-        var sidebar = $('#sidebar');
-        var nav = $('#nav');
-        if (!sidebar || !nav) return;
+        var sidebar = selectElement('#sidebar');
+        var navigationElement = selectElement('#nav');
+        if (!sidebar || !navigationElement) return;
 
-        var collapseBtn = $('#collapse-btn');
+        var collapseBtn = selectElement('#collapse-btn');
         if (collapseBtn) collapseBtn.addEventListener('click', function () { setCollapsed(!collapsed); });
 
-        nav.addEventListener('click', function (e) {
-            var header = e.target.closest('.accordion-header');
+        navigationElement.addEventListener('click', function (event) {
+            var header = event.target.closest('.accordion-header');
             if (header) {
-                e.preventDefault();
+                event.preventDefault();
                 if (collapsed) {
                     if (activeFlyout && activeFlyoutHeader === header) closeFlyout();
                     else showFlyout(header);
@@ -158,32 +158,32 @@
                 return;
             }
 
-            if (e.target.closest('a')) {
+            if (event.target.closest('a')) {
                 sidebar.classList.remove('show');
-                var bd = $('#sidebar-backdrop');
-                if (bd) bd.classList.remove('show');
+                var backdropElement = selectElement('#sidebar-backdrop');
+                if (backdropElement) backdropElement.classList.remove('show');
             }
         });
 
-        var trigger = $('#user-profile-trigger');
-        var popup = $('#user-menu-popup');
+        var trigger = selectElement('#user-profile-trigger');
+        var popup = selectElement('#user-menu-popup');
         if (trigger && popup) {
-            trigger.addEventListener('click', function (e) {
-                e.stopPropagation();
+            trigger.addEventListener('click', function (event) {
+                event.stopPropagation();
                 popup.classList.toggle('visible');
             });
         }
 
-        document.addEventListener('click', function (e) {
-            if (trigger && popup && !trigger.contains(e.target) && !popup.contains(e.target)) {
+        document.addEventListener('click', function (event) {
+            if (trigger && popup && !trigger.contains(event.target) && !popup.contains(event.target)) {
                 popup.classList.remove('visible');
             }
-            if (collapsed && activeFlyout && !activeFlyout.contains(e.target) && !e.target.closest('.accordion-header')) {
+            if (collapsed && activeFlyout && !activeFlyout.contains(event.target) && !event.target.closest('.accordion-header')) {
                 closeFlyout();
             }
         });
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { closeUserPopup(); closeFlyout(); }
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') { closeUserPopup(); closeFlyout(); }
         });
 
         window.addEventListener('resize', closeFlyout);

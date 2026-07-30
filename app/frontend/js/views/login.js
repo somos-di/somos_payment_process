@@ -3,7 +3,7 @@ window.initView_login = async function initView_login() {
     const emailEl = document.getElementById('login-email')
     const pwdEl = document.getElementById('login-password')
     const errEl = document.getElementById('login-error')
-    const btn = document.getElementById('login-submit')
+    const button = document.getElementById('login-submit')
     const HOME = window.CONFIG.HASH(window.CONFIG.ROUTES.DEFAULT)
 
     if (window.Auth && window.Auth.isAuthenticated()) {
@@ -25,16 +25,16 @@ window.initView_login = async function initView_login() {
         })
     }
 
-    form.addEventListener('submit', async function (ev) {
-        ev.preventDefault()
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault()
         errEl.textContent = ''
-        btn.disabled = true
+        button.disabled = true
         try {
             await window.Auth.signIn(emailEl.value.trim(), pwdEl.value)
             window.location.hash = HOME
-        } catch (err) {
-            errEl.textContent = err && err.message ? err.message : 'Falha ao entrar'
-            btn.disabled = false
+        } catch (error) {
+            errEl.textContent = error && error.message ? error.message : 'Falha ao entrar'
+            button.disabled = false
         }
     })
 

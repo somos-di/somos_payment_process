@@ -1,6 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { NotFoundError } from '../../errors.js';
+import type { CommissionTransitionOptions } from '../../types/commissions.js';
+import type { UuidActionRoute, UuidRoute } from '../../types/http.js';
 import { UuidParamSchema } from '../../validators/common.js';
 import type { CommissionsService } from './commissionsService.js';
 
@@ -54,49 +56,49 @@ export class CommissionsController {
     this.removeEmpreendimento = this.removeEmpreendimento.bind(this);
   }
 
-  async create(req: FastifyRequest, reply: FastifyReply) {
-    const c = CreateSchema.parse(req.body);
-    const data = await this.service.create(req.accessToken!, c);
+  async create(request: FastifyRequest, reply: FastifyReply) {
+    const commission = CreateSchema.parse(request.body);
+    const data = await this.service.create(request.accessToken!, commission);
     return reply.send({ success: true, data });
   }
 
-  async upsertEmpreendimento(req: FastifyRequest, reply: FastifyReply) {
-    const e = EmpreendimentoSchema.parse(req.body);
-    const data = await this.service.upsertEmpreendimento(req.accessToken!, e);
+  async upsertEmpreendimento(request: FastifyRequest, reply: FastifyReply) {
+    const empreendimento = EmpreendimentoSchema.parse(request.body);
+    const data = await this.service.upsertEmpreendimento(request.accessToken!, empreendimento);
     return reply.send({ success: true, data });
   }
 
-  async removeEmpreendimento(req: FastifyRequest, reply: FastifyReply) {
-    const { id } = RemoveSchema.parse(req.body);
-    await this.service.deleteEmpreendimento(req.accessToken!, id);
+  async removeEmpreendimento(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = RemoveSchema.parse(request.body);
+    await this.service.deleteEmpreendimento(request.accessToken!, id);
     return reply.send({ success: true });
   }
 
-  async list(req: FastifyRequest, reply: FastifyReply) {
-    return reply.send({ success: true, data: await this.service.list(req.accessToken!) });
+  async list(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send({ success: true, data: await this.service.list(request.accessToken!) });
   }
 
-  async get(req: FastifyRequest<{ Params: { uuid: string } }>, reply: FastifyReply) {
-    const { uuid } = UuidParamSchema.parse(req.params);
-    return reply.send({ success: true, data: await this.service.getByUuid(req.accessToken!, uuid) });
+  async get(request: FastifyRequest<UuidRoute>, reply: FastifyReply) {
+    const { uuid } = UuidParamSchema.parse(request.params);
+    return reply.send({ success: true, data: await this.service.getByUuid(request.accessToken!, uuid) });
   }
 
-  async action(req: FastifyRequest<{ Params: { uuid: string; action: string } }>, reply: FastifyReply) {
-    const { uuid } = UuidParamSchema.parse({ uuid: req.params.uuid });
-    const action = req.params.action;
+  async action(request: FastifyRequest<UuidActionRoute>, reply: FastifyReply) {
+    const { uuid } = UuidParamSchema.parse({ uuid: request.params.uuid });
+    const action = request.params.action;
     if (!VALID_ACTIONS.has(action)) throw new NotFoundError('Ação inválida');
 
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const opts: { note?: string; nfUrl?: string; boletoUrl?: string; sellerEmail?: string; sellerPhone?: string } = {};
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const transitionOptions: CommissionTransitionOptions = {};
 
     if (action === 'validate' || action === 'set-nf') {
-      const b = SetNfSchema.parse(body);
-      opts.nfUrl = b.nf_url ?? undefined; opts.boletoUrl = b.boleto_url ?? undefined;
-      opts.sellerEmail = b.seller_email ?? undefined; opts.sellerPhone = b.seller_phone ?? undefined;
-    } else if (action === 'cancel') { opts.note = CancelSchema.parse(body).note; }
-    else if (action === 'pendency') { opts.note = NoteSchema.parse(body).note; }
+      const parsedBody = SetNfSchema.parse(body);
+      transitionOptions.nfUrl = parsedBody.nf_url ?? undefined; transitionOptions.boletoUrl = parsedBody.boleto_url ?? undefined;
+      transitionOptions.sellerEmail = parsedBody.seller_email ?? undefined; transitionOptions.sellerPhone = parsedBody.seller_phone ?? undefined;
+    } else if (action === 'cancel') { transitionOptions.note = CancelSchema.parse(body).note; }
+    else if (action === 'pendency') { transitionOptions.note = NoteSchema.parse(body).note; }
 
-    const data = await this.service.transition(req.accessToken!, uuid, action, opts);
+    const data = await this.service.transition(request.accessToken!, uuid, action, transitionOptions);
     return reply.send({ success: true, data });
   }
 }

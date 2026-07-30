@@ -1,107 +1,97 @@
-// COMISSÕES (mini app): lista o fluxo de comissões e permite avançar as etapas
-// (validar → aguardando NF → anexar NF → lançar no UAU), pendência e cancelar.
-// Sem aprovação/parcelas. Empreendimento exibido pelo NOME (a view já resolve o id).
-// Visibilidade por trilha vem da RLS; a rota é gated a is_commission/admin no router.
 async function initView_comissoes() {
-  var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
-  function fmtDateTime(d) {
-    if (!d) return '—';
-    try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
-    catch (e) { return String(d); }
+  var selectElement = function (id) { return document.getElementById(id); };
+  function escapeHtml(text) { return String(text == null ? '' : text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  function formatDate(date) { return date ? String(date).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function formatDateTime(date) {
+    if (!date) return '—';
+    try { return new Date(date).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    catch (error) { return String(date); }
   }
-  function toast(msg, ok) {
-    var t = document.createElement('div'); t.textContent = msg;
-    t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
-      + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
-    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
+  function toast(message, isSuccess) {
+    var toastElement = document.createElement('div'); toastElement.textContent = message;
+    toastElement.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
+      + (isSuccess ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
+    document.body.appendChild(toastElement); setTimeout(function () { toastElement.remove(); }, 4000);
   }
   function overlay(html, width) {
-    var o = document.createElement('div'); o.className = 'modal-overlay';
-    o.innerHTML = '<div class="modal-box" style="width:' + (width || 440) + 'px;max-width:94vw">' + html + '</div>';
-    document.body.appendChild(o);
-    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    return o;
+    var overlayElement = document.createElement('div'); overlayElement.className = 'modal-overlay';
+    overlayElement.innerHTML = '<div class="modal-box" style="width:' + (width || 440) + 'px;max-width:94vw">' + html + '</div>';
+    document.body.appendChild(overlayElement);
+    overlayElement.addEventListener('click', function (event) { if (event.target === overlayElement) overlayElement.remove(); });
+    return overlayElement;
   }
 
   var STATUS_CLS = { 0: 'red', 1: 'blue', 2: 'violet', 3: 'warn', 4: 'ok', 5: 'red' };
   var STEPS = {};
-  try { (await window.Store.get('comm_status') || []).forEach(function (s) { STEPS[s.id_csk] = s.descr_csk; }); } catch (e) { }
+  try { (await window.Store.get('comm_status') || []).forEach(function (item) { STEPS[item.id_csk] = item.descr_csk; }); } catch (error) { }
 
-  // popular filtro de status
-  var stSel = $('com-status');
-  stSel.innerHTML = '<option value="">Todos</option>' + Object.keys(STEPS).map(function (id) {
-    return '<option value="' + esc(id) + '">' + esc(STEPS[id]) + '</option>';
+  var stSel = selectElement('com-status');
+  stSel.innerHTML = '<option value="">Todos</option>' + Object.keys(STEPS).map(function (item) {
+    return '<option value="' + escapeHtml(item) + '">' + escapeHtml(STEPS[item]) + '</option>';
   }).join('');
 
   var rows = [];
   async function reload() {
-    $('com-body').innerHTML = '<div class="empty">Carregando…</div>';
+    selectElement('com-body').innerHTML = '<div class="empty">Carregando…</div>';
     try { rows = await window.Store.get('commissions'); render(); }
-    catch (e) { window.viewError($('com-body'), e); }
+    catch (error) { window.viewError(selectElement('com-body'), error); }
   }
 
   function filtered() {
-    var t = ($('com-search').value || '').toLowerCase().trim();
-    var trilha = $('com-trilha').value, status = $('com-status').value;
-    return rows.filter(function (c) {
-      if (trilha && c.trilha !== trilha) return false;
-      if (status !== '' && Number(c.status_step_com) !== Number(status)) return false;
-      if (t && [c.empreendimento_nome, c.seller_name_com, c.client_name_com, c.unit_com, c.id_com].join(' ').toLowerCase().indexOf(t) < 0) return false;
+    var searchTerm = (selectElement('com-search').value || '').toLowerCase().trim();
+    var trilha = selectElement('com-trilha').value, status = selectElement('com-status').value;
+    return rows.filter(function (row) {
+      if (trilha && row.trilha !== trilha) return false;
+      if (status !== '' && Number(row.status_step_com) !== Number(status)) return false;
+      if (searchTerm && [row.empreendimento_nome, row.seller_name_com, row.client_name_com, row.unit_com, row.id_com].join(' ').toLowerCase().indexOf(searchTerm) < 0) return false;
       return true;
     });
   }
 
-  // papel do usuário (do /auth/me): trilha (is_commission) faz 1-2; financeiro (is_financeiro) finaliza; admin tudo.
-  var me = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || {};
-  var isAdmin = !!me.is_admin, isTrack = !!(me.is_commission || me.is_admin), isFin = !!(me.is_financeiro || me.is_admin);
+  var currentUser = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || {};
+  var isAdmin = !!currentUser.is_admin, isTrack = !!(currentUser.is_commission || currentUser.is_admin), isFin = !!(currentUser.is_financeiro || currentUser.is_admin);
 
-  // Fluxo de 2 etapas:
-  //  ETAPA 1 — TRILHA (SOMOS/PARTINI): avalia + anexa a NF num passo só (status 1) e
-  //            corrige quando devolvida (status 5). Ao ir p/ o Financeiro (3), fica só-leitura.
-  //  ETAPA 2 — FINANCEIRO (status 3): finaliza OU devolve p/ correção (volta à trilha).
-  function actionsFor(c) {
-    var s = Number(c.status_step_com), a = [];
-    if (isTrack && (s === 1 || s === 2 || s === 5)) { a.push('validate'); a.push('cancel'); }
-    if (isFin && s === 3) { a.push('finalize'); a.push('pendency'); a.push('cancel'); }
-    return a;
+  function actionsFor(commission) {
+    var statusStep = Number(commission.status_step_com), actions = [];
+    if (isTrack && (statusStep === 1 || statusStep === 2 || statusStep === 5)) { actions.push('validate'); actions.push('cancel'); }
+    if (isFin && statusStep === 3) { actions.push('finalize'); actions.push('pendency'); actions.push('cancel'); }
+    return actions;
   }
   var LABEL = { validate: 'Validar e anexar NF', finalize: 'Finalizar (Financeiro)', pendency: 'Devolver p/ correção', cancel: 'Cancelar' };
-  var CLS = { validate: 'btn-primary', finalize: 'btn-primary', pendency: 'btn-light', cancel: 'btn-danger' };
+  var ACTION_CSS_CLASSES = { validate: 'btn-primary', finalize: 'btn-primary', pendency: 'btn-light', cancel: 'btn-danger' };
 
   function render() {
     var data = filtered();
-    if (!data.length) { $('com-body').innerHTML = '<div class="empty">Nenhuma comissão.</div>'; return; }
+    if (!data.length) { selectElement('com-body').innerHTML = '<div class="empty">Nenhuma comissão.</div>'; return; }
     var html = '<div class="table-scroll"><table><thead><tr>'
       + '<th>#</th><th>Empreendimento</th><th>Trilha</th><th>Unidade</th><th>Vendedor</th><th>Cliente</th>'
       + '<th>Valor</th><th>Status</th><th></th></tr></thead><tbody>';
-    data.forEach(function (c, i) {
-      html += '<tr data-i="' + i + '">'
-        + '<td>' + esc(c.id_com) + '</td>'
-        + '<td>' + esc(c.empreendimento_nome || '—') + '</td>'
-        + '<td>' + esc(c.trilha) + '</td>'
-        + '<td>' + esc(c.unit_com || '—') + '</td>'
-        + '<td>' + esc(c.seller_name_com || '—') + '</td>'
-        + '<td>' + esc(c.client_name_com || '—') + '</td>'
-        + '<td>' + money(c.value_com) + '</td>'
-        + '<td><span class="badge ' + (STATUS_CLS[c.status_step_com] || '') + '">' + esc(c.status_nome) + '</span></td>'
+    data.forEach(function (entry, index) {
+      html += '<tr data-i="' + index + '">'
+        + '<td>' + escapeHtml(entry.id_com) + '</td>'
+        + '<td>' + escapeHtml(entry.empreendimento_nome || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.trilha) + '</td>'
+        + '<td>' + escapeHtml(entry.unit_com || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.seller_name_com || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.client_name_com || '—') + '</td>'
+        + '<td>' + money(entry.value_com) + '</td>'
+        + '<td><span class="badge ' + (STATUS_CLS[entry.status_step_com] || '') + '">' + escapeHtml(entry.status_nome) + '</span></td>'
         + '<td class="fin-acts" style="white-space:nowrap;text-align:right"></td></tr>';
     });
     html += '</tbody></table></div>';
-    $('com-body').innerHTML = html;
+    selectElement('com-body').innerHTML = html;
 
-    $('com-body').querySelectorAll('tr[data-i]').forEach(function (tr) {
-      var c = data[+tr.getAttribute('data-i')], cell = tr.lastElementChild;
-      tr.style.cursor = 'pointer';
-      tr.addEventListener('click', function () { openDetail(c); });
-      actionsFor(c).forEach(function (act) {
-        var b = document.createElement('button');
-        b.className = 'btn ' + (CLS[act] || 'btn-light'); b.style.marginLeft = '6px';
-        b.textContent = (act === 'validate' && Number(c.status_step_com) === 5) ? 'Corrigir e reenviar' : LABEL[act];
-        b.addEventListener('click', function (e) { e.stopPropagation(); runAction(c, act); });
-        cell.appendChild(b);
+    selectElement('com-body').querySelectorAll('tr[data-i]').forEach(function (row) {
+      var commission = data[+row.getAttribute('data-i')], cell = row.lastElementChild;
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', function () { openDetail(commission); });
+      actionsFor(commission).forEach(function (action) {
+        var buttonElement = document.createElement('button');
+        buttonElement.className = 'btn ' + (ACTION_CSS_CLASSES[action] || 'btn-light'); buttonElement.style.marginLeft = '6px';
+        buttonElement.textContent = (action === 'validate' && Number(commission.status_step_com) === 5) ? 'Corrigir e reenviar' : LABEL[action];
+        buttonElement.addEventListener('click', function (event) { event.stopPropagation(); runAction(commission, action); });
+        cell.appendChild(buttonElement);
       });
     });
   }
@@ -109,38 +99,37 @@ async function initView_comissoes() {
   function post(uuid, action, body) { return window.API.post('/commissions/' + uuid + '/' + action, body || {}); }
   async function done() { window.Store.invalidate('commissions'); window.Store.invalidate('comm_history'); await reload(); }
 
-  function runAction(c, act) {
-    // ETAPA 1 (trilha): avaliar + anexar NF num passo só -> vai ao Financeiro. Também é a correção.
-    if (act === 'validate') return openNfModal(c);
-    if (act === 'finalize') return confirmThen('FINALIZAR esta comissão? Encerra o processo (sem integração).', function () { return post(c.uuid_com, 'finalize'); });
-    if (act === 'pendency') return promptThen('Devolver para correção? Volta para a trilha (SOMOS/PARTINI).', function (note) { return post(c.uuid_com, 'pendency', { note: note }); });
-    if (act === 'cancel') return promptThen('Cancelar esta comissão? Esta ação é irreversível.', function (note) { return post(c.uuid_com, 'cancel', { note: note }); }, true, true);
+  function runAction(commission, action) {
+    if (action === 'validate') return openNfModal(commission);
+    if (action === 'finalize') return confirmThen('FINALIZAR esta comissão? Encerra o processo (sem integração).', function () { return post(commission.uuid_com, 'finalize'); });
+    if (action === 'pendency') return promptThen('Devolver para correção? Volta para a trilha (SOMOS/PARTINI).', function (note) { return post(commission.uuid_com, 'pendency', { note: note }); });
+    if (action === 'cancel') return promptThen('Cancelar esta comissão? Esta ação é irreversível.', function (note) { return post(commission.uuid_com, 'cancel', { note: note }); }, true, true);
   }
 
-  async function confirmThen(msg, fn) {
-    var o = overlay('<div class="modal-title">Confirmação</div><div style="font-size:14px;color:var(--text-2);line-height:1.5">' + esc(msg) + '</div>'
+  async function confirmThen(message, onConfirm) {
+    var overlayElement = overlay('<div class="modal-title">Confirmação</div><div style="font-size:14px;color:var(--text-2);line-height:1.5">' + escapeHtml(message) + '</div>'
       + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button><button class="btn btn-primary" data-ok>Confirmar</button></div>');
-    o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
-    o.querySelector('[data-ok]').addEventListener('click', async function () {
-      o.remove();
-      try { await fn(); toast('Feito.', true); await done(); } catch (e) { toast('Erro: ' + e.message); }
+    overlayElement.querySelector('[data-x]').addEventListener('click', function () { overlayElement.remove(); });
+    overlayElement.querySelector('[data-ok]').addEventListener('click', async function () {
+      overlayElement.remove();
+      try { await onConfirm(); toast('Feito.', true); await done(); } catch (error) { toast('Erro: ' + error.message); }
     });
   }
-  async function promptThen(msg, fn, danger, requireNote) {
-    var o = overlay('<div class="modal-title">' + esc(msg) + '</div>'
+  async function promptThen(message, onConfirm, danger, requireNote) {
+    var overlayElement = overlay('<div class="modal-title">' + escapeHtml(message) + '</div>'
       + '<textarea data-note rows="3" maxlength="500" placeholder="Motivo ' + (requireNote ? '(obrigatório)' : '(opcional)') + '…" style="margin-top:10px"></textarea>'
       + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button><button class="btn ' + (danger ? 'btn-danger' : 'btn-primary') + '" data-ok>Confirmar</button></div>');
-    o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
-    o.querySelector('[data-ok]').addEventListener('click', async function () {
-      var note = o.querySelector('[data-note]').value.trim();
+    overlayElement.querySelector('[data-x]').addEventListener('click', function () { overlayElement.remove(); });
+    overlayElement.querySelector('[data-ok]').addEventListener('click', async function () {
+      var note = overlayElement.querySelector('[data-note]').value.trim();
       if (requireNote && !note) { toast('Informe o motivo.'); return; }
-      o.remove();
-      try { await fn(note); toast('Feito.', true); await done(); } catch (e) { toast('Erro: ' + e.message); }
+      overlayElement.remove();
+      try { await onConfirm(note); toast('Feito.', true); await done(); } catch (error) { toast('Erro: ' + error.message); }
     });
   }
 
-  function openNfModal(c) {
-    var nfUrl = c.nf_url_com || null, boletoUrl = c.boleto_url_com || null;
+  function openNfModal(commission) {
+    var nfUrl = commission.nf_url_com || null, boletoUrl = commission.boleto_url_com || null;
     var o = overlay('<div class="modal-title">Validar e anexar Nota Fiscal</div>'
       + '<div class="com-modal-grid" style="margin-top:8px">'
       + '<div><b style="font-size:13px">Nota Fiscal (obrigatória)</b>'
@@ -152,21 +141,21 @@ async function initView_comissoes() {
       + '</div>'
       + '<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
       + '<div><label style="font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px">E-mail do Vendedor</label>'
-      + '<input id="com-email" maxlength="200" placeholder="Opcional" value="' + esc(c.seller_email_com || '') + '"></div>'
+      + '<input id="com-email" maxlength="200" placeholder="Opcional" value="' + escapeHtml(commission.seller_email_com || '') + '"></div>'
       + '<div><label style="font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px">Celular do Vendedor</label>'
-      + '<input id="com-phone" maxlength="50" placeholder="Opcional" value="' + esc(c.seller_phone_com || '') + '"></div>'
+      + '<input id="com-phone" maxlength="50" placeholder="Opcional" value="' + escapeHtml(commission.seller_phone_com || '') + '"></div>'
       + '</div>'
       + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button><button class="btn btn-primary" data-ok>Salvar e avançar</button></div>', 520);
-    function up(inputId, nameId, set) {
+    function bindUploadField(inputId, nameId, set) {
       o.querySelector('#' + inputId).addEventListener('change', async function () {
         if (!this.files[0]) return;
         o.querySelector('#' + nameId).textContent = 'Enviando…';
-        try { var r = await window.SB.upload(this.files[0]); set(r ? r.url : null); o.querySelector('#' + nameId).textContent = this.files[0].name; }
-        catch (e) { o.querySelector('#' + nameId).textContent = ''; toast('Falha no anexo: ' + (e.message || 'storage')); }
+        try { var uploadResult = await window.SB.upload(this.files[0]); set(uploadResult ? uploadResult.url : null); o.querySelector('#' + nameId).textContent = this.files[0].name; }
+        catch (error) { o.querySelector('#' + nameId).textContent = ''; toast('Falha no anexo: ' + (error.message || 'storage')); }
       });
     }
-    up('com-nf', 'com-nf-name', function (u) { nfUrl = u; });
-    up('com-bol', 'com-bol-name', function (u) { boletoUrl = u; });
+    bindUploadField('com-nf', 'com-nf-name', function (uploadedUrl) { nfUrl = uploadedUrl; });
+    bindUploadField('com-bol', 'com-bol-name', function (uploadedUrl) { boletoUrl = uploadedUrl; });
     o.querySelector('[data-x]').addEventListener('click', function () { o.remove(); });
     o.querySelector('[data-ok]').addEventListener('click', async function () {
       if (!nfUrl) { toast('Anexe a Nota Fiscal para validar.'); return; }
@@ -174,43 +163,41 @@ async function initView_comissoes() {
       var phone = (o.querySelector('#com-phone').value || '').trim();
       o.remove();
       try {
-        await post(c.uuid_com, 'validate', { nf_url: nfUrl, boleto_url: boletoUrl, seller_email: email || null, seller_phone: phone || null });
+        await post(commission.uuid_com, 'validate', { nf_url: nfUrl, boleto_url: boletoUrl, seller_email: email || null, seller_phone: phone || null });
         toast('Validado e enviado ao Financeiro.', true); await done();
-      } catch (e) { toast('Erro: ' + e.message); }
+      } catch (error) { toast('Erro: ' + error.message); }
     });
   }
 
-  // Detalhe da comissão — MESMO layout do detalhe de processo (classes pd-*): campos +
-  // NF/boleto ao lado (iframe) + aba Histórico (timeline de v_comm_history).
   async function openDetail(c) {
-    function fieldBox(label, val) {
-      var v = (val === null || val === undefined || val === '') ? '—' : val;
-      return '<div class="pd-field"><label>' + esc(label) + '</label><div class="pd-field-box">' + esc(v) + '</div></div>';
+    function fieldBox(label, value) {
+      var displayValue = (value === null || value === undefined || value === '') ? '—' : value;
+      return '<div class="pd-field"><label>' + escapeHtml(label) + '</label><div class="pd-field-box">' + escapeHtml(displayValue) + '</div></div>';
     }
-    var nf = c.nf_url_com, bol = c.boleto_url_com, firstUrl = nf || bol;
+    var nfAttachmentUrl = c.nf_url_com, boletoAttachmentUrl = c.boleto_url_com, firstUrl = nfAttachmentUrl || boletoAttachmentUrl;
     var docHtml = '';
     if (firstUrl) {
       docHtml = '<div class="pd-doc"><div class="pd-doc-head"><div class="pd-doc-tabs">'
-        + (nf ? '<button class="pd-doc-tab active" data-url="' + esc(nf) + '">Nota Fiscal</button>' : '')
-        + (bol ? '<button class="pd-doc-tab' + (nf ? '' : ' active') + '" data-url="' + esc(bol) + '">Boleto</button>' : '')
+        + (nfAttachmentUrl ? '<button class="pd-doc-tab active" data-url="' + escapeHtml(nfAttachmentUrl) + '">Nota Fiscal</button>' : '')
+        + (boletoAttachmentUrl ? '<button class="pd-doc-tab' + (nfAttachmentUrl ? '' : ' active') + '" data-url="' + escapeHtml(boletoAttachmentUrl) + '">Boleto</button>' : '')
         + '</div><div class="pd-doc-actions">'
-        + (nf ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + esc(nf) + '">Nota Fiscal</a>' : '')
-        + (bol ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + esc(bol) + '">Boleto</a>' : '')
-        + '</div></div><iframe class="pd-doc-frame" src="' + esc(firstUrl) + '" title="Documento"></iframe></div>';
+        + (nfAttachmentUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(nfAttachmentUrl) + '">Nota Fiscal</a>' : '')
+        + (boletoAttachmentUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(boletoAttachmentUrl) + '">Boleto</a>' : '')
+        + '</div></div><iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe></div>';
     }
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
       + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
       + '<div data-pane="dados" class="pane pd-detail">'
-      + '<div class="pd-fields"><h3>Comissão #' + esc(c.id_com) + ' — ' + esc(c.status_nome) + '</h3>'
+      + '<div class="pd-fields"><h3>Comissão #' + escapeHtml(c.id_com) + ' — ' + escapeHtml(c.status_nome) + '</h3>'
       + fieldBox('Empreendimento', c.empreendimento_nome)
       + fieldBox('Empresa', c.empresa_nome || c.company_com)
       + fieldBox('Obra', c.building_com)
       + fieldBox('Trilha', c.trilha)
       + fieldBox('Unidade', c.unit_com)
       + fieldBox('Nº da Venda', c.sale_num_com)
-      + fieldBox('Data da Venda', c.sale_date_com ? fmtDate(c.sale_date_com) : '')
-      + fieldBox('Data de Liberação', c.release_date_com ? fmtDate(c.release_date_com) : '')
+      + fieldBox('Data da Venda', c.sale_date_com ? formatDate(c.sale_date_com) : '')
+      + fieldBox('Data de Liberação', c.release_date_com ? formatDate(c.release_date_com) : '')
       + fieldBox('Cliente', c.client_name_com)
       + fieldBox('Vendedor', c.seller_name_com)
       + fieldBox('Código do Vendedor', c.seller_id_com)
@@ -220,35 +207,35 @@ async function initView_comissoes() {
       + fieldBox('Observação', c.note_com)
       + '</div>' + docHtml + '</div>'
       + '<div data-pane="hist" class="pane" hidden><div class="col-body">…</div></div></div>';
-    o.addEventListener('click', function (e) { if (e.target === o || e.target.classList.contains('modal-x')) o.remove(); });
-    o.querySelectorAll('.tab').forEach(function (t) {
-      t.addEventListener('click', function () {
-        o.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); }); t.classList.add('active');
-        o.querySelectorAll('.pane').forEach(function (p) { p.hidden = (p.getAttribute('data-pane') !== t.getAttribute('data-t')); });
+    o.addEventListener('click', function (event) { if (event.target === o || event.target.classList.contains('modal-x')) o.remove(); });
+    o.querySelectorAll('.tab').forEach(function (tabButton) {
+      tabButton.addEventListener('click', function () {
+        o.querySelectorAll('.tab').forEach(function (otherTab) { otherTab.classList.remove('active'); }); tabButton.classList.add('active');
+        o.querySelectorAll('.pane').forEach(function (pane) { pane.hidden = (pane.getAttribute('data-pane') !== tabButton.getAttribute('data-t')); });
       });
     });
     var frame = o.querySelector('.pd-doc-frame');
-    o.querySelectorAll('.pd-doc-tab').forEach(function (b) {
-      b.addEventListener('click', function () {
-        o.querySelectorAll('.pd-doc-tab').forEach(function (x) { x.classList.remove('active'); });
-        b.classList.add('active'); if (frame) frame.src = b.getAttribute('data-url');
+    o.querySelectorAll('.pd-doc-tab').forEach(function (documentTab) {
+      documentTab.addEventListener('click', function () {
+        o.querySelectorAll('.pd-doc-tab').forEach(function (otherDocumentTab) { otherDocumentTab.classList.remove('active'); });
+        documentTab.classList.add('active'); if (frame) frame.src = documentTab.getAttribute('data-url');
       });
     });
     document.body.appendChild(o);
     try {
       var hist = await window.Store.get('comm_history', c.uuid_com);
       o.querySelector('[data-pane="hist"] .col-body').innerHTML = (hist && hist.length)
-        ? '<ul class="timeline">' + hist.map(function (x) {
-          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + esc(x.action_chs) + '</div>'
-            + '<div class="tl-meta">' + esc(x.user_nome || 'Sistema') + ' · ' + esc(fmtDateTime(x.created_at_chs)) + '</div></div></li>';
+        ? '<ul class="timeline">' + hist.map(function (histItem) {
+          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
+            + '<div class="tl-meta">' + escapeHtml(histItem.user_nome || 'Sistema') + ' · ' + escapeHtml(formatDateTime(histItem.created_at_chs)) + '</div></div></li>';
         }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
-    } catch (e) { o.querySelector('[data-pane="hist"] .col-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
+    } catch (error) { o.querySelector('[data-pane="hist"] .col-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }
 
-  ['com-search', 'com-trilha', 'com-status'].forEach(function (id) { $(id).addEventListener('input', render); $(id).addEventListener('change', render); });
-  $('com-refresh').addEventListener('click', done);
-  $('com-clear').addEventListener('click', function () { $('com-search').value = ''; $('com-trilha').value = ''; $('com-status').value = ''; render(); });
+  ['com-search', 'com-trilha', 'com-status'].forEach(function (item) { selectElement(item).addEventListener('input', render); selectElement(item).addEventListener('change', render); });
+  selectElement('com-refresh').addEventListener('click', done);
+  selectElement('com-clear').addEventListener('click', function () { selectElement('com-search').value = ''; selectElement('com-trilha').value = ''; selectElement('com-status').value = ''; render(); });
 
   await reload();
 }

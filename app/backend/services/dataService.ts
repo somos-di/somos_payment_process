@@ -3,9 +3,9 @@ import type { CacheManager } from '../cache/cacheManager.js';
 import { AppError, NotFoundError } from '../errors.js';
 import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
+import type { QueryOp, RpcArgs, UploadedFile } from '../types/data.js';
 import { MAX_FILE_BYTES } from '../validators/common.js';
 
-// Recursos (tabelas/views) que o front pode LER. RLS ainda restringe as linhas.
 const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
   'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
@@ -15,107 +15,92 @@ const READ_RESOURCES = new Set<string>([
   'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind', 'v_comm_history',
 ]);
 
-// Recursos SÓ de admin: o diagnóstico v_no_approver (view sem security_invoker,
-// ignora RLS) e o mapeamento usuário↔grupo. Leitura barrada a não-admin no backend
-// (o menu/rota no front é só cosmético).
 const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules']);
 
-// RPCs de LEITURA liberadas pro front (ações ficam em /processes/:uuid/:action).
-// completed_approvals/eligible_approvers gateiam can_see_process por dentro.
-// process_levels/current_level saíram: não são usados pelo front e reduzem superfície.
 const READ_RPCS = new Set<string>([
   'my_pending_approvals', 'my_pending_approval_groups', 'my_launchable_kinds',
   'completed_approvals', 'eligible_approvers', 'next_levels',
 ]);
 
-type Op = [string, ...unknown[]];
-
 export class DataService {
   constructor(private readonly cache?: CacheManager) { }
 
-  // SELECT genérico. Recursos globais (CACHEABLE_RESOURCES) passam pelo cache
-  // do Redis, com chave = resource + flags + ops. Os demais (RLS) vão direto no Supabase.
-  // gate de admin: lê is_admin do banco pelo sub do JWT (já validado no requireAuth).
   private async assertAdmin(token: string): Promise<void> {
-    let sub = '';
-    try { sub = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()).sub || ''; } catch { /* token malformado */ }
-    const { data } = await adminClient().from('users').select('is_admin').eq('id_usr', sub).maybeSingle();
+    let userId = '';
+    try { userId = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()).sub || ''; } catch { }
+    const { data } = await adminClient().from('users').select('is_admin').eq('id_usr', userId).maybeSingle();
     if (!data?.is_admin) throw new AppError('Acesso restrito a administradores', 403, 'forbidden');
   }
 
-  async query(token: string, resource: string, ops: Op[], withCount = false, head = false): Promise<any> {
+  async query(token: string, resource: string, operations: QueryOp[], withCount = false, head = false): Promise<any> {
     if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
-    if (ADMIN_RESOURCES.has(resource)) await this.assertAdmin(token); // 403 se não-admin
+    if (ADMIN_RESOURCES.has(resource)) await this.assertAdmin(token);
     if (this.cache && CACHEABLE_RESOURCES.has(resource)) {
-      const key = cacheKey(resource, ops, withCount, head);
-      return this.cache.wrap(key, () => this.runQuery(token, resource, ops, withCount, head));
+      const key = cacheKey(resource, operations, withCount, head);
+      return this.cache.wrap(key, () => this.runQuery(token, resource, operations, withCount, head));
     }
-    return this.runQuery(token, resource, ops, withCount, head);
+    return this.runQuery(token, resource, operations, withCount, head);
   }
 
-  private async runQuery(token: string, resource: string, ops: Op[], withCount: boolean, head: boolean): Promise<any> {
-    const selectOpts = (withCount || head) ? { count: 'exact' as const, head } : undefined;
-    let q: any = userClient(token).from(resource).select('*', selectOpts);
-    for (const op of ops || []) {
-      const [fn, ...args] = op;
-      switch (fn) {
+  private async runQuery(token: string, resource: string, operations: QueryOp[], withCount: boolean, head: boolean): Promise<any> {
+    const selectOptions = (withCount || head) ? { count: 'exact' as const, head } : undefined;
+    let query: any = userClient(token).from(resource).select('*', selectOptions);
+    for (const operation of operations || []) {
+      const [operationName, ...operationArgs] = operation;
+      switch (operationName) {
         case 'eq': case 'neq': case 'gt': case 'gte': case 'lt': case 'lte':
         case 'like': case 'ilike': case 'is':
-          q = q[fn](args[0], args[1]); break;
+          query = query[operationName](operationArgs[0], operationArgs[1]); break;
         case 'in':
-          q = q.in(args[0], args[1] as unknown[]); break;
+          query = query.in(operationArgs[0], operationArgs[1] as unknown[]); break;
         case 'or':
-          q = q.or(args[0] as string); break;
+          query = query.or(operationArgs[0] as string); break;
         case 'order':
-          q = q.order(args[0] as string, (args[1] as object) || {}); break;
+          query = query.order(operationArgs[0] as string, (operationArgs[1] as object) || {}); break;
         case 'limit':
-          q = q.limit(args[0] as number); break;
+          query = query.limit(operationArgs[0] as number); break;
         case 'range':
-          q = q.range(args[0] as number, args[1] as number); break;
+          query = query.range(operationArgs[0] as number, operationArgs[1] as number); break;
         default:
-          throw new AppError(`Operação não suportada: ${fn}`, 400, 'data');
+          throw new AppError(`Operação não suportada: ${operationName}`, 400, 'data');
       }
     }
     if (withCount || head) {
-      const { data, error, count } = await q;
+      const { data, error, count } = await query;
       if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
       return { data: data ?? [], count };
     }
-    return unwrap(q);
+    return unwrap(query);
   }
 
-  async rpc(token: string, fn: string, args: Record<string, unknown>) {
-    if (!READ_RPCS.has(fn)) throw new NotFoundError(`RPC não permitida: ${fn}`);
-    return unwrap(userClient(token).rpc(fn, args || {}));
+  async rpc(token: string, rpcName: string, rpcArguments: RpcArgs) {
+    if (!READ_RPCS.has(rpcName)) throw new NotFoundError(`RPC não permitida: ${rpcName}`);
+    return unwrap(userClient(token).rpc(rpcName, rpcArguments || {}));
   }
 
-  // grava um objeto no bucket de Storage e devolve a URL pública. Faz o enforcement
-  // autoritativo do tamanho real (o teto de base64 no controller é só uma barreira grosseira).
-  private async putObject(objectName: string, base64: string, contentType: string): Promise<{ url: string }> {
-    const s = getSettings();
-    const buf = Buffer.from(base64, 'base64');
-    if (buf.length > MAX_FILE_BYTES) {
+  private async putObject(objectName: string, base64: string, contentType: string): Promise<UploadedFile> {
+    const settings = getSettings();
+    const buffer = Buffer.from(base64, 'base64');
+    if (buffer.length > MAX_FILE_BYTES) {
       throw new AppError(`Arquivo excede o limite de ${Math.floor(MAX_FILE_BYTES / 1024 / 1024)} MB`, 400, 'file_too_large');
     }
-    const up = await adminClient().storage.from(s.attachmentsBucket)
-      .upload(objectName, buf, { contentType: contentType || 'application/octet-stream', upsert: true });
-    if (up.error) throw new AppError(up.error.message, 400, 'storage');
-    const pub = adminClient().storage.from(s.attachmentsBucket).getPublicUrl(objectName);
-    return { url: pub.data.publicUrl };
+    const uploadResult = await adminClient().storage.from(settings.attachmentsBucket)
+      .upload(objectName, buffer, { contentType: contentType || 'application/octet-stream', upsert: true });
+    if (uploadResult.error) throw new AppError(uploadResult.error.message, 400, 'storage');
+    const publicUrlResult = adminClient().storage.from(settings.attachmentsBucket).getPublicUrl(objectName);
+    return { url: publicUrlResult.data.publicUrl };
   }
 
   private safeName(filename: string): string {
     return `${Date.now()}_${filename.replace(/[^\w.\-]/g, '_')}`;
   }
 
-  // upload de anexo (boleto/NF) -> raiz do bucket; devolve URL pública.
-  uploadAttachment(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+  uploadAttachment(filename: string, base64: string, contentType: string): Promise<UploadedFile> {
     return this.putObject(this.safeName(filename), base64, contentType);
   }
 
-  // upload do XLSX de origem do lançamento em massa -> pasta bulk-imports/ (registro/auditoria).
-  uploadBulkImport(filename: string, base64: string, contentType: string): Promise<{ url: string }> {
+  uploadBulkImport(filename: string, base64: string, contentType: string): Promise<UploadedFile> {
     return this.putObject(`bulk-imports/${this.safeName(filename)}`, base64, contentType);
   }
 }

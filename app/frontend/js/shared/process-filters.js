@@ -1,22 +1,21 @@
 (function () {
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function asArray(v) { return Array.isArray(v) ? v.slice() : (v === '' || v == null ? [] : [v]); }  // migra saved antigo (string) -> array
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function asArray(value) { return Array.isArray(value) ? value.slice() : (value === '' || value == null ? [] : [value]); }
 
   var buildingsCache = {};
   async function loadBuildings(company) {
     if (!company) return [];
     if (buildingsCache[company]) return buildingsCache[company];
-    var rows = await window.SB.select('v_obras', function (q) { return q.eq('empresa', company).order('nome'); });
+    var rows = await window.SB.select('v_obras', function (query) { return query.eq('empresa', company).order('nome'); });
     buildingsCache[company] = rows || [];
     return buildingsCache[company];
   }
 
-  // injeta o CSS do multiselect uma única vez
   var STYLE_ID = 'pf-ms-style';
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) return;
-    var st = document.createElement('style'); st.id = STYLE_ID;
-    st.textContent =
+    var styleElement = document.createElement('style'); styleElement.id = STYLE_ID;
+    styleElement.textContent =
       '.pf-ms{position:relative}'
       + '.pf-ms-btn{display:flex;align-items:center;gap:6px;justify-content:space-between;min-width:150px;max-width:230px;'
       + 'padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;'
@@ -28,105 +27,98 @@
       + '.pf-ms-pop.open{display:block}'
       + '.pf-ms-pop .pf-ms-search{width:100%;margin-bottom:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box}'
       + '.pf-ms-pop .pf-ms-list{max-height:200px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}'
-      // opções escopadas em .pf-ms-pop para VENCER o CSS global de <label> dos filtros
-      // (que usa uppercase + space-between + margens). 1 linha, reticências, sem MAIÚSCULA.
       + '.pf-ms-pop .pf-ms-opt{display:flex;justify-content:flex-start;gap:8px;align-items:center;width:auto;margin:0;'
       + 'padding:5px 6px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1.2;text-transform:none;text-align:left;font-weight:400;letter-spacing:normal}'
       + '.pf-ms-pop .pf-ms-opt:hover{background:var(--surface-2)}'
       + '.pf-ms-pop .pf-ms-opt input{flex:none;margin:0;width:15px;height:15px;pointer-events:none}'
       + '.pf-ms-pop .pf-ms-opt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pf-ms-pop .pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
-    document.head.appendChild(st);
+    document.head.appendChild(styleElement);
   }
 
-  // Multiselect com checkboxes + busca. onChange(selectedArray). Fecha ao clicar fora.
-  function makeMultiSelect(caption, opts) {
-    var field = document.createElement('div'); field.className = 'pf-field pf-ms';  // div (não label): evita label aninhado com as opções
+  function makeMultiSelect(caption, options) {
+    var field = document.createElement('div'); field.className = 'pf-field pf-ms';
     field.innerHTML = caption
       + '<button type="button" class="pf-ms-btn"><span class="pf-ms-txt">Todas</span><span>▾</span></button>'
       + '<div class="pf-ms-pop"><input class="pf-ms-search" placeholder="Buscar…">'
       + '<div class="pf-ms-list"></div></div>';
-    var btn = field.querySelector('.pf-ms-btn');
-    var txt = field.querySelector('.pf-ms-txt');
-    var pop = field.querySelector('.pf-ms-pop');
+    var button = field.querySelector('.pf-ms-btn');
+    var textElement = field.querySelector('.pf-ms-txt');
+    var popupElement = field.querySelector('.pf-ms-pop');
     var search = field.querySelector('.pf-ms-search');
     var list = field.querySelector('.pf-ms-list');
 
-    var items = [];          // [{value, label}]
-    var selected = {};       // value -> true
+    var items = [];
+    var selected = {};
     var labelByValue = {};
 
     function selectedArray() { return Object.keys(selected); }
     function updateButton() {
       var n = selectedArray().length;
-      txt.textContent = n === 0 ? (opts.allLabel || 'Todas')
+      textElement.textContent = n === 0 ? (options.allLabel || 'Todas')
         : (n === 1 ? (labelByValue[selectedArray()[0]] || '1 selecionada') : (n + ' selecionadas'));
     }
     function renderList() {
       var term = (search.value || '').toLowerCase().trim();
-      var shown = items.filter(function (it) { return !term || String(it.label).toLowerCase().indexOf(term) >= 0; });
+      var shown = items.filter(function (item) { return !term || String(item.label).toLowerCase().indexOf(term) >= 0; });
       if (!shown.length) { list.innerHTML = '<div class="pf-ms-empty">Nada encontrado</div>'; return; }
-      // <div> (não <label>): evita qualquer CSS global de <label> dos filtros.
-      // O checkbox é só visual (pointer-events:none); o clique na linha é que alterna.
-      list.innerHTML = shown.map(function (it) {
-        return '<div class="pf-ms-opt" data-v="' + esc(it.value) + '" title="' + esc(it.label) + '">'
-          + '<input type="checkbox" tabindex="-1"' + (selected[it.value] ? ' checked' : '') + '>'
-          + '<span>' + esc(it.label) + '</span></div>';
+      list.innerHTML = shown.map(function (shownItem) {
+        return '<div class="pf-ms-opt" data-v="' + escapeHtml(shownItem.value) + '" title="' + escapeHtml(shownItem.label) + '">'
+          + '<input type="checkbox" tabindex="-1"' + (selected[shownItem.value] ? ' checked' : '') + '>'
+          + '<span>' + escapeHtml(shownItem.label) + '</span></div>';
       }).join('');
-      list.querySelectorAll('.pf-ms-opt').forEach(function (row) {
-        row.addEventListener('click', function () {
-          var v = row.getAttribute('data-v'), on = !selected[v];
-          if (on) selected[v] = true; else delete selected[v];
-          var cb = row.querySelector('input'); if (cb) cb.checked = on;
+      list.querySelectorAll('.pf-ms-opt').forEach(function (item) {
+        item.addEventListener('click', function () {
+          var value = item.getAttribute('data-v'), on = !selected[value];
+          if (on) selected[value] = true; else delete selected[value];
+          var callback = item.querySelector('input'); if (callback) callback.checked = on;
           updateButton();
-          if (opts.onChange) opts.onChange(selectedArray());
+          if (options.onChange) options.onChange(selectedArray());
         });
       });
     }
-    function openPop() { pop.classList.add('open'); search.value = ''; renderList(); search.focus(); }
-    function closePop() { pop.classList.remove('open'); }
+    function openPop() { popupElement.classList.add('open'); search.value = ''; renderList(); search.focus(); }
+    function closePop() { popupElement.classList.remove('open'); }
 
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      if (btn.disabled) return;
-      if (pop.classList.contains('open')) closePop(); else openPop();
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      if (button.disabled) return;
+      if (popupElement.classList.contains('open')) closePop(); else openPop();
     });
     search.addEventListener('input', renderList);
-    document.addEventListener('click', function (e) { if (!field.contains(e.target)) closePop(); });
+    document.addEventListener('click', function (event) { if (!field.contains(event.target)) closePop(); });
 
     return {
       el: field,
       getValues: selectedArray,
       setOptions: function (optItems) {
         items = optItems || []; labelByValue = {};
-        items.forEach(function (it) { labelByValue[it.value] = it.label; });
-        // descarta seleções que não existem mais nas opções
-        Object.keys(selected).forEach(function (v) { if (!(v in labelByValue)) delete selected[v]; });
-        updateButton(); if (pop.classList.contains('open')) renderList();
+        items.forEach(function (item) { labelByValue[item.value] = item.label; });
+        Object.keys(selected).forEach(function (item) { if (!(item in labelByValue)) delete selected[item]; });
+        updateButton(); if (popupElement.classList.contains('open')) renderList();
       },
-      setValues: function (arr) {
-        selected = {}; (arr || []).forEach(function (v) { selected[String(v)] = true; });
+      setValues: function (items) {
+        selected = {}; (items || []).forEach(function (item) { selected[String(item)] = true; });
         updateButton();
       },
-      setDisabled: function (d) { btn.disabled = !!d; if (d) closePop(); },
+      setDisabled: function (d) { button.disabled = !!d; if (d) closePop(); },
       clear: function () { selected = {}; search.value = ''; updateButton(); },
     };
   }
 
   window.ProcessFilters = {
-    mount: async function (container, opts) {
-      opts = opts || {};
+    mount: async function (container, options) {
+      options = options || {};
       ensureStyle();
-      var storageKey = 'filters:' + (opts.storageKey || 'global');
+      var storageKey = 'filters:' + (options.storageKey || 'global');
       var saved = {};
-      try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (e) { saved = {}; }
+      try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (error) { saved = {}; }
 
-      var statusMulti = !!opts.multiStatus;   // Status multi-seleção (opt-in; ex.: Financeiro)
+      var statusMulti = !!options.multiStatus;
       var companyMS = makeMultiSelect('Empresa', { allLabel: 'Todas', onChange: onCompanyChange });
       var buildingMS = makeMultiSelect('Obra', { allLabel: 'Todas', onChange: emit });
       var statusMS = statusMulti ? makeMultiSelect('Status', { allLabel: 'Todos', onChange: emit }) : null;
 
-      // De / Até (sempre); Status (multi opt-in ou single); Urgente
       var dates = document.createElement('span'); dates.style.display = 'contents';
       dates.innerHTML =
         '<label class="pf-field">De<input type="date" data-pf="from"></label>'
@@ -144,31 +136,30 @@
       if (statusMulti) container.appendChild(statusMS.el); else container.appendChild(statusSingle);
       container.appendChild(urgentWrap);
 
-      var el = {};
-      container.querySelectorAll('[data-pf]').forEach(function (c) { el[c.getAttribute('data-pf')] = c; });
+      var element = {};
+      container.querySelectorAll('[data-pf]').forEach(function (item) { element[item.getAttribute('data-pf')] = item; });
 
       var companies = [];
-      try { companies = await window.Store.get('empresas'); } catch (e) { companies = []; }
-      companyMS.setOptions((companies || []).map(function (c) { return { value: String(c.codigo), label: c.nome }; }));
+      try { companies = await window.Store.get('empresas'); } catch (error) { companies = []; }
+      companyMS.setOptions((companies || []).map(function (item) { return { value: String(item.codigo), label: item.nome }; }));
 
       var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
-      var statusOpts = Object.keys(steps).map(function (id) { return { value: String(id), label: steps[id] }; });
+      var statusOpts = Object.keys(steps).map(function (item) { return { value: String(item), label: steps[item] }; });
       if (statusMulti) statusMS.setOptions(statusOpts);
-      else el.status.innerHTML = '<option value="">Todos</option>' + statusOpts.map(function (op) {
-        return '<option value="' + esc(op.value) + '">' + esc(op.label) + '</option>';
+      else element.status.innerHTML = '<option value="">Todos</option>' + statusOpts.map(function (statusOpt) {
+        return '<option value="' + escapeHtml(statusOpt.value) + '">' + escapeHtml(statusOpt.label) + '</option>';
       }).join('');
 
-      // Obra = união das obras das empresas selecionadas (dedup por código).
       async function refreshBuildings(keepValues) {
         var comps = companyMS.getValues();
         buildingMS.setDisabled(!comps.length);
         var seen = {}, options = [];
-        for (var i = 0; i < comps.length; i++) {
-          var rows = await loadBuildings(comps[i]);
-          rows.forEach(function (o) {
-            var v = String(o.codigo);
-            if (seen[v]) return; seen[v] = 1;
-            options.push({ value: v, label: o.nome });
+        for (var index = 0; index < comps.length; index++) {
+          var rows = await loadBuildings(comps[index]);
+          rows.forEach(function (row) {
+            var value = String(row.codigo);
+            if (seen[value]) return; seen[value] = 1;
+            options.push({ value: value, label: row.nome });
           });
         }
         buildingMS.setOptions(options);
@@ -180,32 +171,32 @@
       function getValues() {
         return {
           company: companyMS.getValues(), building: buildingMS.getValues(),
-          from: el.from.value, to: el.to.value,
-          status: statusMulti ? statusMS.getValues() : el.status.value,
-          urgent: el.urgent.value,
+          from: element.from.value, to: element.to.value,
+          status: statusMulti ? statusMS.getValues() : element.status.value,
+          urgent: element.urgent.value,
         };
       }
-      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (e) { } }
-      function emit() { persist(); if (opts.onChange) opts.onChange(getValues()); }
+      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (error) { } }
+      function emit() { persist(); if (options.onChange) options.onChange(getValues()); }
 
       companyMS.setValues(asArray(saved.company));
       await refreshBuildings(asArray(saved.building));
-      el.from.value = saved.from || '';
-      el.to.value = saved.to || '';
-      if (statusMulti) statusMS.setValues(asArray(saved.status)); else el.status.value = saved.status || '';
-      el.urgent.value = saved.urgent || '';
+      element.from.value = saved.from || '';
+      element.to.value = saved.to || '';
+      if (statusMulti) statusMS.setValues(asArray(saved.status)); else element.status.value = saved.status || '';
+      element.urgent.value = saved.urgent || '';
 
       (statusMulti ? ['from', 'to', 'urgent'] : ['from', 'to', 'status', 'urgent'])
-        .forEach(function (k) { el[k].addEventListener('change', emit); });
+        .forEach(function (item) { element[item].addEventListener('change', emit); });
 
       return {
         getValues: getValues,
         clear: function () {
           companyMS.clear(); buildingMS.clear(); buildingMS.setDisabled(true);
-          el.from.value = ''; el.to.value = ''; el.urgent.value = '';
-          if (statusMulti) statusMS.clear(); else el.status.value = '';
-          try { localStorage.removeItem(storageKey); } catch (e) { }
-          if (opts.onChange) opts.onChange(getValues());
+          element.from.value = ''; element.to.value = ''; element.urgent.value = '';
+          if (statusMulti) statusMS.clear(); else element.status.value = '';
+          try { localStorage.removeItem(storageKey); } catch (error) { }
+          if (options.onChange) options.onChange(getValues());
         },
       };
     },

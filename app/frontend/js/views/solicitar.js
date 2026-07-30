@@ -1,11 +1,11 @@
 async function initView_solicitar() {
   var SB = window.SB;
-  var $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function toast(msg, ok) {
-    var t = document.createElement('div'); t.textContent = msg;
+  var selectElement = function (id) { return document.getElementById(id); };
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function toast(message, isSuccess) {
+    var t = document.createElement('div'); t.textContent = message;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
-      + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
+      + (isSuccess ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4500);
   }
   var parseVal = function (raw) { if (!raw) return NaN; var s = String(raw).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.'); var n = parseFloat(s); return isNaN(n) ? NaN : n; };
@@ -20,70 +20,62 @@ async function initView_solicitar() {
   var step = 1, installments = [], appropriationMap = {}, appropriationOptions = [], attachments = { boleto: null, nf: null }, userId = null, deptId = null;
 
   function renderStepper() {
-    $('sol-stepper').innerHTML = STEPS.map(function (s) {
-      var cls = step > s.n ? 'done' : (step === s.n ? 'current' : '');
-      var inner = step > s.n ? '✓' : s.n;
-      return '<li class="step ' + cls + '"><span class="num">' + inner + '</span><span><span class="st">' + s.t + '</span><br><span class="sd">' + s.d + '</span></span></li>';
+    selectElement('sol-stepper').innerHTML = STEPS.map(function (STEPSItem) {
+      var cssClass = step > STEPSItem.n ? 'done' : (step === STEPSItem.n ? 'current' : '');
+      var inner = step > STEPSItem.n ? '✓' : STEPSItem.n;
+      return '<li class="step ' + cssClass + '"><span class="num">' + inner + '</span><span><span class="st">' + STEPSItem.t + '</span><br><span class="sd">' + STEPSItem.d + '</span></span></li>';
     }).join('');
   }
   function show() {
     renderStepper();
-    document.querySelectorAll('.sol-step').forEach(function (el) { el.hidden = Number(el.getAttribute('data-step')) !== step; });
-    $('sol-back').disabled = step === 1;
+    document.querySelectorAll('.sol-step').forEach(function (item) { item.hidden = Number(item.getAttribute('data-step')) !== step; });
+    selectElement('sol-back').disabled = step === 1;
 
-    $('sol-next').hidden = step === 4;
-    $('sol-save').hidden = step !== 4;
-    $('sol-save').disabled = !allValid();
-    $('sol-next').disabled = !validStep(step);
+    selectElement('sol-next').hidden = step === 4;
+    selectElement('sol-save').hidden = step !== 4;
+    selectElement('sol-save').disabled = !allValid();
+    selectElement('sol-next').disabled = !validStep(step);
   }
 
   function validStep(n) {
-    if (n === 1) return !!($('sol-empresa').value && $('sol-obra').value);
-    if (n === 2) return !!($('sol-pessoa').value && $('sol-apropriacao').value && $('sol-tipo').value
-      && $('sol-urgente').value !== '' && $('sol-tipodoc').value && parseVal($('sol-valor').value) > 0);
-    if (n === 3) return installments.length > 0 && parseInt($('sol-qtd').value, 10) === installments.length && sumCheck().ok;
+    if (n === 1) return !!(selectElement('sol-empresa').value && selectElement('sol-obra').value);
+    if (n === 2) return !!(selectElement('sol-pessoa').value && selectElement('sol-apropriacao').value && selectElement('sol-tipo').value
+      && selectElement('sol-urgente').value !== '' && selectElement('sol-tipodoc').value && parseVal(selectElement('sol-valor').value) > 0);
+    if (n === 3) return installments.length > 0 && parseInt(selectElement('sol-qtd').value, 10) === installments.length && sumCheck().ok;
     return true;
   }
   function allValid() { return validStep(1) && validStep(2) && validStep(3); }
 
   try {
-    var me = (window.Auth && window.Auth.getUser()) || null;
-    if (!me) { try { me = await window.API.get('/auth/me'); } catch (e) { } }
-    userId = me ? me.id : null;
-    deptId = me ? me.department : null;
-  } catch (e) { }
+    var currentUser = (window.Auth && window.Auth.getUser()) || null;
+    if (!currentUser) { try { currentUser = await window.API.get('/auth/me'); } catch (error) { } }
+    userId = currentUser ? currentUser.id : null;
+    deptId = currentUser ? currentUser.department : null;
+  } catch (error) { }
 
-  function fill(sel, rows, vk, tk, ph) {
-    sel.innerHTML = '<option value="">' + ph + '</option>' + rows.map(function (r) {
-      return '<option value="' + esc(r[vk]) + '">' + esc(r[tk]) + '</option>';
+  function fill(selector, rows, valueKey, textKey, placeholder) {
+    selector.innerHTML = '<option value="">' + placeholder + '</option>' + rows.map(function (row) {
+      return '<option value="' + escapeHtml(row[valueKey]) + '">' + escapeHtml(row[textKey]) + '</option>';
     }).join('');
   }
   try {
-    fill($('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
+    fill(selectElement('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
 
-    // Comissão é um domínio próprio (mini app): sem apropriação/parcelas/aprovação.
-    // NÃO é mais um tipo de PAGAMENTO — removemos o kind legado "Comissão" da lista e
-    // usamos uma opção sentinela (value 'commission') que troca a tela. Só quem opera
-    // comissões (trilha) ou admin vê a opção; o RPC ainda valida a trilha no banco.
     var kinds = (await window.Store.get('launchable_kinds')) || [];
-    var payKinds = kinds.filter(function (k) { return String(k.name_pkn || '').trim().toLowerCase() !== 'comissão'; });
-    fill($('sol-tipo'), payKinds, 'id_pkn', 'name_pkn', 'Selecione o tipo');
-    if (me && (me.is_commission || me.is_admin)) {
+    var payKinds = kinds.filter(function (kind) { return String(kind.name_pkn || '').trim().toLowerCase() !== 'comissão'; });
+    fill(selectElement('sol-tipo'), payKinds, 'id_pkn', 'name_pkn', 'Selecione o tipo');
+    if (currentUser && (currentUser.is_commission || currentUser.is_admin)) {
       var optC = document.createElement('option'); optC.value = 'commission'; optC.textContent = 'Comissão';
-      $('sol-tipo').appendChild(optC);
+      selectElement('sol-tipo').appendChild(optC);
     }
-    fill($('sol-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
-  } catch (e) { toast('Falha ao carregar listas: ' + e.message); }
+    fill(selectElement('sol-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
+  } catch (error) { toast('Falha ao carregar listas: ' + error.message); }
 
-  // Alterna a tela conforme o tipo: "Comissão" troca o wizard de pagamento pelo
-  // formulário de comissão (módulo isolado — SRP). Demais tipos = wizard padrão.
-  // Monta o módulo UMA vez (evita re-registrar listeners a cada troca de tipo);
-  // depois só alterna a visibilidade.
   var commissionMounted = false;
   function applyMode() {
-    var isComm = $('sol-tipo').value === 'commission';
-    document.querySelectorAll('[data-payonly]').forEach(function (el) { el.hidden = isComm; });
-    var host = $('sol-commission-host'); host.hidden = !isComm;
+    var isComm = selectElement('sol-tipo').value === 'commission';
+    document.querySelectorAll('[data-payonly]').forEach(function (item) { item.hidden = isComm; });
+    var host = selectElement('sol-commission-host'); host.hidden = !isComm;
     if (isComm) {
       if (commissionMounted) return;
       if (window.CommissionLaunch && typeof window.CommissionLaunch.mount === 'function') {
@@ -92,185 +84,184 @@ async function initView_solicitar() {
       } else { host.innerHTML = '<div class="view-error">Módulo de comissão não carregado.</div>'; }
     } else { show(); }
   }
-  $('sol-tipo').addEventListener('change', applyMode);
+  selectElement('sol-tipo').addEventListener('change', applyMode);
 
-  $('sol-empresa').addEventListener('change', async function () {
+  selectElement('sol-empresa').addEventListener('change', async function () {
     var company = this.value;
-    var building = $('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
+    var building = selectElement('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
     resetAppropriation('Selecione uma obra');
     if (company) {
       try {
         var buildings = await window.Store.get('obras', company);
         fill(building, buildings, 'codigo', 'nome', 'Selecione uma obra'); building.disabled = false;
-      } catch (e) { building.innerHTML = '<option value="">Erro</option>'; building.disabled = false; }
+      } catch (error) { building.innerHTML = '<option value="">Erro</option>'; building.disabled = false; }
     }
     show();
   });
-  $('sol-obra').addEventListener('change', async function () {
-    var company = $('sol-empresa').value, building = this.value;
+  selectElement('sol-obra').addEventListener('change', async function () {
+    var company = selectElement('sol-empresa').value, building = this.value;
     resetAppropriation('Carregando…');
     if (building) {
       try {
         var rows = await window.Store.get('compositions_lk', company + '|' + building);
         var seen = {};
-        rows.forEach(function (r) {
-          var key = r.codigo_composicao + '|' + r.codigo_insumo;
-          if (seen[key] || !r.codigo_composicao || !r.codigo_insumo) return; seen[key] = 1;
-          appropriationMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
-          appropriationOptions.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
+        rows.forEach(function (row) {
+          var key = row.codigo_composicao + '|' + row.codigo_insumo;
+          if (seen[key] || !row.codigo_composicao || !row.codigo_insumo) return; seen[key] = 1;
+          appropriationMap[key] = { comp: row.codigo_composicao, insumo: row.codigo_insumo };
+          appropriationOptions.push({ k: key, t: (row.descricao_composicao || row.codigo_composicao) + ' / ' + (row.descricao_insumo || row.codigo_insumo) });
         });
-        var apin = $('sol-apropriacao-input');
+        var apin = selectElement('sol-apropriacao-input');
         apin.disabled = false; apin.placeholder = 'Busque a composição / insumo (' + appropriationOptions.length + ')…';
-      } catch (e) { $('sol-apropriacao-input').placeholder = 'Erro ao carregar'; }
+      } catch (error) { selectElement('sol-apropriacao-input').placeholder = 'Erro ao carregar'; }
     } else {
-      $('sol-apropriacao-input').placeholder = 'Selecione empresa e obra primeiro';
+      selectElement('sol-apropriacao-input').placeholder = 'Selecione empresa e obra primeiro';
     }
     show();
   });
 
-  // Apropriação: BUSCA client-side nas composições já carregadas (filtradas por empresa+obra).
-  var apin = $('sol-apropriacao-input'), apres = $('sol-apropriacao-results');
+  var apin = selectElement('sol-apropriacao-input'), apres = selectElement('sol-apropriacao-results');
   function resetAppropriation(placeholder) {
     appropriationMap = {}; appropriationOptions = [];
-    $('sol-apropriacao').value = ''; apin.value = ''; apin.disabled = true;
+    selectElement('sol-apropriacao').value = ''; apin.value = ''; apin.disabled = true;
     apin.placeholder = placeholder || 'Selecione empresa e obra primeiro';
     apres.classList.remove('show');
   }
   function renderAppropriation(term) {
     term = (term || '').toLowerCase().trim();
-    var list = appropriationOptions.filter(function (o) {
-      return !term || o.t.toLowerCase().indexOf(term) >= 0 || o.k.toLowerCase().indexOf(term) >= 0;
+    var list = appropriationOptions.filter(function (appropriationOption) {
+      return !term || appropriationOption.t.toLowerCase().indexOf(term) >= 0 || appropriationOption.k.toLowerCase().indexOf(term) >= 0;
     }).slice(0, 100);
     apres.innerHTML = list.length
-      ? list.map(function (o) { return '<div class="it" data-k="' + esc(o.k) + '">' + esc(o.t) + '</div>'; }).join('')
+      ? list.map(function (listItem) { return '<div class="it" data-k="' + escapeHtml(listItem.k) + '">' + escapeHtml(listItem.t) + '</div>'; }).join('')
       : '<div class="it">Nada encontrado</div>';
     apres.classList.add('show');
-    apres.querySelectorAll('.it[data-k]').forEach(function (it) {
-      it.addEventListener('click', function () {
-        $('sol-apropriacao').value = it.getAttribute('data-k'); apin.value = it.textContent;
+    apres.querySelectorAll('.it[data-k]').forEach(function (item) {
+      item.addEventListener('click', function () {
+        selectElement('sol-apropriacao').value = item.getAttribute('data-k'); apin.value = item.textContent;
         apres.classList.remove('show'); show();
       });
     });
   }
   apin.addEventListener('focus', function () { if (!apin.disabled) renderAppropriation(apin.value); });
-  apin.addEventListener('input', function () { $('sol-apropriacao').value = ''; renderAppropriation(apin.value); show(); });
-  document.addEventListener('click', function (e) { if (!apin.contains(e.target) && !apres.contains(e.target)) apres.classList.remove('show'); });
+  apin.addEventListener('input', function () { selectElement('sol-apropriacao').value = ''; renderAppropriation(apin.value); show(); });
+  document.addEventListener('click', function (event) { if (!apin.contains(event.target) && !apres.contains(event.target)) apres.classList.remove('show'); });
 
-  var pin = $('sol-pessoa-input'), pres = $('sol-pessoa-results'), tmr = null;
+  var personInput = selectElement('sol-pessoa-input'), personResults = selectElement('sol-pessoa-results'), personDebounceTimer = null;
   async function searchSuppliers(term) {
-    pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
+    personResults.innerHTML = '<div class="it">Buscando…</div>'; personResults.classList.add('show');
     try {
       var rows = await window.Store.get('fornecedores', term || '');
-      pres.innerHTML = rows.length
-        ? rows.map(function (r) { return '<div class="it" data-id="' + r.id + '" data-nome="' + esc(r.nome) + '">' + esc(r.nome) + '<small>' + esc(r.cpf_cnpj || '') + '</small></div>'; }).join('')
+      personResults.innerHTML = rows.length
+        ? rows.map(function (row) { return '<div class="it" data-id="' + row.id + '" data-nome="' + escapeHtml(row.nome) + '">' + escapeHtml(row.nome) + '<small>' + escapeHtml(row.cpf_cnpj || '') + '</small></div>'; }).join('')
         : '<div class="it">Nada encontrado</div>';
-      pres.querySelectorAll('.it[data-id]').forEach(function (it) {
-        it.addEventListener('click', function () { $('sol-pessoa').value = it.getAttribute('data-id'); pin.value = it.getAttribute('data-nome'); pres.classList.remove('show'); show(); });
+      personResults.querySelectorAll('.it[data-id]').forEach(function (item) {
+        item.addEventListener('click', function () { selectElement('sol-pessoa').value = item.getAttribute('data-id'); personInput.value = item.getAttribute('data-nome'); personResults.classList.remove('show'); show(); });
       });
-    } catch (e) { pres.innerHTML = '<div class="it">' + esc(e.message) + '</div>'; }
+    } catch (error) { personResults.innerHTML = '<div class="it">' + escapeHtml(error.message) + '</div>'; }
   }
-  pin.addEventListener('focus', function () { if (!$('sol-pessoa').value) searchSuppliers(pin.value.trim()); });
-  pin.addEventListener('input', function () {
-    var term = pin.value.trim(); $('sol-pessoa').value = '';
-    clearTimeout(tmr); tmr = setTimeout(function () { searchSuppliers(term); }, 300); show();
+  personInput.addEventListener('focus', function () { if (!selectElement('sol-pessoa').value) searchSuppliers(personInput.value.trim()); });
+  personInput.addEventListener('input', function () {
+    var term = personInput.value.trim(); selectElement('sol-pessoa').value = '';
+    clearTimeout(personDebounceTimer); personDebounceTimer = setTimeout(function () { searchSuppliers(term); }, 300); show();
   });
-  document.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
+  document.addEventListener('click', function (event) { if (!personInput.contains(event.target) && !personResults.contains(event.target)) personResults.classList.remove('show'); });
 
-  $('sol-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (!isNaN(n) && n > 0) this.value = 'R$ ' + fmtBR(n); show(); });
-  ['sol-tipo', 'sol-urgente', 'sol-tipodoc', 'sol-apropriacao', 'sol-numdoc', 'sol-emissao', 'sol-valor', 'sol-historico'].forEach(function (id) {
-    $(id).addEventListener('input', show); $(id).addEventListener('change', show);
+  selectElement('sol-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (!isNaN(n) && n > 0) this.value = 'R$ ' + fmtBR(n); show(); });
+  ['sol-tipo', 'sol-urgente', 'sol-tipodoc', 'sol-apropriacao', 'sol-numdoc', 'sol-emissao', 'sol-valor', 'sol-historico'].forEach(function (item) {
+    selectElement(item).addEventListener('input', show); selectElement(item).addEventListener('change', show);
   });
 
   function generateInstallments() {
-    var total = parseVal($('sol-valor').value), count = parseInt($('sol-qtd').value, 10), first = $('sol-venc1').value;
-    var box = $('sol-parcelas');
+    var total = parseVal(selectElement('sol-valor').value), count = parseInt(selectElement('sol-qtd').value, 10), first = selectElement('sol-venc1').value;
+    var box = selectElement('sol-parcelas');
     if (!total || total <= 0 || !count || count < 1 || !first) { box.innerHTML = '<p class="empty">Preencha valor, quantidade e 1º vencimento.</p>'; installments = []; show(); return; }
-    installments = []; var base = Math.floor((total / count) * 100) / 100, acc = 0, fd = new Date(first + 'T12:00:00Z'), html = '';
-    for (var i = 0; i < count; i++) {
-      var val = (i === count - 1) ? (total - acc).toFixed(2) : base.toFixed(2); acc += parseFloat(val);
-      var d = new Date(fd); d.setUTCMonth(d.getUTCMonth() + i); var dueDate = d.toISOString().split('T')[0];
-      installments.push({ vencimento: dueDate, valor: val });
-      html += '<div class="parc-row"><span class="pl">Parcela ' + (i + 1) + '</span>'
-        + '<input type="date" value="' + dueDate + '" data-i="' + i + '" data-f="vencimento">'
-        + '<input type="number" step="0.01" value="' + val + '" data-i="' + i + '" data-f="valor"></div>';
+    installments = []; var base = Math.floor((total / count) * 100) / 100, accumulator = 0, firstDueDate = new Date(first + 'T12:00:00Z'), html = '';
+    for (var index = 0; index < count; index++) {
+      var value = (index === count - 1) ? (total - accumulator).toFixed(2) : base.toFixed(2); accumulator += parseFloat(value);
+      var d = new Date(firstDueDate); d.setUTCMonth(d.getUTCMonth() + index); var dueDate = d.toISOString().split('T')[0];
+      installments.push({ vencimento: dueDate, valor: value });
+      html += '<div class="parc-row"><span class="pl">Parcela ' + (index + 1) + '</span>'
+        + '<input type="date" value="' + dueDate + '" data-i="' + index + '" data-f="vencimento">'
+        + '<input type="number" step="0.01" value="' + value + '" data-i="' + index + '" data-f="valor"></div>';
     }
     box.innerHTML = html;
-    box.querySelectorAll('input').forEach(function (inp) {
-      inp.addEventListener('input', function () { var i = +inp.getAttribute('data-i'); installments[i][inp.getAttribute('data-f')] = inp.value; });
+    box.querySelectorAll('input').forEach(function (item) {
+      item.addEventListener('input', function () { var index = +item.getAttribute('data-i'); installments[index][item.getAttribute('data-f')] = item.value; });
     });
     show();
   }
-  $('sol-gerar').addEventListener('click', generateInstallments);
-  function sumCheck() { var gross = parseVal($('sol-valor').value) || 0, s = installments.reduce(function (a, p) { return a + (parseFloat(p.valor) || 0); }, 0); return { soma: Math.round(s * 100) / 100, bruto: gross, ok: Math.abs(Math.round(s * 100) / 100 - gross) < 0.01 }; }
+  selectElement('sol-gerar').addEventListener('click', generateInstallments);
+  function sumCheck() { var gross = parseVal(selectElement('sol-valor').value) || 0, s = installments.reduce(function (a, p) { return a + (parseFloat(p.valor) || 0); }, 0); return { soma: Math.round(s * 100) / 100, bruto: gross, ok: Math.abs(Math.round(s * 100) / 100 - gross) < 0.01 }; }
 
   async function upload(file, key) {
     try {
-      var res = await SB.upload(file);
-      attachments[key] = res ? res.url : null;
-      $('sol-' + (key === 'boleto' ? 'boleto' : 'nf') + '-name').textContent = file.name;
-    } catch (e) { toast('Anexo não enviado (' + (e.message || 'storage') + ') — verifique o bucket "attachments".'); }
+      var response = await SB.upload(file);
+      attachments[key] = response ? response.url : null;
+      selectElement('sol-' + (key === 'boleto' ? 'boleto' : 'nf') + '-name').textContent = file.name;
+    } catch (error) { toast('Anexo não enviado (' + (error.message || 'storage') + ') — verifique o bucket "attachments".'); }
   }
-  $('sol-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); });
-  $('sol-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); });
+  selectElement('sol-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); });
+  selectElement('sol-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); });
 
-  $('sol-back').addEventListener('click', function () { if (step > 1) { step--; show(); } });
-  $('sol-next').addEventListener('click', function () {
+  selectElement('sol-back').addEventListener('click', function () { if (step > 1) { step--; show(); } });
+  selectElement('sol-next').addEventListener('click', function () {
     if (!validStep(step)) return;
     if (step === 3) {
-      var isUrgent = $('sol-urgente').value === '1';
-      if (!isUrgent && $('sol-venc1').value) {
+      var isUrgent = selectElement('sol-urgente').value === '1';
+      if (!isUrgent && selectElement('sol-venc1').value) {
         var today = new Date(); today.setHours(0, 0, 0, 0);
-        var diff = (new Date($('sol-venc1').value + 'T00:00:00').getTime() - today.getTime()) / 86400000;
-        if (diff < 10) { $('sol-parc-erro-msg').textContent = 'Prazo mínimo de 10 dias a partir de hoje para o 1º vencimento. Ajuste a data.'; $('sol-parc-erro').hidden = false; return; }
+        var diff = (new Date(selectElement('sol-venc1').value + 'T00:00:00').getTime() - today.getTime()) / 86400000;
+        if (diff < 10) { selectElement('sol-parc-erro-msg').textContent = 'Prazo mínimo de 10 dias a partir de hoje para o 1º vencimento. Ajuste a data.'; selectElement('sol-parc-erro').hidden = false; return; }
       }
       var s = sumCheck();
-      if (!s.ok) { $('sol-parc-erro-msg').textContent = 'A soma das parcelas (R$ ' + fmtBR(s.soma) + ') difere do valor bruto (R$ ' + fmtBR(s.bruto) + '). Ajuste.'; $('sol-parc-erro').hidden = false; return; }
-      $('sol-parc-erro').hidden = true;
+      if (!s.ok) { selectElement('sol-parc-erro-msg').textContent = 'A soma das parcelas (R$ ' + fmtBR(s.soma) + ') difere do valor bruto (R$ ' + fmtBR(s.bruto) + '). Ajuste.'; selectElement('sol-parc-erro').hidden = false; return; }
+      selectElement('sol-parc-erro').hidden = true;
     }
     if (step < 4) { step++; show(); }
   });
 
-  function optionText(sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : '—'; }
-  $('sol-save').addEventListener('click', function () {
+  function optionText(selector) { var o = selector.options[selector.selectedIndex]; return o ? o.text : '—'; }
+  selectElement('sol-save').addEventListener('click', function () {
     var rows = [
-      ['Empresa', optionText($('sol-empresa'))], ['Obra', optionText($('sol-obra'))], ['Fornecedor', pin.value || '—'],
-      ['Apropriação', apin.value || '—'], ['Tipo de Processo', optionText($('sol-tipo'))],
-      ['Urgente', $('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText($('sol-tipodoc'))],
-      ['Nº Documento', $('sol-numdoc').value || '—'], ['Data de Emissão', $('sol-emissao').value || '—'],
-      ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal($('sol-valor').value) || 0)], ['Parcelas', String(installments.length)],
+      ['Empresa', optionText(selectElement('sol-empresa'))], ['Obra', optionText(selectElement('sol-obra'))], ['Fornecedor', personInput.value || '—'],
+      ['Apropriação', apin.value || '—'], ['Tipo de Processo', optionText(selectElement('sol-tipo'))],
+      ['Urgente', selectElement('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText(selectElement('sol-tipodoc'))],
+      ['Nº Documento', selectElement('sol-numdoc').value || '—'], ['Data de Emissão', selectElement('sol-emissao').value || '—'],
+      ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal(selectElement('sol-valor').value) || 0)], ['Parcelas', String(installments.length)],
     ];
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box"><div class="modal-title">Valide os dados do processo</div>'
-      + '<div class="validate-table">' + rows.map(function (r) { return '<div class="vr"><div class="vk">' + esc(r[0]) + '</div><div class="vv">' + esc(r[1]) + '</div></div>'; }).join('') + '</div>'
+      + '<div class="validate-table">' + rows.map(function (row) { return '<div class="vr"><div class="vk">' + escapeHtml(row[0]) + '</div><div class="vv">' + escapeHtml(row[1]) + '</div></div>'; }).join('') + '</div>'
       + '<div class="modal-actions"><button class="btn btn-light" id="m-cancel">Cancelar</button><button class="btn btn-primary" id="m-ok">Confirmar e Salvar</button></div></div>';
     document.body.appendChild(o);
     o.querySelector('#m-cancel').addEventListener('click', function () { o.remove(); });
     o.querySelector('#m-ok').addEventListener('click', async function () {
-      var btn = this; btn.disabled = true; btn.textContent = 'Salvando…';
-      try { await save(); o.remove(); toast('Processo salvo com sucesso!', true); window.location.hash = '#/consulta?kind=' + $('sol-tipo').value; }
-      catch (e) { btn.disabled = false; btn.textContent = 'Confirmar e Salvar'; toast('Erro ao salvar: ' + e.message); }
+      var button = this; button.disabled = true; button.textContent = 'Salvando…';
+      try { await save(); o.remove(); toast('Processo salvo com sucesso!', true); window.location.hash = '#/consulta?kind=' + selectElement('sol-tipo').value; }
+      catch (error) { button.disabled = false; button.textContent = 'Confirmar e Salvar'; toast('Erro ao salvar: ' + error.message); }
     });
   });
 
   async function save() {
-    var ap = appropriationMap[$('sol-apropriacao').value] || {};
+    var ap = appropriationMap[selectElement('sol-apropriacao').value] || {};
 
     await window.Store.mutate('processes', function () {
       var process = {
-        description_prc: $('sol-historico').value || null,
-        company_prc: $('sol-empresa').value, building_prc: $('sol-obra').value,
+        description_prc: selectElement('sol-historico').value || null,
+        company_prc: selectElement('sol-empresa').value, building_prc: selectElement('sol-obra').value,
         composition_prc: ap.comp || null, supply_prc: ap.insumo || null,
-        person_prc: $('sol-pessoa').value ? Number($('sol-pessoa').value) : null,
-        kind_prc: Number($('sol-tipo').value), department_prc: deptId,
-        doc_kind_prc: $('sol-tipodoc').value ? Number($('sol-tipodoc').value) : null,
-        is_urgent_prc: $('sol-urgente').value === '1',
-        issue_date_prc: $('sol-emissao').value || null,
+        person_prc: selectElement('sol-pessoa').value ? Number(selectElement('sol-pessoa').value) : null,
+        kind_prc: Number(selectElement('sol-tipo').value), department_prc: deptId,
+        doc_kind_prc: selectElement('sol-tipodoc').value ? Number(selectElement('sol-tipodoc').value) : null,
+        is_urgent_prc: selectElement('sol-urgente').value === '1',
+        issue_date_prc: selectElement('sol-emissao').value || null,
         due_date_prc: installments[0] ? installments[0].vencimento : null,
-        value_prc: parseVal($('sol-valor').value), fiscal_doc_prc: $('sol-numdoc').value || null,
+        value_prc: parseVal(selectElement('sol-valor').value), fiscal_doc_prc: selectElement('sol-numdoc').value || null,
         attachment_url_prc: attachments.boleto, attachment_url2_prc: attachments.nf,
 
       };
-      var installmentsPayload = installments.map(function (p) { return { due_date_ins: p.vencimento, value_ins: Number(p.valor) }; });
+      var installmentsPayload = installments.map(function (installment) { return { due_date_ins: installment.vencimento, value_ins: Number(installment.valor) }; });
       return window.API.post('/processes/full', { process: process, installments: installmentsPayload });
     });
   }

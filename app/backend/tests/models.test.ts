@@ -14,13 +14,13 @@ test('statusKindSchema: rejeita id não-inteiro / campos faltando', () => {
 });
 
 test('toStatusCatalog: monta byId/byKey e ignora key nula', () => {
-  const cat = toStatusCatalog([
+  const catalog = toStatusCatalog([
     { id_skn: 1, descr_skn: 'Aguardando', key_skn: 'aguardando' },
     { id_skn: 3, descr_skn: 'Cancelado', key_skn: null },
     { id_skn: 7, descr_skn: 'Integrado', key_skn: 'integrado' },
   ]);
-  assert.deepEqual(cat.byId, { 1: 'Aguardando', 3: 'Cancelado', 7: 'Integrado' });
-  assert.deepEqual(cat.byKey, { aguardando: 1, integrado: 7 }); // 3 (key null) não entra
+  assert.deepEqual(catalog.byId, { 1: 'Aguardando', 3: 'Cancelado', 7: 'Integrado' });
+  assert.deepEqual(catalog.byKey, { aguardando: 1, integrado: 7 });
 });
 
 test('toStatusCatalog: propaga erro de validação de linha inválida', () => {

@@ -2,8 +2,6 @@ import type { FastifyRequest } from 'fastify';
 import { AppError, UnauthorizedError } from '../errors.js';
 import { adminClient } from '../gateways/supabase.js';
 
-// Roda DEPOIS do requireAuth (req.user já setado). Verifica payment.users.is_admin
-// pelo service_role — gate de verdade no servidor; o front só esconde o menu.
 export async function requireAdmin(request: FastifyRequest): Promise<void> {
   const id = request.user?.id;
   if (!id) throw new UnauthorizedError();

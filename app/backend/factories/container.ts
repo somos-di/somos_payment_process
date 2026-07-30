@@ -8,7 +8,6 @@ import { ProcessesController } from '../controllers/processesController.js';
 import { SyncController } from '../controllers/syncController.js';
 import { createRedisClient } from '../gateways/redis.js';
 import { UauGateway } from '../gateways/uau.js';
-import type { ControllersContainer } from '../routes/index.js';
 import { AdminService } from '../services/adminService.js';
 import { AuthService } from '../services/authService.js';
 import { CatalogService } from '../services/catalogService.js';
@@ -17,24 +16,17 @@ import { ProcessesService } from '../services/processesService.js';
 import { UauSyncService } from '../services/syncUauData/sync.js';
 import { UauIntegrationService } from '../services/uauIntegrationService.js';
 import { getSettings } from '../settings.js';
+import type { Container, ControllersContainer } from '../types/container.js';
 
-export interface Container {
-  controllers: ControllersContainer;
-  authService: AuthService;   // usado pelo requireAuth (renovação de sessão)
-  warmer: CacheWarmer;        // usado no boot (main.ts) para aquecer o cache
-}
-
-// Instancia gateways/services/controllers do CORE (pagamento). Os MINI APPS
-// (comissões, reaprovações) têm DI própria em apps/<app>/ (via initApps) e não entram aqui.
 export function createContainer(): Container {
   const settings = getSettings();
-  const uau = new UauGateway(settings);
+  const uauGateway = new UauGateway(settings);
   const cache = new CacheManager(createRedisClient(), settings.cacheTtlMs);
   const warmer = new CacheWarmer(cache);
 
   const processesService = new ProcessesService();
   const uauIntegrationService = new UauIntegrationService();
-  const uauSyncService = new UauSyncService(uau, warmer);
+  const uauSyncService = new UauSyncService(uauGateway, warmer);
   const authService = new AuthService();
   const dataService = new DataService(cache);
   const adminService = new AdminService();

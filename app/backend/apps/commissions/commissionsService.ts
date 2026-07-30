@@ -1,4 +1,8 @@
 import { unwrap, userClient } from '../../gateways/supabase.js';
+import type {
+  CommissionCreated, CommissionInput, CommissionTransitionOptions, CommissionTransitionResult,
+  EmpreendimentoInput, EmpreendimentoUpserted,
+} from '../../types/commissions.js';
 
 export class CommissionsService {
   private readonly view = 'v_commissions';
@@ -13,43 +17,32 @@ export class CommissionsService {
 
   transition(
     token: string, uuid: string, action: string,
-    opts: { note?: string; nfUrl?: string; boletoUrl?: string; sellerEmail?: string; sellerPhone?: string } = {},
-  ): Promise<{ uuid_com: string; status_step: number }> {
+    transitionOptions: CommissionTransitionOptions = {},
+  ): Promise<CommissionTransitionResult> {
     return unwrap(userClient(token).rpc('commission_transition', {
       p_uuid: uuid, p_action: action,
-      p_note: opts.note ?? null,
-      p_nf_url: opts.nfUrl ?? null, p_boleto_url: opts.boletoUrl ?? null,
-      p_seller_email: opts.sellerEmail ?? null, p_seller_phone: opts.sellerPhone ?? null,
-    })) as Promise<{ uuid_com: string; status_step: number }>;
+      p_note: transitionOptions.note ?? null,
+      p_nf_url: transitionOptions.nfUrl ?? null, p_boleto_url: transitionOptions.boletoUrl ?? null,
+      p_seller_email: transitionOptions.sellerEmail ?? null, p_seller_phone: transitionOptions.sellerPhone ?? null,
+    })) as Promise<CommissionTransitionResult>;
   }
 
-  create(
-    token: string,
-    c: {
-      company: string; building: string; value: number;
-      sellerName: string; clientName: string;
-      unit?: string; saleNum?: string; saleDate?: string; releaseDate?: string;
-      sellerId?: number; sellerEmail?: string; sellerPhone?: string; note?: string;
-    },
-  ): Promise<{ uuid_com: string }> {
+  create(token: string, commission: CommissionInput): Promise<CommissionCreated> {
     return unwrap(userClient(token).rpc('commission_create', {
-      p_company: c.company, p_building: c.building, p_value: c.value,
-      p_seller_name: c.sellerName, p_client_name: c.clientName,
-      p_unit: c.unit ?? null, p_sale_num: c.saleNum ?? null,
-      p_sale_date: c.saleDate ?? null, p_release_date: c.releaseDate ?? null,
-      p_seller_id: c.sellerId ?? null, p_seller_email: c.sellerEmail ?? null,
-      p_seller_phone: c.sellerPhone ?? null, p_note: c.note ?? null,
-    })) as Promise<{ uuid_com: string }>;
+      p_company: commission.company, p_building: commission.building, p_value: commission.value,
+      p_seller_name: commission.sellerName, p_client_name: commission.clientName,
+      p_unit: commission.unit ?? null, p_sale_num: commission.saleNum ?? null,
+      p_sale_date: commission.saleDate ?? null, p_release_date: commission.releaseDate ?? null,
+      p_seller_id: commission.sellerId ?? null, p_seller_email: commission.sellerEmail ?? null,
+      p_seller_phone: commission.sellerPhone ?? null, p_note: commission.note ?? null,
+    })) as Promise<CommissionCreated>;
   }
 
-  upsertEmpreendimento(
-    token: string,
-    e: { id?: number | null; name: string; company: string; building: string; somos: boolean; active?: boolean },
-  ): Promise<{ id_cem: number }> {
+  upsertEmpreendimento(token: string, empreendimento: EmpreendimentoInput): Promise<EmpreendimentoUpserted> {
     return unwrap(userClient(token).rpc('comm_upsert_empreendimento', {
-      p_id: e.id ?? null, p_name: e.name, p_company: e.company, p_building: e.building,
-      p_somos: e.somos, p_active: e.active ?? true,
-    })) as Promise<{ id_cem: number }>;
+      p_id: empreendimento.id ?? null, p_name: empreendimento.name, p_company: empreendimento.company, p_building: empreendimento.building,
+      p_somos: empreendimento.somos, p_active: empreendimento.active ?? true,
+    })) as Promise<EmpreendimentoUpserted>;
   }
 
   deleteEmpreendimento(token: string, id: number): Promise<void> {

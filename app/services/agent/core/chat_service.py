@@ -16,11 +16,11 @@ def _system_prompt(mcp_instructions: str | None) -> str:
 
 async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) -> AsyncIterator[str]:
     azure = get_azure_gateway()
-    mcp = get_mcp_gateway()
+    mcp_gateway = get_mcp_gateway()
     conversations = get_conversation_gateway()
 
-    async with mcp.session(user_jwt) as (session, init):
-        tools = [to_openai_tool(t) for t in (await session.list_tools()).tools]
+    async with mcp_gateway.session(user_jwt) as (session, init):
+        tools = [to_openai_tool(tool_definitions) for tool_definitions in (await session.list_tools()).tools]
 
         messages = await conversations.load(conversation_id)
         if messages is None:
@@ -63,11 +63,11 @@ async def _resolve_tool_round(session, messages: list[dict], assistant_text: str
             "content": assistant_text or None,
             "tool_calls": [
                 {
-                    "id": c["id"],
+                    "id": chat_completion["id"],
                     "type": "function",
-                    "function": {"name": c["name"], "arguments": c["args"] or "{}"},
+                    "function": {"name": chat_completion["name"], "arguments": chat_completion["args"] or "{}"},
                 }
-                for c in ordered_calls
+                for chat_completion in ordered_calls
             ],
         }
     )
@@ -77,6 +77,6 @@ async def _resolve_tool_round(session, messages: list[dict], assistant_text: str
             args = json.loads(call["args"] or "{}")
             result = await session.call_tool(call["name"], args)
             output = tool_result_to_text(result)
-        except Exception as exc:
-            output = json.dumps({"error": str(exc)}, ensure_ascii=False)
+        except Exception as error:
+            output = json.dumps({"error": str(error)}, ensure_ascii=False)
         messages.append({"role": "tool", "tool_call_id": call["id"], "content": output})

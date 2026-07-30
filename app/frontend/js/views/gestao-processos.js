@@ -1,29 +1,25 @@
-// GESTÃO DE PROCESSOS (admin): lista TODOS os processos (v_processes_admin) e permite
-// editar qualquer campo — exceto o Nº UAU — via um modal com MOTIVO obrigatório.
-// Toda a autorização (is_admin) e a whitelist vivem na RPC admin_edit_process; aqui é UI.
-// Rota gated a admin no router; o menu já fica escondido para não-admin.
 async function initView_gestao_processos() {
-  var SB = window.SB, $ = function (id) { return document.getElementById(id); };
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-  function money(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  var SB = window.SB, selectElement = function (id) { return document.getElementById(id); };
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   var parseVal = function (raw) { if (raw == null || raw === '') return null; var s = String(raw).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.'); var n = parseFloat(s); return isNaN(n) ? null : n; };
   var fmtBR = function (n) { return (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-  function toast(msg, ok) {
-    var t = document.createElement('div'); t.textContent = msg;
+  function toast(message, isSuccess) {
+    var t = document.createElement('div'); t.textContent = message;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10000;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
-      + (ok ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
+      + (isSuccess ? 'background:var(--ok-weak);color:#166534' : 'background:var(--danger-weak);color:#9f1239');
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
-  function fill(sel, rows, vk, tk, ph) {
-    sel.innerHTML = (ph ? '<option value="">' + ph + '</option>' : '') + (rows || []).map(function (r) {
-      return '<option value="' + esc(r[vk]) + '">' + esc(r[tk]) + '</option>';
+  function fill(selector, rows, valueKey, textKey, placeholder) {
+    selector.innerHTML = (placeholder ? '<option value="">' + placeholder + '</option>' : '') + (rows || []).map(function (item) {
+      return '<option value="' + escapeHtml(item[valueKey]) + '">' + escapeHtml(item[textKey]) + '</option>';
     }).join('');
   }
   var STEPS = (window.CONFIG && window.CONFIG.STEPS) || {};
 
   var EDIT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
 
-  var pl = await window.ProcessList.mount($('gp-host'), {
+  var processList = await window.ProcessList.mount(selectElement('gp-host'), {
     emptyText: 'Nenhum processo.',
     storageKey: 'gestao-processos',
     refreshKeys: ['processes_admin'],
@@ -34,16 +30,15 @@ async function initView_gestao_processos() {
     ],
   });
 
-  // ---------------- Modal de edição ----------------
-  function openEdit(proc) {
-    var appropriationMap = {}, attachments = { boleto: proc.attachment_url_prc || null, nf: proc.attachment_url2_prc || null };
+  function openEdit(process) {
+    var appropriationMap = {}, attachments = { boleto: process.attachment_url_prc || null, nf: process.attachment_url2_prc || null };
     var installments = [];
 
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box" style="width:760px;max-width:96vw;max-height:92vh;overflow:auto">'
       + '<button class="modal-x" aria-label="Fechar">×</button>'
-      + '<div class="modal-title">Editar Processo #' + esc(proc.id_prc) + '</div>'
-      + '<div class="gp-uau" style="margin:-4px 0 12px">Nº UAU (não editável): <b>' + esc(proc.uau_number_prc || '—') + '</b></div>'
+      + '<div class="modal-title">Editar Processo #' + escapeHtml(process.id_prc) + '</div>'
+      + '<div class="gp-uau" style="margin:-4px 0 12px">Nº UAU (não editável): <b>' + escapeHtml(process.uau_number_prc || '—') + '</b></div>'
       + '<div class="gp-modal-grid">'
       + '<div class="gp-sec">Dados Gerais</div>'
       + '<div class="field"><label>Empresa</label><select id="gp-empresa"></select></div>'
@@ -82,32 +77,31 @@ async function initView_gestao_processos() {
       + '</div>';
     document.body.appendChild(o);
     function close() { o.remove(); }
-    o.addEventListener('click', function (e) { if (e.target === o || e.target.classList.contains('modal-x')) close(); });
+    o.addEventListener('click', function (event) { if (event.target === o || event.target.classList.contains('modal-x')) close(); });
     o.querySelector('#gp-cancel').addEventListener('click', close);
 
-    // ----- listas + cascata -----
     async function loadBuildings(company, keep) {
-      var el = o.querySelector('#gp-obra'); el.innerHTML = '<option value="">Carregando…</option>';
-      try { fill(el, await window.Store.get('obras', company), 'codigo', 'nome', 'Selecione'); }
-      catch (e) { el.innerHTML = '<option value="">Erro</option>'; }
-      if (keep) el.value = keep;
+      var element = o.querySelector('#gp-obra'); element.innerHTML = '<option value="">Carregando…</option>';
+      try { fill(element, await window.Store.get('obras', company), 'codigo', 'nome', 'Selecione'); }
+      catch (error) { element.innerHTML = '<option value="">Erro</option>'; }
+      if (keep) element.value = keep;
     }
     async function loadAppropriations(company, obra, keepComp, keepSup) {
-      var ap = o.querySelector('#gp-apropriacao'); ap.innerHTML = '<option value="">Carregando…</option>'; appropriationMap = {};
+      var appropriationSelect = o.querySelector('#gp-apropriacao'); appropriationSelect.innerHTML = '<option value="">Carregando…</option>'; appropriationMap = {};
       try {
-        var rs = await window.Store.get('compositions_lk', company + '|' + obra);
-        var seen = {}, opts = [];
-        rs.forEach(function (r) {
-          var key = r.codigo_composicao + '|' + r.codigo_insumo;
-          if (seen[key] || !r.codigo_composicao || !r.codigo_insumo) return; seen[key] = 1;
-          appropriationMap[key] = { comp: r.codigo_composicao, insumo: r.codigo_insumo };
-          opts.push({ k: key, t: (r.descricao_composicao || r.codigo_composicao) + ' / ' + (r.descricao_insumo || r.codigo_insumo) });
+        var compositions = await window.Store.get('compositions_lk', company + '|' + obra);
+        var seen = {}, options = [];
+        compositions.forEach(function (item) {
+          var key = item.codigo_composicao + '|' + item.codigo_insumo;
+          if (seen[key] || !item.codigo_composicao || !item.codigo_insumo) return; seen[key] = 1;
+          appropriationMap[key] = { comp: item.codigo_composicao, insumo: item.codigo_insumo };
+          options.push({ k: key, t: (item.descricao_composicao || item.codigo_composicao) + ' / ' + (item.descricao_insumo || item.codigo_insumo) });
         });
-        var cur = keepComp ? (keepComp + '|' + keepSup) : '';
-        if (cur && !appropriationMap[cur]) { appropriationMap[cur] = { comp: keepComp, insumo: keepSup }; opts.unshift({ k: cur, t: keepComp + ' / ' + keepSup }); }
-        ap.innerHTML = '<option value="">Selecione</option>' + opts.map(function (op) { return '<option value="' + esc(op.k) + '">' + esc(op.t) + '</option>'; }).join('');
-        if (cur) ap.value = cur;
-      } catch (e) { ap.innerHTML = '<option value="">Erro</option>'; }
+        var current = keepComp ? (keepComp + '|' + keepSup) : '';
+        if (current && !appropriationMap[current]) { appropriationMap[current] = { comp: keepComp, insumo: keepSup }; options.unshift({ k: current, t: keepComp + ' / ' + keepSup }); }
+        appropriationSelect.innerHTML = '<option value="">Selecione</option>' + options.map(function (item) { return '<option value="' + escapeHtml(item.k) + '">' + escapeHtml(item.t) + '</option>'; }).join('');
+        if (current) appropriationSelect.value = current;
+      } catch (error) { appropriationSelect.innerHTML = '<option value="">Erro</option>'; }
     }
 
     (async function populate() {
@@ -115,31 +109,31 @@ async function initView_gestao_processos() {
         fill(o.querySelector('#gp-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione');
         fill(o.querySelector('#gp-tipo'), await window.Store.get('process_kinds'), 'id_pkn', 'name_pkn', 'Selecione');
         fill(o.querySelector('#gp-tipodoc'), await window.Store.get('document_kinds'), 'id_dck', 'name_dck', 'Selecione');
-      } catch (e) { }
-      o.querySelector('#gp-status').innerHTML = Object.keys(STEPS).map(function (id) {
-        return '<option value="' + esc(id) + '">' + esc(STEPS[id]) + ' (' + id + ')</option>';
+      } catch (error) { }
+      o.querySelector('#gp-status').innerHTML = Object.keys(STEPS).map(function (item) {
+        return '<option value="' + escapeHtml(item) + '">' + escapeHtml(STEPS[item]) + ' (' + item + ')</option>';
       }).join('');
 
-      o.querySelector('#gp-empresa').value = proc.company_prc || '';
-      await loadBuildings(proc.company_prc, proc.building_prc);
-      await loadAppropriations(proc.company_prc, proc.building_prc, proc.composition_prc, proc.supply_prc);
-      o.querySelector('#gp-tipo').value = proc.kind_prc != null ? String(proc.kind_prc) : '';
-      o.querySelector('#gp-tipodoc').value = proc.doc_kind_prc != null ? String(proc.doc_kind_prc) : '';
-      o.querySelector('#gp-urgente').value = proc.is_urgent_prc ? '1' : '0';
-      o.querySelector('#gp-numdoc').value = proc.fiscal_doc_prc || '';
-      o.querySelector('#gp-emissao').value = proc.issue_date_prc ? String(proc.issue_date_prc).split('T')[0] : '';
-      o.querySelector('#gp-venc').value = proc.due_date_prc ? String(proc.due_date_prc).split('T')[0] : '';
-      o.querySelector('#gp-valor').value = proc.value_prc != null ? 'R$ ' + fmtBR(proc.value_prc) : '';
-      o.querySelector('#gp-historico').value = proc.description_prc || '';
-      o.querySelector('#gp-pessoa').value = proc.person_prc != null ? String(proc.person_prc) : '';
-      o.querySelector('#gp-pessoa-input').value = proc.fornecedor_nome || '';
-      o.querySelector('#gp-status').value = String(proc.status_step_prc);
-      o.querySelector('#gp-ativo').value = proc.active_prc === false ? 'false' : 'true';
+      o.querySelector('#gp-empresa').value = process.company_prc || '';
+      await loadBuildings(process.company_prc, process.building_prc);
+      await loadAppropriations(process.company_prc, process.building_prc, process.composition_prc, process.supply_prc);
+      o.querySelector('#gp-tipo').value = process.kind_prc != null ? String(process.kind_prc) : '';
+      o.querySelector('#gp-tipodoc').value = process.doc_kind_prc != null ? String(process.doc_kind_prc) : '';
+      o.querySelector('#gp-urgente').value = process.is_urgent_prc ? '1' : '0';
+      o.querySelector('#gp-numdoc').value = process.fiscal_doc_prc || '';
+      o.querySelector('#gp-emissao').value = process.issue_date_prc ? String(process.issue_date_prc).split('T')[0] : '';
+      o.querySelector('#gp-venc').value = process.due_date_prc ? String(process.due_date_prc).split('T')[0] : '';
+      o.querySelector('#gp-valor').value = process.value_prc != null ? 'R$ ' + fmtBR(process.value_prc) : '';
+      o.querySelector('#gp-historico').value = process.description_prc || '';
+      o.querySelector('#gp-pessoa').value = process.person_prc != null ? String(process.person_prc) : '';
+      o.querySelector('#gp-pessoa-input').value = process.fornecedor_nome || '';
+      o.querySelector('#gp-status').value = String(process.status_step_prc);
+      o.querySelector('#gp-ativo').value = process.active_prc === false ? 'false' : 'true';
 
       try {
-        var insRows = await window.Store.get('installments', proc.uuid_prc);
-        installments = (insRows || []).map(function (r) { return { due_date_ins: r.due_date_ins ? String(r.due_date_ins).split('T')[0] : '', value_ins: r.value_ins }; });
-      } catch (e) { installments = []; }
+        var insRows = await window.Store.get('installments', process.uuid_prc);
+        installments = (insRows || []).map(function (item) { return { due_date_ins: item.due_date_ins ? String(item.due_date_ins).split('T')[0] : '', value_ins: item.value_ins }; });
+      } catch (error) { installments = []; }
       o.querySelector('#gp-qtd').value = installments.length || 1;
       renderInstallments();
     })();
@@ -154,66 +148,61 @@ async function initView_gestao_processos() {
     o.querySelector('#gp-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); updateSum(); });
     o.querySelector('#gp-gerar').addEventListener('click', generateInstallments);
 
-    // ----- fornecedor (busca) -----
-    var pin = o.querySelector('#gp-pessoa-input'), pres = o.querySelector('#gp-pessoa-results'), ptmr = null;
+    var personInput = o.querySelector('#gp-pessoa-input'), personResults = o.querySelector('#gp-pessoa-results'), ptmr = null;
     async function searchSuppliers(term) {
-      pres.innerHTML = '<div class="it">Buscando…</div>'; pres.classList.add('show');
+      personResults.innerHTML = '<div class="it">Buscando…</div>'; personResults.classList.add('show');
       try {
-        var rs = await window.Store.get('fornecedores', term || '');
-        pres.innerHTML = rs.length ? rs.map(function (r) { return '<div class="it" data-id="' + r.id + '" data-nome="' + esc(r.nome) + '">' + esc(r.nome) + '<small>' + esc(r.cpf_cnpj || '') + '</small></div>'; }).join('') : '<div class="it">Nada encontrado</div>';
-        pres.querySelectorAll('.it[data-id]').forEach(function (it) {
-          it.addEventListener('click', function () { o.querySelector('#gp-pessoa').value = it.getAttribute('data-id'); pin.value = it.getAttribute('data-nome'); pres.classList.remove('show'); });
+        var suppliers = await window.Store.get('fornecedores', term || '');
+        personResults.innerHTML = suppliers.length ? suppliers.map(function (item) { return '<div class="it" data-id="' + item.id + '" data-nome="' + escapeHtml(item.nome) + '">' + escapeHtml(item.nome) + '<small>' + escapeHtml(item.cpf_cnpj || '') + '</small></div>'; }).join('') : '<div class="it">Nada encontrado</div>';
+        personResults.querySelectorAll('.it[data-id]').forEach(function (item) {
+          item.addEventListener('click', function () { o.querySelector('#gp-pessoa').value = item.getAttribute('data-id'); personInput.value = item.getAttribute('data-nome'); personResults.classList.remove('show'); });
         });
-      } catch (e) { pres.innerHTML = '<div class="it">' + esc(e.message) + '</div>'; }
+      } catch (error) { personResults.innerHTML = '<div class="it">' + escapeHtml(error.message) + '</div>'; }
     }
-    pin.addEventListener('focus', function () { searchSuppliers(pin.value.trim()); });
-    pin.addEventListener('input', function () { o.querySelector('#gp-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchSuppliers(pin.value.trim()); }, 300); });
-    o.addEventListener('click', function (e) { if (!pin.contains(e.target) && !pres.contains(e.target)) pres.classList.remove('show'); });
+    personInput.addEventListener('focus', function () { searchSuppliers(personInput.value.trim()); });
+    personInput.addEventListener('input', function () { o.querySelector('#gp-pessoa').value = ''; clearTimeout(ptmr); ptmr = setTimeout(function () { searchSuppliers(personInput.value.trim()); }, 300); });
+    o.addEventListener('click', function (event) { if (!personInput.contains(event.target) && !personResults.contains(event.target)) personResults.classList.remove('show'); });
 
-    // ----- parcelas -----
     function installmentsSum() { return Math.round(installments.reduce(function (a, p) { return a + (Number(p.value_ins) || 0); }, 0) * 100) / 100; }
     function updateSum() {
-      var el = o.querySelector('#gp-parc-sum'); if (!el) return;
+      var element = o.querySelector('#gp-parc-sum'); if (!element) return;
       var total = parseVal(o.querySelector('#gp-valor').value) || 0, soma = installmentsSum();
-      var ok = installments.length > 0 && Math.abs(soma - total) < 0.01;
-      el.textContent = installments.length ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (ok ? ' ✓' : ' — diferente do valor')) : 'Sem parcelas.';
-      el.classList.toggle('bad', installments.length > 0 && !ok);
+      var isSuccess = installments.length > 0 && Math.abs(soma - total) < 0.01;
+      element.textContent = installments.length ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (isSuccess ? ' ✓' : ' — diferente do valor')) : 'Sem parcelas.';
+      element.classList.toggle('bad', installments.length > 0 && !isSuccess);
     }
     function renderInstallments() {
       var box = o.querySelector('#gp-parcelas');
-      box.innerHTML = installments.map(function (p, i) {
-        return '<div class="gp-parc-row"><span class="pl">Parcela ' + (i + 1) + '</span>'
-          + '<input type="date" value="' + esc(p.due_date_ins || '') + '" data-i="' + i + '" data-f="due">'
-          + '<input type="number" step="0.01" min="0" value="' + esc(p.value_ins != null ? p.value_ins : '') + '" data-i="' + i + '" data-f="val">'
-          + '<button type="button" class="rm" title="Remover" data-rm="' + i + '">×</button></div>';
+      box.innerHTML = installments.map(function (installment, index) {
+        return '<div class="gp-parc-row"><span class="pl">Parcela ' + (index + 1) + '</span>'
+          + '<input type="date" value="' + escapeHtml(installment.due_date_ins || '') + '" data-i="' + index + '" data-f="due">'
+          + '<input type="number" step="0.01" min="0" value="' + escapeHtml(installment.value_ins != null ? installment.value_ins : '') + '" data-i="' + index + '" data-f="val">'
+          + '<button type="button" class="rm" title="Remover" data-rm="' + index + '">×</button></div>';
       }).join('');
-      box.querySelectorAll('input').forEach(function (inp) {
-        inp.addEventListener('input', function () {
-          var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
-          if (f === 'due') installments[i].due_date_ins = inp.value; else installments[i].value_ins = inp.value === '' ? null : Number(inp.value);
+      box.querySelectorAll('input').forEach(function (item) {
+        item.addEventListener('input', function () {
+          var index = +item.getAttribute('data-i'), fieldName = item.getAttribute('data-f');
+          if (fieldName === 'due') installments[index].due_date_ins = item.value; else installments[index].value_ins = item.value === '' ? null : Number(item.value);
           updateSum();
         });
       });
-      box.querySelectorAll('[data-rm]').forEach(function (b) { b.addEventListener('click', function () { installments.splice(+b.getAttribute('data-rm'), 1); renderInstallments(); }); });
+      box.querySelectorAll('[data-rm]').forEach(function (item) { item.addEventListener('click', function () { installments.splice(+item.getAttribute('data-rm'), 1); renderInstallments(); }); });
       updateSum();
     }
     function generateInstallments() {
       var total = parseVal(o.querySelector('#gp-valor').value), count = parseInt(o.querySelector('#gp-qtd').value, 10), first = o.querySelector('#gp-venc').value;
-      var err = o.querySelector('#gp-parc-erro');
-      if (!total || total <= 0 || !count || count < 1 || !first) { err.textContent = 'Preencha Valor, Quantidade e Vencimento (1ª parcela) para gerar.'; err.style.display = 'block'; return; }
-      err.style.display = 'none'; installments = [];
-      var base = Math.floor((total / count) * 100) / 100, acc = 0, fd = new Date(first + 'T12:00:00Z');
-      for (var i = 0; i < count; i++) {
-        var val = (i === count - 1) ? Math.round((total - acc) * 100) / 100 : base; acc += val;
-        var d = new Date(fd); d.setUTCMonth(d.getUTCMonth() + i);
-        installments.push({ due_date_ins: d.toISOString().split('T')[0], value_ins: val });
+      var errorElement = o.querySelector('#gp-parc-erro');
+      if (!total || total <= 0 || !count || count < 1 || !first) { errorElement.textContent = 'Preencha Valor, Quantidade e Vencimento (1ª parcela) para gerar.'; errorElement.style.display = 'block'; return; }
+      errorElement.style.display = 'none'; installments = [];
+      var base = Math.floor((total / count) * 100) / 100, accumulator = 0, firstDueDate = new Date(first + 'T12:00:00Z');
+      for (var index = 0; index < count; index++) {
+        var value = (index === count - 1) ? Math.round((total - accumulator) * 100) / 100 : base; accumulator += value;
+        var d = new Date(firstDueDate); d.setUTCMonth(d.getUTCMonth() + index);
+        installments.push({ due_date_ins: d.toISOString().split('T')[0], value_ins: value });
       }
       renderInstallments();
     }
 
-    // ----- anexos (upload/substituir) -----
-    // (mantém simples: não exibe preview; upload substitui a URL usada no save)
-    // ----- salvar -----
     function collect() {
       var ap = appropriationMap[o.querySelector('#gp-apropriacao').value] || {};
       return {
@@ -237,14 +226,14 @@ async function initView_gestao_processos() {
     o.querySelector('#gp-save').addEventListener('click', async function () {
       var reason = (o.querySelector('#gp-reason').value || '').trim();
       if (!reason) { toast('Informe o motivo da alteração.'); o.querySelector('#gp-reason').focus(); return; }
-      var btn = this; btn.disabled = true; btn.textContent = 'Salvando…';
+      var button = this; button.disabled = true; button.textContent = 'Salvando…';
       try {
         var payload = { process: collect(), reason: reason };
-        if (installments.length) payload.installments = installments.map(function (p) { return { due_date_ins: p.due_date_ins, value_ins: Number(p.value_ins) }; });
-        await window.API.post('/processes/' + proc.uuid_prc + '/admin-edit', payload);
+        if (installments.length) payload.installments = installments.map(function (installment) { return { due_date_ins: installment.due_date_ins, value_ins: Number(installment.value_ins) }; });
+        await window.API.post('/processes/' + process.uuid_prc + '/admin-edit', payload);
         window.Store.invalidate('processes_admin'); window.invalidateFlowCaches && window.invalidateFlowCaches();
-        toast('Processo atualizado.', true); close(); await pl.reload();
-      } catch (e) { toast('Erro: ' + e.message); btn.disabled = false; btn.textContent = 'Salvar alteração'; }
+        toast('Processo atualizado.', true); close(); await processList.reload();
+      } catch (error) { toast('Erro: ' + error.message); button.disabled = false; button.textContent = 'Salvar alteração'; }
     });
   }
 }

@@ -5,13 +5,12 @@ export function registerProcessesRoutes(app: FastifyInstance, processes_center: 
   app.get('/processes', processes_center.list);
   app.get('/processes/pending-approvals', processes_center.pending);
   app.get('/processes/:uuid', processes_center.get);
-  app.post('/processes/full', processes_center.createFull); // processo + parcelas (Solicitar)
-  app.post('/processes/bulk', processes_center.createBulk); // lançamento em massa
-  app.post('/processes/approve-batch', processes_center.approveBatch); // aprovação em lote (static > :uuid/:action)
-  app.post('/processes/:uuid/log', processes_center.logEvent); // registra evento no histórico (static > :action)
-  app.post('/processes/:uuid/correct', processes_center.correct); // correção: edita dados/parcelas (+reenviar)
-  app.post('/processes/:uuid/admin-edit', processes_center.adminEdit); // gestão (admin): edita qualquer campo (static > :action)
-  app.post('/processes/:uuid/installments', processes_center.setInstallments); // CRUD de parcelas (financeiro)
-  // ações: approve | reject | close | financeiro-reject | send-uau
+  app.post('/processes/full', processes_center.createFull);
+  app.post('/processes/bulk', processes_center.createBulk);
+  app.post('/processes/approve-batch', processes_center.approveBatch);
+  app.post('/processes/:uuid/log', processes_center.logEvent);
+  app.post('/processes/:uuid/correct', processes_center.correct);
+  app.post('/processes/:uuid/admin-edit', processes_center.adminEdit);
+  app.post('/processes/:uuid/installments', processes_center.setInstallments);
   app.post('/processes/:uuid/:action', processes_center.action);
 }

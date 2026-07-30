@@ -9,8 +9,8 @@ export const UAU_RESOURCES = new Set<string>([
   'v_empresas', 'v_obras', 'v_fornecedores', 'v_compositions', 'compositions',
 ]);
 
-export function cacheKey(resource: string, ops: unknown[], withCount = false, head = false): string {
-  return `data:${resource}:${withCount ? 'c' : ''}${head ? 'h' : ''}:${JSON.stringify(ops || [])}`;
+export function cacheKey(resource: string, operations: unknown[], withCount = false, head = false): string {
+  return `data:${resource}:${withCount ? 'c' : ''}${head ? 'h' : ''}:${JSON.stringify(operations || [])}`;
 }
 
 export function resourcePrefix(resource: string): string {

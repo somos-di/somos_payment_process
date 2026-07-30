@@ -2,8 +2,8 @@ async function initView_correcao() {
   await window.ProcessList.mount(document.getElementById('cor-host'), {
     emptyText: 'Você não tem processos em correção.',
     load: function () {
-      return window.SB.select('v_processes', function (q) {
-        return q.eq('status_step_prc', window.CONFIG.STATUS.correcao).order('id_prc', { ascending: false });
+      return window.SB.select('v_processes', function (query) {
+        return query.eq('status_step_prc', window.CONFIG.STATUS.correcao).order('id_prc', { ascending: false });
       });
     },
     actions: [

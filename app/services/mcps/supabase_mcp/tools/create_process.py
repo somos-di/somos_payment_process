@@ -29,15 +29,7 @@ async def create_process(
     supabase_gateway: SupabaseGateway = Depends(get_supabase_gateway),
     user_jwt: str = Depends(get_user_jwt),
 ) -> dict:
-    """Cria um processo de pagamento com parcelas, em nome do usuário logado.
 
-    - company/building: `codigo` da empresa/obra (de get_companies/get_buildings).
-    - composition/supply: codigo_composicao/codigo_insumo (de get_appropriations).
-    - kind_id: id_pkn (de get_process_kinds).  doc_kind_id: id_dck (de get_document_kinds).
-    - person_id: id do fornecedor (de search_suppliers).
-    - value: valor total bruto; a soma das parcelas deve bater com ele.
-    - department_prc é herdado do perfil do usuário automaticamente.
-    """
     process = {
         "description_prc": description,
         "company_prc": company,
@@ -52,10 +44,9 @@ async def create_process(
         "due_date_prc": installments[0].due_date if installments else None,
         "value_prc": value,
         "fiscal_doc_prc": fiscal_doc,
-        # anexos ficam de fora por enquanto (attachment_url_prc / attachment_url2_prc)
     }
     installments_payload = [
-        {"due_date_ins": i.due_date, "value_ins": i.value} for i in installments
+        {"due_date_ins": index.due_date, "value_ins": index.value} for index in installments
     ]
     return await supabase_gateway.create_process(user_jwt, process, installments_payload)
 

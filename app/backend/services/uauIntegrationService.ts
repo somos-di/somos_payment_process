@@ -1,40 +1,31 @@
-import { buildUauPayloadParams as P } from '../config/runtime.js';
+import { buildUauPayloadParams as payloadParams } from '../config/runtime.js';
 import { AppError } from '../errors.js';
 import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
+import type { InstallmentRow, ProcessValueRow } from '../types/process.js';
+import type { UauIntegrationResult, UauPayload } from '../types/uau.js';
 
-// junta base + endpoint normalizando as barras (evita '//' ou base sem '/')
 function joinUrl(base: string, endpoint: string): string {
   return base.replace(/\/+$/, '') + '/' + endpoint.replace(/^\/+/, '');
 }
 
-// ── Helpers de formatação do payload (puros, sem estado) ────────────────────
-const fmtDateTime = (d?: string | null): string =>            // 'YYYY-MM-DD HH:mm:ss'
-  !d ? '' : (String(d).includes('T') ? String(d) : String(d) + 'T00:00:00').slice(0, 19).replace('T', ' ');
+const formatDateTime = (date?: string | null): string =>
+  !date ? '' : (String(date).includes('T') ? String(date) : String(date) + 'T00:00:00').slice(0, 19).replace('T', ' ');
 
-const fmtDueNotPast = (d?: string | null): string => {        // vencimento nunca no passado
+const formatDueDateNotPast = (date?: string | null): string => {
   const today = new Date().toISOString().slice(0, 10);
-  const day = d ? String(d).slice(0, 10) : today;
+  const day = date ? String(date).slice(0, 10) : today;
   return (day < today ? today : day) + ' 00:00:00';
 };
 
-const fmtMonthYear = (d?: string | null): string => {         // 'MM/YYYY'
-  if (!d) return '';
-  const [y, m] = String(d).slice(0, 10).split('-');
-  return (m || '') + '/' + (y || '');
+const formatMonthYear = (date?: string | null): string => {
+  if (!date) return '';
+  const [year, month] = String(date).slice(0, 10).split('-');
+  return (month || '') + '/' + (year || '');
 };
 
-// Integração UAU: monta o payload a partir do schema payment, valida pendências
-// (espelha os alertas do Financeiro) e envia ao webhook de integração.
-// Responsabilidade isolada do ProcessesService (persistência/domínio do processo).
 export class UauIntegrationService {
-  // ENVIAR UAU (botão Integrar): valida visibilidade + pendências, POSTa no webhook
-  // e registra no histórico (via RPC send_to_uau). NÃO muda o status: a transição
-  // (Em integração / Integrado / Erro) é feita pela INTEGRAÇÃO EXTERNA.
-  async sendToUau(token: string, uuid: string): Promise<{ uuid_prc: string; sent: true }> {
-    // Visibilidade PELA RLS antes de tudo: buildUauPayload/pendingAlerts leem via
-    // service_role (bypass de RLS), então sem este gate um usuário poderia disparar
-    // a integração de um processo que não pode ver. Se a RLS esconde a linha, barra.
+  async sendToUau(token: string, uuid: string): Promise<UauIntegrationResult> {
     const visible = await userClient(token)
       .from('processes').select('uuid_prc').eq('uuid_prc', uuid).maybeSingle();
     if (visible.error || !visible.data) {
@@ -46,125 +37,116 @@ export class UauIntegrationService {
       throw new AppError('Processo com pendência; resolva antes de integrar: ' + alerts.join(' '), 422, 'validation');
     }
 
-    const s = getSettings();
-    if (!s.n8nBaseUrl || !s.integration.webhookEndpoint) {
+    const settings = getSettings();
+    if (!settings.n8nBaseUrl || !settings.integration.webhookEndpoint) {
       throw new AppError('Integração não configurada: defina N8N_BASE_URL e INTEGRATION_WEBHOOK_ENDPOINT no ambiente.', 500, 'config');
     }
-    const webhookUrl = joinUrl(s.n8nBaseUrl, s.integration.webhookEndpoint);
+    const webhookUrl = joinUrl(settings.n8nBaseUrl, settings.integration.webhookEndpoint);
 
     const payload = await this.buildPayload(uuid);
-    let resp: Response;
+    let response: Response;
     try {
-      resp = await fetch(webhookUrl, {
+      response = await fetch(webhookUrl, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
-    } catch (e) {
-      throw new AppError('Não consegui chamar o webhook de integração: ' + ((e as { message?: string }).message || e), 502, 'integration');
+    } catch (error) {
+      throw new AppError('Não consegui chamar o webhook de integração: ' + ((error as { message?: string }).message || error), 502, 'integration');
     }
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      throw new AppError('Webhook de integração retornou ' + resp.status + ': ' + body.slice(0, 200), 502, 'integration');
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new AppError('Webhook de integração retornou ' + response.status + ': ' + body.slice(0, 200), 502, 'integration');
     }
-    await unwrap(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));   // só histórico (auth.uid()); status é da integração externa
+    await unwrap(userClient(token).rpc('send_to_uau', { p_uuid: uuid }));
     return { uuid_prc: uuid, sent: true };
   }
 
-  // Recalcula no BACKEND os mesmos alertas da tela do Financeiro (espelha
-  // financeiro.js → alertas()): sem parcelas, soma divergente do valor, ou
-  // vencimentos fora de ordem. Não confia no front.
   private async pendingAlerts(uuid: string): Promise<string[]> {
-    const a = adminClient();
-    const p = await unwrap(a.from('processes').select('value_prc').eq('uuid_prc', uuid).single()) as { value_prc: number | null };
-    const inst = await unwrap(a.from('installments')
-      .select('due_date_ins,value_ins,number_ins').eq('process_ins', uuid).order('number_ins')) as Array<{ due_date_ins: string; value_ins: number; number_ins: number }>;
-    const out: string[] = [];
-    const total = Number(p.value_prc) || 0;
-    const soma = inst.reduce((s, x) => s + (Number(x.value_ins) || 0), 0);
-    const diff = Math.round((soma - total) * 100) / 100;
-    if (inst.length === 0) out.push('Processo sem parcelas cadastradas.');
-    if (inst.length > 0 && Math.abs(diff) >= 0.01) out.push('A soma das parcelas diverge do valor do processo.');
-    for (let i = 1; i < inst.length; i++) {                          // ordenado por number_ins: vencimentos devem ser não-decrescentes
-      if (String(inst[i].due_date_ins) < String(inst[i - 1].due_date_ins)) { out.push('Há parcelas com vencimento fora de ordem.'); break; }
+    const client = adminClient();
+    const processRow = await unwrap(client.from('processes').select('value_prc').eq('uuid_prc', uuid).single()) as ProcessValueRow;
+    const installments = await unwrap(client.from('installments')
+      .select('due_date_ins,value_ins,number_ins').eq('process_ins', uuid).order('number_ins')) as InstallmentRow[];
+    const alerts: string[] = [];
+    const total = Number(processRow.value_prc) || 0;
+    const installmentsSum = installments.reduce((accumulated, installment) => accumulated + (Number(installment.value_ins) || 0), 0);
+    const difference = Math.round((installmentsSum - total) * 100) / 100;
+    if (installments.length === 0) alerts.push('Processo sem parcelas cadastradas.');
+    if (installments.length > 0 && Math.abs(difference) >= 0.01) alerts.push('A soma das parcelas diverge do valor do processo.');
+    for (let index = 1; index < installments.length; index++) {
+      if (String(installments[index].due_date_ins) < String(installments[index - 1].due_date_ins)) { alerts.push('Há parcelas com vencimento fora de ordem.'); break; }
     }
-    return out;
+    return alerts;
   }
 
-  // Monta o payload de integração a partir do schema payment (equivalente à query do Mitra).
-  // Impostos (DescontoVinculado) ficam vazios por ora; Cap não existe no espelho.
-  private async buildPayload(uuid: string): Promise<Record<string, unknown>> {
-    const a = adminClient();
-    const p = await unwrap(a.from('processes').select('*').eq('uuid_prc', uuid).single()) as any;
-    // compositions tem UMA linha por EMPRESA/OBRA para o mesmo par composição/insumo
-    // (cada obra tem seu planejamento: Item/Contrato/Produto próprios). Sem o filtro
-    // de empresa+obra, o limit(1) devolvia uma linha arbitrária de OUTRA obra e o
-    // payload saía com CodigoProduto/Contrato errados.
-    const comp = ((await unwrap(a.from('compositions')
+  private async buildPayload(uuid: string): Promise<UauPayload> {
+    const client = adminClient();
+    const processRow = await unwrap(client.from('processes').select('*').eq('uuid_prc', uuid).single()) as any;
+    const composition = ((await unwrap(client.from('compositions')
       .select('item_cins,prod_cins,contrato_cins,codigo_composicao,codigo_insumo,unidade_insumo')
-      .eq('empresa_cins', Number(p.company_prc))
-      .ilike('obra_cins', p.building_prc)
-      .eq('codigo_composicao', p.composition_prc).eq('codigo_insumo', p.supply_prc).limit(1)) as any[])[0]) || {};
-    const doc = p.doc_kind_prc != null
-      ? ((await unwrap(a.from('document_kinds').select('especie_dck,tipo_dck,modelo_dck,serie_dck')
-        .eq('id_dck', p.doc_kind_prc).maybeSingle()) as any) || {})
+      .eq('empresa_cins', Number(processRow.company_prc))
+      .ilike('obra_cins', processRow.building_prc)
+      .eq('codigo_composicao', processRow.composition_prc).eq('codigo_insumo', processRow.supply_prc).limit(1)) as any[])[0]) || {};
+    const documentKind = processRow.doc_kind_prc != null
+      ? ((await unwrap(client.from('document_kinds').select('especie_dck,tipo_dck,modelo_dck,serie_dck')
+        .eq('id_dck', processRow.doc_kind_prc).maybeSingle()) as any) || {})
       : {};
-    const apprs = await unwrap(a.from('process_approvers')
+    const approvers = await unwrap(client.from('process_approvers')
       .select('approver_app,level_app').eq('process_app', uuid).order('level_app').limit(2)) as any[];
-    const uau: Record<string, string | null> = {};
-    if (apprs.length) {
-      const us = await unwrap(a.from('users').select('id_usr,uau_user_usr')
-        .in('id_usr', apprs.map((x) => x.approver_app))) as any[];
-      us.forEach((u) => { uau[u.id_usr] = u.uau_user_usr; });
+    const uauUserById: Record<string, string | null> = {};
+    if (approvers.length) {
+      const users = await unwrap(client.from('users').select('id_usr,uau_user_usr')
+        .in('id_usr', approvers.map((approver) => approver.approver_app))) as any[];
+      users.forEach((user) => { uauUserById[user.id_usr] = user.uau_user_usr; });
     }
-    const inst = await unwrap(a.from('installments')
+    const installments = await unwrap(client.from('installments')
       .select('due_date_ins,value_ins,number_ins').eq('process_ins', uuid).order('number_ins')) as any[];
 
     return {
-      Id: p.id_prc,
-      Empresa: p.company_prc,
-      Obra: p.building_prc,
-      CodigoFornecedor: p.person_prc,
-      TipoProcesso: P.tipoProcesso,
-      ControlarEstoque: P.controlarEstoque,
-      AcompanhaEntrega: P.acompanhaEntrega,
-      DataPrevisaoEntrega: P.dataPrevisaoEntrega,
-      TipoItem: P.tipoItem,
-      HistoricoLancContabil: P.historicoLancContabil,
-      HistoricoLancContabilPago: P.historicoLancContabilPago,
-      aprovador1_uau: apprs[0] ? (uau[apprs[0].approver_app] ?? null) : null,
-      aprovador2_uau: apprs[1] ? (uau[apprs[1].approver_app] ?? null) : null,
-      anexo_boleto_url: p.attachment_url_prc || '',
-      anexo_docfiscal_url: p.attachment_url2_prc || '',
+      Id: processRow.id_prc,
+      Empresa: processRow.company_prc,
+      Obra: processRow.building_prc,
+      CodigoFornecedor: processRow.person_prc,
+      TipoProcesso: payloadParams.tipoProcesso,
+      ControlarEstoque: payloadParams.controlarEstoque,
+      AcompanhaEntrega: payloadParams.acompanhaEntrega,
+      DataPrevisaoEntrega: payloadParams.dataPrevisaoEntrega,
+      TipoItem: payloadParams.tipoItem,
+      HistoricoLancContabil: payloadParams.historicoLancContabil,
+      HistoricoLancContabilPago: payloadParams.historicoLancContabilPago,
+      aprovador1_uau: approvers[0] ? (uauUserById[approvers[0].approver_app] ?? null) : null,
+      aprovador2_uau: approvers[1] ? (uauUserById[approvers[1].approver_app] ?? null) : null,
+      anexo_boleto_url: processRow.attachment_url_prc || '',
+      anexo_docfiscal_url: processRow.attachment_url2_prc || '',
       DocumentoFiscal: {
-        NumeroNota: Number(p.fiscal_doc_prc) || 0,   // sempre numérico (fiscal_doc_prc é text; 0 quando vazio/inválido)
-        SerieNota: doc.serie_dck ?? '',
-        EspecieNota: doc.especie_dck ?? '',
-        TipoNota: doc.tipo_dck ?? 0,
-        DataEmissao: fmtDateTime(p.issue_date_prc),
-        NFEletronica: P.nfEletronica,
-        ChaveNFe: P.chaveNFe,
-        Modelo: doc.modelo_dck ?? '',
+        NumeroNota: Number(processRow.fiscal_doc_prc) || 0,
+        SerieNota: documentKind.serie_dck ?? '',
+        EspecieNota: documentKind.especie_dck ?? '',
+        TipoNota: documentKind.tipo_dck ?? 0,
+        DataEmissao: formatDateTime(processRow.issue_date_prc),
+        NFEletronica: payloadParams.nfEletronica,
+        ChaveNFe: payloadParams.chaveNFe,
+        Modelo: documentKind.modelo_dck ?? '',
       },
       Parametro: {},
-      Parcelas: (inst || []).map((x) => ({ Datavencimento: fmtDueNotPast(x.due_date_ins), Valor: x.value_ins })),
+      Parcelas: (installments || []).map((installment) => ({ Datavencimento: formatDueDateNotPast(installment.due_date_ins), Valor: installment.value_ins })),
       Itens: [{
-        Item: p.supply_prc,
-        Quantidade: P.quantidade,
-        Preco: p.value_prc,
+        Item: processRow.supply_prc,
+        Quantidade: payloadParams.quantidade,
+        Preco: processRow.value_prc,
         Cap: '',
-        Unidade: comp.unidade_insumo ?? '',
+        Unidade: composition.unidade_insumo ?? '',
         VinculoPL: [{
-          Item: comp.item_cins ?? '',
-          CodigoProduto: comp.prod_cins ?? '',
-          Contrato: comp.contrato_cins ?? '',
-          Servico: comp.codigo_composicao ?? p.composition_prc,
-          Insumo: comp.codigo_insumo ?? p.supply_prc,
-          MesPlanejamento: fmtMonthYear(p.due_date_prc),
-          Quantidade: P.quantidade,
-          Preco: p.value_prc,
-          numeroItemContrato: P.numeroItemContrato,
+          Item: composition.item_cins ?? '',
+          CodigoProduto: composition.prod_cins ?? '',
+          Contrato: composition.contrato_cins ?? '',
+          Servico: composition.codigo_composicao ?? processRow.composition_prc,
+          Insumo: composition.codigo_insumo ?? processRow.supply_prc,
+          MesPlanejamento: formatMonthYear(processRow.due_date_prc),
+          Quantidade: payloadParams.quantidade,
+          Preco: processRow.value_prc,
+          numeroItemContrato: payloadParams.numeroItemContrato,
         }],
       }],
-      DescontoVinculado: [],   // impostos ainda não tratados
+      DescontoVinculado: [],
     };
   }
 }

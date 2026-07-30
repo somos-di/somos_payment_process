@@ -9,62 +9,49 @@ from settings import AppSettings
 
 
 def _jwt_sub(user_jwt: str) -> str | None:
-    """Extrai o `sub` (id do usuário) do JWT. Não valida assinatura — quem valida é
-    o Supabase quando a query roda com o token."""
     try:
         payload = user_jwt.split(".")[1]
-        payload += "=" * (-len(payload) % 4)  # padding base64
+        payload += "=" * (-len(payload) % 4)
         return json.loads(base64.urlsafe_b64decode(payload)).get("sub")
     except Exception:
         return None
 
 
 class SupabaseGateway:
-    """Acessa o schema payment_process SEMPRE como o usuário logado (JWT), então a
-    RLS do banco continua valendo — o MCP nunca vira um "vê-tudo".
-
-    Cria um client POR REQUEST (bind do JWT em cada chamada). Isso é de propósito:
-    mutar `postgrest.auth()` num client compartilhado vazaria o token de um usuário
-    para requisições concorrentes de outro.
-    """
-
     def __init__(self, settings: AppSettings):
         self.settings = settings
 
     async def _client(self, user_jwt: str) -> AsyncClient:
         client = await create_async_client(
             self.settings.supabase_url,
-            self.settings.supabase_key.get_secret_value(),  # anon/publishable key
+            self.settings.supabase_key.get_secret_value(),
             options=AsyncClientOptions(
                 schema=self.settings.payment_process_schema.get_secret_value(),
             ),
         )
-        client.postgrest.auth(user_jwt)  # age como o usuário -> RLS aplica
+        client.postgrest.auth(user_jwt)
         return client
 
-    # Tudo que o agente precisa para montar um processo, filtrado como no app.
-
     async def get_launchable_kinds(self, user_jwt: str) -> list[dict]:
-        """Tipos de processo que ESTE usuário pode lançar (respeita grupos lançadores)."""
         client = await self._client(user_jwt)
         try:
-            resp = await client.rpc("my_launchable_kinds", {}).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar tipos de processo: {e.message}") from e
-        return resp.data or []
+            response = await client.rpc("my_launchable_kinds", {}).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar tipos de processo: {error.message}") from error
+        return response.data or []
 
     async def get_document_kinds(self, user_jwt: str) -> list[dict]:
         client = await self._client(user_jwt)
         try:
-            resp = await (
+            response = await (
                 client.table("document_kinds")
                 .select("id_dck,name_dck")
                 .order("name_dck")
                 .execute()
             )
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar tipos de documento: {e.message}") from e
-        return resp.data or []
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar tipos de documento: {error.message}") from error
+        return response.data or []
 
     async def get_companies(self, user_jwt: str, search: str | None = None, limit: int = 10) -> list[dict]:
         client = await self._client(user_jwt)
@@ -72,24 +59,24 @@ class SupabaseGateway:
             query = client.table("v_empresas").select("codigo,nome")
             if search:
                 query = query.ilike("nome", f"%{search}%")
-            resp = await query.order("nome").limit(limit).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar empresas: {e.message}") from e
-        return resp.data or []
+            response = await query.order("nome").limit(limit).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar empresas: {error.message}") from error
+        return response.data or []
 
     async def get_buildings(self, user_jwt: str, company: str) -> list[dict]:
         client = await self._client(user_jwt)
         try:
-            resp = await (
+            response = await (
                 client.table("v_obras")
                 .select("codigo,nome")
                 .eq("empresa", company)
                 .order("nome")
                 .execute()
             )
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar obras: {e.message}") from e
-        return resp.data or []
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar obras: {error.message}") from error
+        return response.data or []
 
     async def get_appropriations(
         self,
@@ -112,22 +99,22 @@ class SupabaseGateway:
                     f"descricao_composicao.ilike.%{search}%,descricao_insumo.ilike.%{search}%,"
                     f"codigo_composicao.ilike.%{search}%,codigo_insumo.ilike.%{search}%"
                 )
-            resp = await query.limit(2000).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar composições: {e.message}") from e
-        except ValueError as e:
-            raise RuntimeError(f"Empresa inválida (esperado código numérico): {company}") from e
+            response = await query.limit(2000).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar composições: {error.message}") from error
+        except ValueError as error:
+            raise RuntimeError(f"Empresa inválida (esperado código numérico): {company}") from error
 
         seen: set[tuple] = set()
-        out: list[dict] = []
-        for r in resp.data or []:
-            comp, ins = r.get("codigo_composicao"), r.get("codigo_insumo")
-            if not comp or not ins or (comp, ins) in seen:
+        results: list[dict] = []
+        for rule in response.data or []:
+            composition, supply = rule.get("codigo_composicao"), rule.get("codigo_insumo")
+            if not composition or not supply or (composition, supply) in seen:
                 continue
-            seen.add((comp, ins))
-            label = f"{r.get('descricao_composicao') or comp} / {r.get('descricao_insumo') or ins}"
-            out.append({"composition": comp, "supply": ins, "label": label})
-        return out[:limit]
+            seen.add((composition, supply))
+            label = f"{rule.get('descricao_composicao') or composition} / {rule.get('descricao_insumo') or supply}"
+            results.append({"composition": composition, "supply": supply, "label": label})
+        return results[:limit]
 
     async def search_suppliers(self, user_jwt: str, term: str | None = None) -> list[dict]:
         client = await self._client(user_jwt)
@@ -135,68 +122,65 @@ class SupabaseGateway:
             query = client.table("v_fornecedores").select("id,nome,cpf_cnpj")
             if term:
                 query = query.or_(f"nome.ilike.%{term}%,cpf_cnpj.ilike.%{term}%")
-            resp = await query.order("nome").limit(100).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar fornecedores: {e.message}") from e
-        return resp.data or []
+            response = await query.order("nome").limit(100).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar fornecedores: {error.message}") from error
+        return response.data or []
 
     async def _user_department(self, client: AsyncClient, user_jwt: str) -> int | None:
-        """Departamento do usuário logado (o processo herda dele, igual ao app)."""
-        sub = _jwt_sub(user_jwt)
-        if not sub:
+        user_id = _jwt_sub(user_jwt)
+        if not user_id:
             return None
         try:
-            resp = await (
+            response = await (
                 client.table("users")
                 .select("department_usr")
-                .eq("id_usr", sub)
+                .eq("id_usr", user_id)
                 .maybe_single()
                 .execute()
             )
         except APIError:
             return None
-        return (resp.data or {}).get("department_usr")
+        return (response.data or {}).get("department_usr")
 
 
     async def create_process(self, user_jwt: str, process: dict, installments: list[dict]) -> dict:
-        """Cria processo + parcelas via RPC (author = auth.uid(); valida tipo permitido)."""
         client = await self._client(user_jwt)
         if not process.get("department_prc"):
             process["department_prc"] = await self._user_department(client, user_jwt)
         try:
-            resp = await client.rpc(
+            response = await client.rpc(
                 "create_process_with_installments",
                 {"p_process": process, "p_installments": installments},
             ).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao criar o processo: {e.message}") from e
-        return resp.data or {}
+        except APIError as error:
+            raise RuntimeError(f"Falha ao criar o processo: {error.message}") from error
+        return response.data or {}
 
     async def get_eligible_approvers(self, user_jwt: str, process_uuid: str) -> list[dict]:
         client = await self._client(user_jwt)
         try:
-            resp = await client.rpc("eligible_approvers", {"p_uuid": process_uuid}).execute()
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar aprovadores elegíveis: {e.message}") from e
+            response = await client.rpc("eligible_approvers", {"p_uuid": process_uuid}).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar aprovadores elegíveis: {error.message}") from error
         return [
-            {"name": r.get("name"), "email": r.get("email"), "group": r.get("group_name")}
-            for r in (resp.data or [])
+            {"name": rule.get("name"), "email": rule.get("email"), "group": rule.get("group_name")}
+            for rule in (response.data or [])
         ]
 
     async def get_process_uuid(self, user_jwt: str, id_prc: int) -> str | None:
         client = await self._client(user_jwt)
         try:
-            resp = await (
+            response = await (
                 client.table("processes")
                 .select("uuid_prc")
                 .eq("id_prc", id_prc)
                 .maybe_single()
                 .execute()
             )
-        except APIError as e:
-            raise RuntimeError(f"Falha ao buscar o processo: {e.message}") from e
-        return (resp.data or {}).get("uuid_prc")
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar o processo: {error.message}") from error
+        return (response.data or {}).get("uuid_prc")
 
     def close(self) -> None:
-        # clients são por-request (efêmeros); nada persistente para fechar.
         return None

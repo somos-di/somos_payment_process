@@ -16,13 +16,13 @@ export class ReapprovalController {
     this.list = this.list.bind(this);
   }
 
-  async create(req: FastifyRequest, reply: FastifyReply) {
-    const payload = CreateSchema.parse(req.body);
-    const data = await this.service.send(req.accessToken!, payload);
+  async create(request: FastifyRequest, reply: FastifyReply) {
+    const payload = CreateSchema.parse(request.body);
+    const data = await this.service.send(request.accessToken!, payload);
     return reply.send({ success: true, data });
   }
 
-  async list(req: FastifyRequest, reply: FastifyReply) {
-    return reply.send({ success: true, data: await this.service.list(req.accessToken!) });
+  async list(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send({ success: true, data: await this.service.list(request.accessToken!) });
   }
 }

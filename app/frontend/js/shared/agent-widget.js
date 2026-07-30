@@ -3,18 +3,18 @@
   var ROBOT = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="8" width="15" height="11" rx="2.5"/><path d="M12 8V5"/><circle cx="12" cy="3.4" r="1.2"/><path d="M2.5 12v3M21.5 12v3"/><circle cx="9" cy="13" r="1.3"/><circle cx="15" cy="13" r="1.3"/><path d="M9.5 16.5h5"/></svg>';
   var TYPING = '<span class="agw-typing"><span></span><span></span><span></span></span>';
   var state = { open: false, busy: false, conversationId: null };
-  var els = {};
+  var elements = {};
 
   function newId() {
     if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
     return 'c-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
 
-  function el(tag, cls, html) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (html != null) e.innerHTML = html;
-    return e;
+  function element(tag, cssClass, html) {
+    var createdElement = document.createElement(tag);
+    if (cssClass) createdElement.className = cssClass;
+    if (html != null) createdElement.innerHTML = html;
+    return createdElement;
   }
 
   function mdEscape(s) {
@@ -30,22 +30,22 @@
 
   function renderMd(text) {
     var lines = mdEscape(text).split('\n');
-    var out = '';
+    var output = '';
     var list = null;
-    function close() { if (list) { out += '</' + list + '>'; list = null; } }
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      var h = line.match(/^\s*#{1,6}\s+(.*)$/);
-      var ul = line.match(/^\s*[-*]\s+(.*)$/);
-      var ol = line.match(/^\s*\d+\.\s+(.*)$/);
-      if (h) { close(); out += '<div class="agw-h">' + mdInline(h[1]) + '</div>'; }
-      else if (ul) { if (list !== 'ul') { close(); out += '<ul>'; list = 'ul'; } out += '<li>' + mdInline(ul[1]) + '</li>'; }
-      else if (ol) { if (list !== 'ol') { close(); out += '<ol>'; list = 'ol'; } out += '<li>' + mdInline(ol[1]) + '</li>'; }
+    function close() { if (list) { output += '</' + list + '>'; list = null; } }
+    for (var index = 0; index < lines.length; index++) {
+      var line = lines[index];
+      var headingMatch = line.match(/^\s*#{1,6}\s+(.*)$/);
+      var bulletMatch = line.match(/^\s*[-*]\s+(.*)$/);
+      var numberedMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+      if (headingMatch) { close(); output += '<div class="agw-h">' + mdInline(headingMatch[1]) + '</div>'; }
+      else if (bulletMatch) { if (list !== 'ul') { close(); output += '<ul>'; list = 'ul'; } output += '<li>' + mdInline(bulletMatch[1]) + '</li>'; }
+      else if (numberedMatch) { if (list !== 'ol') { close(); output += '<ol>'; list = 'ol'; } output += '<li>' + mdInline(numberedMatch[1]) + '</li>'; }
       else if (line.trim() === '') { close(); }
-      else { close(); out += '<div>' + mdInline(line) + '</div>'; }
+      else { close(); output += '<div>' + mdInline(line) + '</div>'; }
     }
     close();
-    return out;
+    return output;
   }
 
   function injectStyles() {
@@ -84,16 +84,16 @@
 
   function build() {
     injectStyles();
-    var root = el('div', 'agw-root');
-    var bubble = el('button', 'agw-bubble', ROBOT);
-    var panel = el('div', 'agw-panel');
-    panel.appendChild(el('div', 'agw-header', ROBOT + '<span>Assistente</span>'));
-    var body = el('div', 'agw-body');
-    var form = el('form', 'agw-form');
-    var input = el('input', 'agw-input');
+    var root = element('div', 'agw-root');
+    var bubble = element('button', 'agw-bubble', ROBOT);
+    var panel = element('div', 'agw-panel');
+    panel.appendChild(element('div', 'agw-header', ROBOT + '<span>Assistente</span>'));
+    var body = element('div', 'agw-body');
+    var form = element('form', 'agw-form');
+    var input = element('input', 'agw-input');
     input.type = 'text';
     input.placeholder = 'Como posso ajudar?';
-    var send = el('button', 'agw-send', '&#10148;');
+    var send = element('button', 'agw-send', '&#10148;');
     send.type = 'submit';
     form.appendChild(input);
     form.appendChild(send);
@@ -103,7 +103,7 @@
     root.appendChild(bubble);
     document.body.appendChild(root);
 
-    els = { root: root, bubble: bubble, body: body, form: form, input: input, send: send };
+    elements = { root: root, bubble: bubble, body: body, form: form, input: input, send: send };
     state.conversationId = newId();
     bubble.addEventListener('click', toggle);
     form.addEventListener('submit', onSubmit);
@@ -111,41 +111,41 @@
 
   function toggle() {
     state.open = !state.open;
-    els.root.classList.toggle('agw-open', state.open);
-    if (state.open) els.input.focus();
+    elements.root.classList.toggle('agw-open', state.open);
+    if (state.open) elements.input.focus();
   }
 
   function addUser(text) {
-    var m = el('div', 'agw-msg agw-user');
-    m.textContent = text;
-    els.body.appendChild(m);
+    var messageElement = element('div', 'agw-msg agw-user');
+    messageElement.textContent = text;
+    elements.body.appendChild(messageElement);
     scrollBottom();
-    return m;
+    return messageElement;
   }
 
   function addAssistant() {
-    var m = el('div', 'agw-msg agw-assistant');
-    els.body.appendChild(m);
+    var messageElement = element('div', 'agw-msg agw-assistant');
+    elements.body.appendChild(messageElement);
     scrollBottom();
-    return m;
+    return messageElement;
   }
 
   function scrollBottom() {
-    els.body.scrollTop = els.body.scrollHeight;
+    elements.body.scrollTop = elements.body.scrollHeight;
   }
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    var text = els.input.value.trim();
+  async function onSubmit(event) {
+    event.preventDefault();
+    var text = elements.input.value.trim();
     if (!text || state.busy) return;
-    els.input.value = '';
+    elements.input.value = '';
     addUser(text);
     state.busy = true;
-    els.send.disabled = true;
+    elements.send.disabled = true;
 
     var target = addAssistant();
     target.innerHTML = TYPING;
-    var acc = '';
+    var accumulator = '';
     var streaming = false;
 
     function stopTyping() {
@@ -156,16 +156,16 @@
     }
 
     try {
-      var resp = await fetch(ENDPOINT, {
+      var response = await fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ message: text, conversation_id: state.conversationId })
       });
-      if (resp.status === 401) { stopTyping(); target.textContent = 'Sessão expirada. Faça login novamente.'; return; }
-      if (!resp.ok || !resp.body) { stopTyping(); target.textContent = 'Falha ao falar com o assistente.'; return; }
+      if (response.status === 401) { stopTyping(); target.textContent = 'Sessão expirada. Faça login novamente.'; return; }
+      if (!response.ok || !response.body) { stopTyping(); target.textContent = 'Falha ao falar com o assistente.'; return; }
 
-      var reader = resp.body.getReader();
+      var reader = response.body.getReader();
       var decoder = new TextDecoder();
       var buffer = '';
       while (true) {
@@ -174,40 +174,40 @@
         buffer += decoder.decode(read.value, { stream: true });
         var frames = buffer.split('\n\n');
         buffer = frames.pop();
-        for (var i = 0; i < frames.length; i++) {
-          var dataLine = frames[i].split('\n').filter(function (l) { return l.indexOf('data:') === 0; })[0];
+        for (var index = 0; index < frames.length; index++) {
+          var dataLine = frames[index].split('\n').filter(function (item) { return item.indexOf('data:') === 0; })[0];
           if (!dataLine) continue;
           var payload = dataLine.slice(5).trim();
           if (!payload) continue;
           var data;
-          try { data = JSON.parse(payload); } catch (err) { continue; }
+          try { data = JSON.parse(payload); } catch (error) { continue; }
           stopTyping();
-          if (data.error) acc += '\n[erro] ' + data.error;
-          else if (data.delta) acc += data.delta;
-          target.innerHTML = renderMd(acc);
+          if (data.error) accumulator += '\n[erro] ' + data.error;
+          else if (data.delta) accumulator += data.delta;
+          target.innerHTML = renderMd(accumulator);
           scrollBottom();
         }
       }
       stopTyping();
-      if (!acc) target.textContent = 'Sem resposta.';
-    } catch (err) {
+      if (!accumulator) target.textContent = 'Sem resposta.';
+    } catch (error) {
       stopTyping();
-      target.textContent = 'Erro: ' + (err && err.message ? err.message : String(err));
+      target.textContent = 'Erro: ' + (error && error.message ? error.message : String(error));
     } finally {
       state.busy = false;
-      els.send.disabled = false;
-      els.input.focus();
+      elements.send.disabled = false;
+      elements.input.focus();
     }
   }
 
   function reflect(user) {
-    if (!els.root) return;
-    els.root.style.display = user ? 'block' : 'none';
+    if (!elements.root) return;
+    elements.root.style.display = user ? 'block' : 'none';
     if (!user) {
       state.open = false;
       state.conversationId = newId();
-      els.root.classList.remove('agw-open');
-      els.body.innerHTML = '';
+      elements.root.classList.remove('agw-open');
+      elements.body.innerHTML = '';
     }
   }
 
