@@ -37,7 +37,7 @@
   });
   
   S.register('history', function (uuid) {
-    return SB.select('v_process_history', function (query) { return query.eq('process_hst', uuid).order('created_at_hst', { ascending: false }); });
+    return SB.select('v_process_history', function (query) { return query.eq('process_hst', uuid).order('created_at_hst', { ascending: false }).order('id_hst', { ascending: false }); });
   });
   S.register('approvers', function (uuid) { return SB.rpc('completed_approvals', { p_uuid: uuid }); });
   S.register('eligible_approvers', function (uuid) { return SB.rpc('eligible_approvers', { p_uuid: uuid }); });
