@@ -26,10 +26,6 @@
         + '<div class="pd-doc-tabs">'
         + (fiscalDocUrl ? '<button class="pd-doc-tab active" data-url="' + escapeHtml(fiscalDocUrl) + '">Nota Fiscal</button>' : '')
         + (boletoUrl ? '<button class="pd-doc-tab' + (fiscalDocUrl ? '' : ' active') + '" data-url="' + escapeHtml(boletoUrl) + '">Boleto</button>' : '')
-        + '</div>'
-        + '<div class="pd-doc-actions">'
-        + (fiscalDocUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(fiscalDocUrl) + '">Nota Fiscal</a>' : '')
-        + (boletoUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(boletoUrl) + '">Boleto</a>' : '')
         + '</div></div>'
         + '<iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe>'
         + '</div>';
