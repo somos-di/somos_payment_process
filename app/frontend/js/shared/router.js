@@ -189,6 +189,7 @@ async function loadView(route, params) {
         }
     }
     document.body.classList.toggle('auth-mode', route === LOGIN_ROUTE)
+    document.body.classList.remove('booting')
 
     updateBreadcrumb(meta)
     content.innerHTML = '<div class="view-loading">Carregando ' + escapeText(meta.title) + '…</div>'

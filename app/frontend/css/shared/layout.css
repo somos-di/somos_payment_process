@@ -474,16 +474,21 @@ svg {
 
 body.auth-mode .sidebar,
 body.auth-mode .topbar,
-body.auth-mode .mobile-top {
+body.auth-mode .mobile-top,
+body.booting .sidebar,
+body.booting .topbar,
+body.booting .mobile-top {
     display: none;
 }
 
-body.auth-mode .main {
+body.auth-mode .main,
+body.booting .main {
     width: 100%;
     height: 100vh;
 }
 
-body.auth-mode #app-content {
+body.auth-mode #app-content,
+body.booting #app-content {
     padding: 0;
     height: 100%;
     display: flex;
