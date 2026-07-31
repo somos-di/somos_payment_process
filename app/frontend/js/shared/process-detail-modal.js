@@ -37,8 +37,7 @@
 
     o.innerHTML =
       '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
-      + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
-      + '<div data-pane="dados" class="pane pd-detail">'
+      + '<div class="pd-detail">'
       + '<div class="pd-fields"><h3>Dados Gerais</h3>'
       + fieldBox('Descrição', process.description_prc)
       + fieldBox('Empresa', process.empresa_nome || process.company_prc)
@@ -54,15 +53,20 @@
       + fieldBox('Vencimento', formatDate(process.due_date_prc))
       + '</div>'
       + docHtml
+      + '<div class="pd-hist">'
+      + '<div class="pd-hist-head"><h3>Histórico</h3>'
+      + '<button type="button" class="pd-hist-toggle" aria-label="Recolher histórico">›</button></div>'
+      + '<div class="pd-hist-body col-body">…</div>'
       + '</div>'
-      + '<div data-pane="hist" class="pane" hidden><div class="col-body">…</div></div></div>';
+      + '</div></div>';
 
     o.addEventListener('click', function (event) { if (event.target === o || event.target.classList.contains('modal-x')) o.remove(); });
-    o.querySelectorAll('.tab').forEach(function (tabButton) {
-      tabButton.addEventListener('click', function () {
-        o.querySelectorAll('.tab').forEach(function (otherTab) { otherTab.classList.remove('active') }); tabButton.classList.add('active');
-        o.querySelectorAll('.pane').forEach(function (pane) { pane.hidden = (pane.getAttribute('data-pane') !== tabButton.getAttribute('data-t')); });
-      });
+    var modalBox = o.querySelector('.modal-box');
+    var histToggle = o.querySelector('.pd-hist-toggle');
+    if (histToggle) histToggle.addEventListener('click', function () {
+      var collapsed = modalBox.classList.toggle('hist-collapsed');
+      histToggle.textContent = collapsed ? '‹' : '›';
+      histToggle.setAttribute('aria-label', collapsed ? 'Expandir histórico' : 'Recolher histórico');
     });
 
     var frame = o.querySelector('.pd-doc-frame');
@@ -79,7 +83,7 @@
     try { window.Store.invalidate('history'); } catch (error) { }
     try {
       var historyEntries = await window.Store.get('history', process.uuid_prc);
-      o.querySelector('[data-pane="hist"] .col-body').innerHTML = historyEntries.length
+      o.querySelector('.pd-hist-body').innerHTML = historyEntries.length
         ? '<ul class="timeline">' + historyEntries.map(function (historyEntry) {
           var kindColor = /^#[0-9a-fA-F]{3,8}$/.test(historyEntry.kind_color || '') ? historyEntry.kind_color : '';
           var kindStyle = kindColor ? ' style="--kind:' + kindColor + '"' : '';
