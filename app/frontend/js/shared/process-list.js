@@ -203,7 +203,7 @@
           if (filters.company && filters.company.length && filters.company.map(String).indexOf(String(outItem.company_prc)) < 0) return false;
           if (filters.building && filters.building.length
             && filters.building.map(function (buildingItem) { return String(buildingItem).toUpperCase(); }).indexOf(String(outItem.building_prc || '').toUpperCase()) < 0) return false;
-          if (filters.status !== '' && Number(outItem.status_step_prc) !== Number(filters.status)) return false;
+          if (filters.status && filters.status.length && filters.status.map(Number).indexOf(Number(outItem.status_step_prc)) < 0) return false;
           if (filters.urgent !== '' && !!outItem.is_urgent_prc !== (filters.urgent === '1')) return false;
           if (filters.from || filters.to) {
             var d = isoDay(outItem[dateField]);
@@ -433,6 +433,7 @@
 
       var processFilters = await window.ProcessFilters.mount(host.querySelector('#pl-filters'), {
         storageKey: options.storageKey || (window.location.hash || 'view'),
+        multiStatus: true,
         onChange: function (values) {
           filters = values;
           if (paged) { page = 0; total = null; reload(); } else render();
@@ -576,7 +577,8 @@
     var builds = Array.isArray(activeFilters.building) ? activeFilters.building : (activeFilters.building ? [activeFilters.building] : []);
     if (comps.length) s = s.in('company_prc', comps);
     if (builds.length) s = s.in('building_prc', builds);
-    if (activeFilters.status !== '' && activeFilters.status != null) s = s.eq('status_step_prc', Number(activeFilters.status));
+    var statuses = Array.isArray(activeFilters.status) ? activeFilters.status : (activeFilters.status !== '' && activeFilters.status != null ? [activeFilters.status] : []);
+    if (statuses.length) s = s.in('status_step_prc', statuses.map(Number));
     if (activeFilters.urgent === '1' || activeFilters.urgent === '0') s = s.eq('is_urgent_prc', activeFilters.urgent === '1');
     if (activeFilters.from) s = s.gte('due_date_prc', activeFilters.from);
     if (activeFilters.to) s = s.lte('due_date_prc', activeFilters.to);

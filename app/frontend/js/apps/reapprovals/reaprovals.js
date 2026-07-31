@@ -77,7 +77,6 @@ async function initView_reaprovals() {
       });
       selectElement('ra-status').textContent = '';
       toast((response && response.message) || 'Reaprovação enviada com sucesso!', true);
-      clearForm();
       loadHist();
     } catch (error) {
       selectElement('ra-status').textContent = '';
