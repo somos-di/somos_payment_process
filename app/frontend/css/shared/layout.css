@@ -586,6 +586,16 @@ body.booting #app-content {
     padding: 26px 32px 60px;
 }
 
+.site-foot {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+}
+
 #app-content::-webkit-scrollbar {
     width: 10px;
 }
