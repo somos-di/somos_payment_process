@@ -970,7 +970,7 @@ tbody tr:hover td {
 .pd-hist-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
 }
 
@@ -980,6 +980,7 @@ tbody tr:hover td {
 }
 
 .pd-hist-toggle {
+  order: -1;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
