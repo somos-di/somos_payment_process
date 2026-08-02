@@ -3,6 +3,7 @@ const LOGIN_ROUTE = window.CONFIG.ROUTES.LOGIN
 
 const ROUTES = {
     'login': { title: 'Entrar', folder: 'auth', public: true },
+    'inicio': { title: 'Início', folder: 'inicio' },
     'solicitar': { title: 'Novo Processo', folder: 'solicitar', parentLabel: 'Solicitar' },
     'solicitar-massa': { title: 'Solicitar em Massa', folder: 'solicitar', parentLabel: 'Solicitar' },
     'meus-lancamentos': { title: 'Meus Lançamentos', folder: 'solicitar', parentLabel: 'Solicitar' },
