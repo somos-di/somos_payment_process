@@ -180,9 +180,6 @@ async function initView_comissoes() {
       docHtml = '<div class="pd-doc"><div class="pd-doc-head"><div class="pd-doc-tabs">'
         + (nfAttachmentUrl ? '<button class="pd-doc-tab active" data-url="' + escapeHtml(nfAttachmentUrl) + '">Nota Fiscal</button>' : '')
         + (boletoAttachmentUrl ? '<button class="pd-doc-tab' + (nfAttachmentUrl ? '' : ' active') + '" data-url="' + escapeHtml(boletoAttachmentUrl) + '">Boleto</button>' : '')
-        + '</div><div class="pd-doc-actions">'
-        + (nfAttachmentUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(nfAttachmentUrl) + '">Nota Fiscal</a>' : '')
-        + (boletoAttachmentUrl ? '<a class="btn btn-ghost" target="_blank" rel="noopener" href="' + escapeHtml(boletoAttachmentUrl) + '">Boleto</a>' : '')
         + '</div></div><iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe></div>';
     }
     var o = document.createElement('div'); o.className = 'modal-overlay';
