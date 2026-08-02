@@ -521,6 +521,43 @@ body.booting #app-content {
     z-index: 5;
 }
 
+.theme-toggle {
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.theme-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+.theme-toggle .icon-sun {
+    display: none;
+}
+
+html[data-theme="black"] .theme-toggle .icon-moon {
+    display: none;
+}
+
+html[data-theme="black"] .theme-toggle .icon-sun {
+    display: inline;
+}
+
 .crumb {
     display: flex;
     align-items: center;
