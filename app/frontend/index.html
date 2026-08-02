@@ -10,14 +10,93 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/shared/base.css?v=60">
-    <link rel="stylesheet" href="css/shared/layout.css?v=60">
-    <link rel="stylesheet" href="css/shared/responsive.css?v=60">
-    <link rel="stylesheet" href="css/shared/theme.css?v=60">
-    <link rel="stylesheet" href="css/shared/shell.css?v=60">
+    <link rel="stylesheet" href="css/shared/base.css?v=61">
+    <link rel="stylesheet" href="css/shared/layout.css?v=61">
+    <link rel="stylesheet" href="css/shared/responsive.css?v=61">
+    <link rel="stylesheet" href="css/shared/theme.css?v=61">
+    <link rel="stylesheet" href="css/shared/shell.css?v=61">
+    <style>
+        .boot-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            background: #0e1116;
+            overflow: hidden;
+            transition: opacity .5s ease;
+            --gold: #d4b475;
+            --loop: 2.4s;
+            --dot: clamp(34px, 4.6vw, 96px);
+            --gap: calc(var(--dot) * .27);
+            --spread: calc(var(--dot) * 2.15);
+        }
+
+        .boot-loader.done {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .boot-loader .dots {
+            display: flex;
+            gap: var(--gap);
+        }
+
+        .boot-loader .dot {
+            width: var(--dot);
+            height: var(--dot);
+            border-radius: 50%;
+            background: var(--gold);
+            animation: boot-converge var(--loop) infinite;
+            animation-delay: calc(var(--i) * .08s);
+            will-change: transform, opacity;
+        }
+
+        @keyframes boot-converge {
+            0% {
+                opacity: 0;
+                transform: translateX(calc(var(--x) * var(--spread))) scale(.5);
+                animation-timing-function: cubic-bezier(.22, 1.32, .36, 1);
+            }
+
+            26% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                animation-timing-function: linear;
+            }
+
+            62% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                animation-timing-function: cubic-bezier(.55, 0, .85, .3);
+            }
+
+            88%,
+            100% {
+                opacity: 0;
+                transform: translateX(calc(var(--x) * var(--spread))) scale(.5);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .boot-loader .dot {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
 </head>
 
 <body class="booting">
+    <div class="boot-loader" id="boot-loader">
+        <div class="dots" role="progressbar" aria-label="Carregando">
+            <div class="dot" style="--i:0;--x:-1"></div>
+            <div class="dot" style="--i:1;--x:0"></div>
+            <div class="dot" style="--i:2;--x:1"></div>
+        </div>
+    </div>
+
     <aside class="sidebar" id="sidebar">
         <button class="collapse-btn" id="collapse-btn" type="button" title="Recolher menu" aria-label="Recolher menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
@@ -306,23 +385,23 @@
 
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-    <script src="js/shared/config.js?v=60"></script>
-    <script src="js/shared/api.js?v=60"></script>
-    <script src="js/shared/backend-client.js?v=60"></script>
-    <script src="js/shared/store.js?v=60"></script>
-    <script src="js/shared/data.js?v=60"></script>
-    <script src="js/shared/auth.js?v=60"></script>
-    <script src="js/shared/sidebar-user.js?v=60"></script>
-    <script src="js/shared/consulta-tabs.js?v=60"></script>
-    <script src="js/shared/process-detail-modal.js?v=60"></script>
-    <script src="js/shared/process-approvers-modal.js?v=60"></script>
-    <script src="js/shared/process-installments-modal.js?v=60"></script>
-    <script src="js/shared/process-filters.js?v=60"></script>
-    <script src="js/shared/process-list.js?v=60"></script>
-    <script src="js/apps/commissions/commission-launch.js?v=60"></script>
-    <script src="js/shared/shell.js?v=60"></script>
-    <script src="js/shared/router.js?v=60"></script>
-    <script src="js/shared/agent-widget.js?v=60"></script>
+    <script src="js/shared/config.js?v=61"></script>
+    <script src="js/shared/api.js?v=61"></script>
+    <script src="js/shared/backend-client.js?v=61"></script>
+    <script src="js/shared/store.js?v=61"></script>
+    <script src="js/shared/data.js?v=61"></script>
+    <script src="js/shared/auth.js?v=61"></script>
+    <script src="js/shared/sidebar-user.js?v=61"></script>
+    <script src="js/shared/consulta-tabs.js?v=61"></script>
+    <script src="js/shared/process-detail-modal.js?v=61"></script>
+    <script src="js/shared/process-approvers-modal.js?v=61"></script>
+    <script src="js/shared/process-installments-modal.js?v=61"></script>
+    <script src="js/shared/process-filters.js?v=61"></script>
+    <script src="js/shared/process-list.js?v=61"></script>
+    <script src="js/apps/commissions/commission-launch.js?v=61"></script>
+    <script src="js/shared/shell.js?v=61"></script>
+    <script src="js/shared/router.js?v=61"></script>
+    <script src="js/shared/agent-widget.js?v=61"></script>
 </body>
 
 </html>

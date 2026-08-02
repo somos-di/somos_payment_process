@@ -221,6 +221,14 @@ async function loadView(route, params) {
         if (stale()) return
         content.innerHTML = '<div class="view-error">Falha ao carregar a view: ' + escapeText(error.message) + '</div>'
     }
+    hideBootLoader()
+}
+
+function hideBootLoader() {
+    const loader = document.getElementById('boot-loader')
+    if (!loader) return
+    loader.classList.add('done')
+    setTimeout(function () { loader.remove() }, 600)
 }
 
 async function handleRoute() {
