@@ -57,6 +57,24 @@ body {
 .brand-name {
   color: var(--text);
   font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.brand .somos-dots {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+
+.brand .somos-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d4b475;
+}
+
+.brand .brand-sub {
+  color: #d4b475;
 }
 
 .brand-sub,
