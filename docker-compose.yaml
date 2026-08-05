@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -25,6 +32,7 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - somos
 
@@ -35,6 +43,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - somos
 
@@ -45,6 +54,7 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - somos
 
@@ -63,6 +73,7 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - somos
 
