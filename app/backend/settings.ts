@@ -38,7 +38,7 @@ export function getSettings(): AppSettings {
       user: process.env.UAU_USER || '',
       password: process.env.UAU_PASSWORD || '',
       xIntegration: process.env.UAU_X_INTEGRATION || '',
-      timeoutMs: Number(process.env.UAU_TIMEOUT_MS || 30000),
+      timeoutMs: Number(process.env.UAU_TIMEOUT_MS || 600000),
     },
     n8nBaseUrl: process.env.N8N_BASE_URL || '',
     integration: { webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '' },
