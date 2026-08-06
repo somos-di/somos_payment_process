@@ -10,7 +10,10 @@ export interface ProcessExtractResult {
   document_kind_id: number | null;
   payment_kind_id: number | null;
   document_number: string | null;
+  description: string | null;
+  additional_info: string | null;
   document_content: string | null;
   installment_quantity: number;
   is_urgente: number;
+  swapped_cnpj: boolean;
 }

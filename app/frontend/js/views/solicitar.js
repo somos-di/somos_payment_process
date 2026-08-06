@@ -337,6 +337,7 @@ async function initView_solicitar() {
     if (data.document_number != null && data.document_number !== '') selectElement('sol-numdoc').value = String(data.document_number);
     if (data.issue_date) selectElement('sol-emissao').value = String(data.issue_date).slice(0, 10);
     if (data.is_urgente != null) selectElement('sol-urgente').value = data.is_urgente ? '1' : '0';
+    if (data.additional_info) selectElement('sol-historico').value = String(data.additional_info);
     if (data.process_value != null && data.process_value !== '') {
       var amount = Number(String(data.process_value));
       if (!isNaN(amount) && amount > 0) selectElement('sol-valor').value = 'R$ ' + fmtBR(amount);
