@@ -43,6 +43,11 @@ export function getSettings(): AppSettings {
     n8nBaseUrl: process.env.N8N_BASE_URL || '',
     integration: { webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '' },
     reapproval: { workflowEndPoint: process.env.REAPROVAL_WORKFLOW_ENDPOINT || '' },
+    processCreator: {
+      baseUrl: process.env.PROCESS_CREATOR_URL || 'http://somos_process_creator:8000',
+      token: process.env.PROCESS_CREATOR_TOKEN || '',
+      timeoutMs: Number(process.env.PROCESS_CREATOR_TIMEOUT_MS || 120000),
+    },
   };
   return cachedSettings;
 }

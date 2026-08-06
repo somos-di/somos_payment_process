@@ -266,5 +266,103 @@ async function initView_solicitar() {
     });
   }
 
+  var quickBtn = selectElement('sol-quick'), quickFile = selectElement('sol-quick-file');
+  if (quickBtn && quickFile) {
+    quickBtn.addEventListener('click', function () { quickFile.value = ''; quickFile.click(); });
+    quickFile.addEventListener('change', function () { if (this.files[0]) runQuickLaunch(this.files[0]); });
+  }
+
+  function readBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result).split(',')[1] || ''); };
+      reader.onerror = function () { reject(new Error('Falha ao ler o arquivo')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setSelectIfOption(selector, value) {
+    if (value == null || value === '') return false;
+    var target = String(value);
+    var found = Array.prototype.some.call(selector.options, function (opt) { return opt.value === target; });
+    if (found) { selector.value = target; return true; }
+    return false;
+  }
+
+  async function prefillFromExtract(data) {
+    if (selectElement('sol-tipo').value === 'commission') selectElement('sol-tipo').value = '';
+    setSelectIfOption(selectElement('sol-tipo'), data.payment_kind_id);
+    applyMode();
+
+    if (setSelectIfOption(selectElement('sol-empresa'), data.company_id)) {
+      var building = selectElement('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
+      resetAppropriation('Carregando…');
+      try {
+        fill(building, await window.Store.get('obras', selectElement('sol-empresa').value), 'codigo', 'nome', 'Selecione uma obra');
+        building.disabled = false;
+      } catch (error) { building.innerHTML = '<option value="">Erro</option>'; building.disabled = false; }
+    }
+
+    if (data.building_id != null && setSelectIfOption(selectElement('sol-obra'), data.building_id)) {
+      try {
+        var rows = await window.Store.get('compositions_lk', selectElement('sol-empresa').value + '|' + selectElement('sol-obra').value);
+        var seen = {}; appropriationMap = {}; appropriationOptions = [];
+        rows.forEach(function (row) {
+          var key = row.codigo_composicao + '|' + row.codigo_insumo;
+          if (seen[key] || !row.codigo_composicao || !row.codigo_insumo) return; seen[key] = 1;
+          appropriationMap[key] = { comp: row.codigo_composicao, insumo: row.codigo_insumo };
+          appropriationOptions.push({ k: key, t: (row.descricao_composicao || row.codigo_composicao) + ' / ' + (row.descricao_insumo || row.codigo_insumo) });
+        });
+        apin.disabled = false; apin.placeholder = 'Busque a composição / insumo (' + appropriationOptions.length + ')…';
+        if (data.composition_code && data.supply_code) {
+          var apKey = data.composition_code + '|' + data.supply_code;
+          if (appropriationMap[apKey]) {
+            selectElement('sol-apropriacao').value = apKey;
+            var chosen = appropriationOptions.filter(function (option) { return option.k === apKey; })[0];
+            apin.value = chosen ? chosen.t : apKey;
+          }
+        }
+      } catch (error) { apin.placeholder = 'Erro ao carregar'; }
+    }
+
+    if (data.supplier_id != null) {
+      selectElement('sol-pessoa').value = String(data.supplier_id);
+      try {
+        var suppliers = await SB.select('v_fornecedores', function (query) { return query.eq('id', Number(data.supplier_id)).limit(1); });
+        personInput.value = (suppliers && suppliers[0] && suppliers[0].nome) ? suppliers[0].nome : ('Fornecedor #' + data.supplier_id);
+      } catch (error) { personInput.value = 'Fornecedor #' + data.supplier_id; }
+    }
+
+    setSelectIfOption(selectElement('sol-tipodoc'), data.document_kind_id);
+    if (data.document_number != null && data.document_number !== '') selectElement('sol-numdoc').value = String(data.document_number);
+    if (data.issue_date) selectElement('sol-emissao').value = String(data.issue_date).slice(0, 10);
+    if (data.is_urgente != null) selectElement('sol-urgente').value = data.is_urgente ? '1' : '0';
+    if (data.process_value != null && data.process_value !== '') {
+      var amount = Number(String(data.process_value));
+      if (!isNaN(amount) && amount > 0) selectElement('sol-valor').value = 'R$ ' + fmtBR(amount);
+    }
+    if (data.installment_quantity && Number(data.installment_quantity) > 0) selectElement('sol-qtd').value = String(Number(data.installment_quantity));
+    if (data.due_date) selectElement('sol-venc1').value = String(data.due_date).slice(0, 10);
+    if (selectElement('sol-valor').value && selectElement('sol-venc1').value) generateInstallments();
+
+    step = 1; show();
+  }
+
+  async function runQuickLaunch(file) {
+    var previous = quickBtn.textContent; quickBtn.disabled = true; quickBtn.textContent = 'Lendo documento…';
+    try {
+      var content = await readBase64(file);
+      var data = await window.API.post('/processes/quick/extract', { content: content });
+      await prefillFromExtract(data || {});
+      await upload(file, 'nf');
+      selectElement('sol-nf').disabled = true;
+      var nfDrop = document.querySelector('label.dropzone[for="sol-nf"]');
+      if (nfDrop) { nfDrop.style.pointerEvents = 'none'; nfDrop.style.opacity = '0.65'; }
+      toast('Documento lido. Confira os dados e ajuste o que precisar (a NF já foi anexada).', true);
+    } catch (error) {
+      toast('Não consegui ler o documento: ' + (error.message || 'erro'));
+    } finally { quickBtn.disabled = false; quickBtn.textContent = previous; }
+  }
+
   show();
 }

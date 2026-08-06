@@ -68,7 +68,11 @@
 
   <div class="card" style="padding:0">
     <div style="padding:20px;border-bottom:1px solid var(--border)">
-      <div class="section-title">Novo Processo</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px">
+        <div class="section-title">Novo Processo</div>
+        <button class="btn btn-primary" id="sol-quick" type="button" data-payonly>Lançamento rápido</button>
+      </div>
+      <input id="sol-quick-file" type="file" accept="image/*,application/pdf" hidden>
       <div class="field" style="max-width:420px;margin-top:12px">
         <label>Tipo de Processo</label>
         <select id="sol-tipo">
