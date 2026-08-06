@@ -1,5 +1,4 @@
-import base64
-import json
+from datetime import date, timedelta
 
 from postgrest import APIError
 from supabase import create_async_client, AsyncClient
@@ -7,14 +6,10 @@ from supabase.lib.client_options import AsyncClientOptions
 
 from settings import AppSettings
 
-
-def _jwt_sub(user_jwt: str) -> str | None:
-    try:
-        payload = user_jwt.split(".")[1]
-        payload += "=" * (-len(payload) % 4)
-        return json.loads(base64.urlsafe_b64decode(payload)).get("sub")
-    except Exception:
-        return None
+_PROCESS_FIELDS = (
+    "id_prc,uuid_prc,empresa_nome,obra_nome,fornecedor_nome,tipo_nome,"
+    "value_prc,status_nome,status_step_prc,is_urgent_prc,due_date_prc,description_prc"
+)
 
 
 class SupabaseGateway:
@@ -32,130 +27,100 @@ class SupabaseGateway:
         client.postgrest.auth(user_jwt)
         return client
 
-    async def get_launchable_kinds(self, user_jwt: str) -> list[dict]:
-        client = await self._client(user_jwt)
-        try:
-            response = await client.rpc("my_launchable_kinds", {}).execute()
-        except APIError as error:
-            raise RuntimeError(f"Falha ao buscar tipos de processo: {error.message}") from error
-        return response.data or []
-
-    async def get_document_kinds(self, user_jwt: str) -> list[dict]:
-        client = await self._client(user_jwt)
-        try:
-            response = await (
-                client.table("document_kinds")
-                .select("id_dck,name_dck")
-                .order("name_dck")
-                .execute()
-            )
-        except APIError as error:
-            raise RuntimeError(f"Falha ao buscar tipos de documento: {error.message}") from error
-        return response.data or []
-
-    async def get_companies(self, user_jwt: str, search: str | None = None, limit: int = 10) -> list[dict]:
-        client = await self._client(user_jwt)
-        try:
-            query = client.table("v_empresas").select("codigo,nome")
-            if search:
-                query = query.ilike("nome", f"%{search}%")
-            response = await query.order("nome").limit(limit).execute()
-        except APIError as error:
-            raise RuntimeError(f"Falha ao buscar empresas: {error.message}") from error
-        return response.data or []
-
-    async def get_buildings(self, user_jwt: str, company: str) -> list[dict]:
-        client = await self._client(user_jwt)
-        try:
-            response = await (
-                client.table("v_obras")
-                .select("codigo,nome")
-                .eq("empresa", company)
-                .order("nome")
-                .execute()
-            )
-        except APIError as error:
-            raise RuntimeError(f"Falha ao buscar obras: {error.message}") from error
-        return response.data or []
-
-    async def get_appropriations(
-        self,
-        user_jwt: str,
-        company: str,
-        building: str,
-        search: str | None = None,
-        limit: int = 10,
-    ) -> list[dict]:
-        client = await self._client(user_jwt)
-        try:
-            query = (
-                client.table("compositions")
-                .select("codigo_composicao,descricao_composicao,codigo_insumo,descricao_insumo")
-                .eq("empresa_cins", int(company))
-                .eq("obra_cins", building)
-            )
-            if search:
-                query = query.or_(
-                    f"descricao_composicao.ilike.%{search}%,descricao_insumo.ilike.%{search}%,"
-                    f"codigo_composicao.ilike.%{search}%,codigo_insumo.ilike.%{search}%"
-                )
-            response = await query.limit(2000).execute()
-        except APIError as error:
-            raise RuntimeError(f"Falha ao buscar composições: {error.message}") from error
-        except ValueError as error:
-            raise RuntimeError(f"Empresa inválida (esperado código numérico): {company}") from error
-
-        seen: set[tuple] = set()
-        results: list[dict] = []
-        for rule in response.data or []:
-            composition, supply = rule.get("codigo_composicao"), rule.get("codigo_insumo")
-            if not composition or not supply or (composition, supply) in seen:
-                continue
-            seen.add((composition, supply))
-            label = f"{rule.get('descricao_composicao') or composition} / {rule.get('descricao_insumo') or supply}"
-            results.append({"composition": composition, "supply": supply, "label": label})
-        return results[:limit]
-
     async def search_suppliers(self, user_jwt: str, term: str | None = None) -> list[dict]:
         client = await self._client(user_jwt)
         try:
             query = client.table("v_fornecedores").select("id,nome,cpf_cnpj")
             if term:
                 query = query.or_(f"nome.ilike.%{term}%,cpf_cnpj.ilike.%{term}%")
-            response = await query.order("nome").limit(100).execute()
+            response = await query.order("nome").limit(50).execute()
         except APIError as error:
             raise RuntimeError(f"Falha ao buscar fornecedores: {error.message}") from error
         return response.data or []
 
-    async def _user_department(self, client: AsyncClient, user_jwt: str) -> int | None:
-        user_id = _jwt_sub(user_jwt)
-        if not user_id:
-            return None
+    async def list_processes(
+        self,
+        user_jwt: str,
+        supplier: str | None = None,
+        company: str | None = None,
+        status: str | None = None,
+        urgent: bool | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        overdue: bool = False,
+        limit: int = 30,
+    ) -> list[dict]:
+        client = await self._client(user_jwt)
+        try:
+            query = client.table("v_processes").select(_PROCESS_FIELDS)
+            if supplier:
+                query = query.ilike("fornecedor_nome", f"%{supplier}%")
+            if company:
+                query = query.ilike("empresa_nome", f"%{company}%")
+            if status:
+                query = query.ilike("status_nome", f"%{status}%")
+            if urgent is not None:
+                query = query.eq("is_urgent_prc", "true" if urgent else "false")
+            if overdue:
+                query = query.lt("due_date_prc", date.today().isoformat())
+            if due_before:
+                query = query.lte("due_date_prc", due_before)
+            if due_after:
+                query = query.gte("due_date_prc", due_after)
+            response = await query.order("due_date_prc").limit(limit).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao consultar processos: {error.message}") from error
+        return response.data or []
+
+    async def get_process_by_id(self, user_jwt: str, id_prc: int) -> dict | None:
+        client = await self._client(user_jwt)
         try:
             response = await (
-                client.table("users")
-                .select("department_usr")
-                .eq("id_usr", user_id)
-                .maybe_single()
+                client.table("v_processes")
+                .select(_PROCESS_FIELDS)
+                .eq("id_prc", id_prc)
+                .limit(1)
                 .execute()
             )
-        except APIError:
-            return None
-        return (response.data or {}).get("department_usr")
-
-
-    async def create_process(self, user_jwt: str, process: dict, installments: list[dict]) -> dict:
-        client = await self._client(user_jwt)
-        if not process.get("department_prc"):
-            process["department_prc"] = await self._user_department(client, user_jwt)
-        try:
-            response = await client.rpc(
-                "create_process_with_installments",
-                {"p_process": process, "p_installments": installments},
-            ).execute()
         except APIError as error:
-            raise RuntimeError(f"Falha ao criar o processo: {error.message}") from error
-        return response.data or {}
+            raise RuntimeError(f"Falha ao buscar o processo: {error.message}") from error
+        rows = response.data or []
+        return rows[0] if rows else None
+
+    async def my_pending_approvals(self, user_jwt: str, limit: int = 50) -> list[dict]:
+        client = await self._client(user_jwt)
+        try:
+            pending = await client.rpc("my_pending_approvals", {}).execute()
+            ids = [row["id_prc"] for row in (pending.data or []) if row.get("id_prc")][:limit]
+            if not ids:
+                return []
+            response = await (
+                client.table("v_processes")
+                .select(_PROCESS_FIELDS)
+                .in_("id_prc", ids)
+                .order("due_date_prc")
+                .execute()
+            )
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar aprovações pendentes: {error.message}") from error
+        return response.data or []
+
+    async def get_completed_approvals(self, user_jwt: str, process_uuid: str) -> list[dict]:
+        client = await self._client(user_jwt)
+        try:
+            response = await client.rpc("completed_approvals", {"p_uuid": process_uuid}).execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao buscar aprovações concluídas: {error.message}") from error
+        return [
+            {
+                "name": rule.get("name"),
+                "email": rule.get("email"),
+                "group": rule.get("group_name"),
+                "level": rule.get("level"),
+                "approved_at": rule.get("approved_at"),
+            }
+            for rule in (response.data or [])
+        ]
 
     async def get_eligible_approvers(self, user_jwt: str, process_uuid: str) -> list[dict]:
         client = await self._client(user_jwt)
@@ -168,19 +133,48 @@ class SupabaseGateway:
             for rule in (response.data or [])
         ]
 
-    async def get_process_uuid(self, user_jwt: str, id_prc: int) -> str | None:
+    async def get_process_history(self, user_jwt: str, process_uuid: str, limit: int = 20) -> list[dict]:
         client = await self._client(user_jwt)
         try:
             response = await (
-                client.table("processes")
-                .select("uuid_prc")
-                .eq("id_prc", id_prc)
-                .maybe_single()
+                client.table("v_process_history")
+                .select("action_hst,kind_nome,user_nome,created_at_hst")
+                .eq("process_hst", process_uuid)
+                .order("created_at_hst", desc=True)
+                .order("id_hst", desc=True)
+                .limit(limit)
                 .execute()
             )
         except APIError as error:
-            raise RuntimeError(f"Falha ao buscar o processo: {error.message}") from error
-        return (response.data or {}).get("uuid_prc")
+            raise RuntimeError(f"Falha ao buscar histórico: {error.message}") from error
+        return response.data or []
+
+    async def processes_overview(self, user_jwt: str) -> dict:
+        client = await self._client(user_jwt)
+        today = date.today().isoformat()
+        soon = (date.today() + timedelta(days=7)).isoformat()
+        try:
+            pending = await client.rpc("my_pending_approvals", {}).execute()
+            processes = await (
+                client.table("v_processes")
+                .select("status_step_prc,is_urgent_prc,due_date_prc")
+                .execute()
+            )
+        except APIError as error:
+            raise RuntimeError(f"Falha ao montar o resumo: {error.message}") from error
+        rows = processes.data or []
+        overdue = sum(1 for row in rows if row.get("due_date_prc") and row["due_date_prc"] < today)
+        due_soon = sum(
+            1 for row in rows if row.get("due_date_prc") and today <= row["due_date_prc"] <= soon
+        )
+        urgent = sum(1 for row in rows if row.get("is_urgent_prc"))
+        return {
+            "aguardando_minha_aprovacao": len(pending.data or []),
+            "visiveis_no_total": len(rows),
+            "urgentes": urgent,
+            "vencendo_em_7_dias": due_soon,
+            "vencidos": overdue,
+        }
 
     def close(self) -> None:
         return None
