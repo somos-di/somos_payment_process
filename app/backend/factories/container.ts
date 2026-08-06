@@ -6,6 +6,7 @@ import { CatalogController } from '../controllers/catalogController.js';
 import { DataController } from '../controllers/dataController.js';
 import { ProcessesController } from '../controllers/processesController.js';
 import { SyncController } from '../controllers/syncController.js';
+import { ProcessCreatorGateway } from '../gateways/processCreator.js';
 import { createRedisClient } from '../gateways/redis.js';
 import { UauGateway } from '../gateways/uau.js';
 import { AdminService } from '../services/adminService.js';
@@ -27,13 +28,14 @@ export function createContainer(): Container {
   const processesService = new ProcessesService();
   const catalogService = new CatalogService(cache);
   const uauIntegrationService = new UauIntegrationService(catalogService);
+  const processCreatorGateway = new ProcessCreatorGateway(settings);
   const uauSyncService = new UauSyncService(uauGateway, warmer);
   const authService = new AuthService();
   const dataService = new DataService(cache);
   const adminService = new AdminService();
 
   const controllers: ControllersContainer = {
-    processes: new ProcessesController(processesService, uauIntegrationService),
+    processes: new ProcessesController(processesService, uauIntegrationService, processCreatorGateway),
     sync: new SyncController(uauSyncService),
     auth: new AuthController(authService),
     data: new DataController(dataService),

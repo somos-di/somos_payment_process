@@ -14,6 +14,12 @@ export interface ReapprovalSettings {
   workflowEndPoint: string;
 }
 
+export interface ProcessCreatorSettings {
+  baseUrl: string;
+  token: string;
+  timeoutMs: number;
+}
+
 export interface AppSettings {
   port: number;
   host: string;
@@ -33,4 +39,5 @@ export interface AppSettings {
   n8nBaseUrl: string;
   integration: IntegrationSettings;
   reapproval: ReapprovalSettings;
+  processCreator: ProcessCreatorSettings;
 }

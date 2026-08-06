@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { NotFoundError } from '../errors.js';
+import type { ProcessCreatorGateway } from '../gateways/processCreator.js';
 import type { ProcessesService } from '../services/processesService.js';
 import type { UauIntegrationService } from '../services/uauIntegrationService.js';
 import type { ProcessListRoute, UuidActionRoute, UuidRoute } from '../types/http.js';
@@ -13,6 +14,7 @@ const SolicitationSchema = z.object({
 });
 const BulkSchema = z.object({ items: z.array(SolicitationSchema).min(1).max(1000) });
 const LogSchema = z.object({ action: z.string().min(1).max(200), kind: z.number().int().positive().optional() });
+const QuickExtractSchema = z.object({ content: z.string().min(1) });
 const CorrectSchema = z.object({
   process: boundedRecord,
   installments: z.array(InstallmentSchema).optional(),
@@ -37,8 +39,10 @@ export class ProcessesController {
   constructor(
     private readonly service: ProcessesService,
     private readonly uauIntegration: UauIntegrationService,
+    private readonly processCreator: ProcessCreatorGateway,
   ) {
     this.list = this.list.bind(this);
+    this.quickExtract = this.quickExtract.bind(this);
     this.get = this.get.bind(this);
     this.createFull = this.createFull.bind(this);
     this.createBulk = this.createBulk.bind(this);
@@ -83,6 +87,12 @@ export class ProcessesController {
     const { action, kind } = LogSchema.parse(request.body);
     await this.service.log(request.accessToken!, uuid, action, kind);
     return reply.send({ success: true });
+  }
+
+  async quickExtract(request: FastifyRequest, reply: FastifyReply) {
+    const { content } = QuickExtractSchema.parse(request.body);
+    const data = await this.processCreator.extractFromDocument(content);
+    return reply.send({ success: true, data });
   }
 
   async list(request: FastifyRequest<ProcessListRoute>, reply: FastifyReply) {

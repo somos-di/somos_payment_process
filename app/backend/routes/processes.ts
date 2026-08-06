@@ -12,5 +12,6 @@ export function registerProcessesRoutes(app: FastifyInstance, processes_center: 
   app.post('/processes/:uuid/correct', processes_center.correct);
   app.post('/processes/:uuid/admin-edit', processes_center.adminEdit);
   app.post('/processes/:uuid/installments', processes_center.setInstallments);
+  app.post('/processes/quick/extract', processes_center.quickExtract);
   app.post('/processes/:uuid/:action', processes_center.action);
 }
