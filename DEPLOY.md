@@ -18,7 +18,7 @@ docker compose version   # confirma o plugin v2
 sudo mkdir -p /var/www && sudo chown "$USER" /var/www
 cd /var/www
 git clone git@github.com:luduvico-neto/somos_payment_process.git somos_payment_process
-cd somos_payment_process
+cd somos_payment_process 
 ```
 
 > O caminho **`/var/www/somos_payment_process`** está fixo no `cd.yml`. Se usar outro, ajuste lá.
