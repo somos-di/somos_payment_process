@@ -55,7 +55,7 @@
     s.textContent = [
       '.agw-root{position:fixed;right:20px;bottom:20px;z-index:9998;display:none}',
       '.agw-bubble{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:var(--accent,#2563eb);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}',
-      '.agw-panel{position:absolute;right:0;bottom:68px;width:360px;max-width:calc(100vw - 40px);height:480px;max-height:calc(100vh - 120px);background:var(--surface,#fff);color:var(--text,#1f2937);border:1px solid var(--border,#e5e7eb);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.2);display:none;flex-direction:column;overflow:hidden}',
+      '.agw-panel{position:absolute;right:0;bottom:68px;width:440px;max-width:calc(100vw - 40px);height:640px;max-height:calc(100vh - 120px);background:var(--surface,#fff);color:var(--text,#1f2937);border:1px solid var(--border,#e5e7eb);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.2);display:none;flex-direction:column;overflow:hidden}',
       '.agw-open .agw-panel{display:flex}',
       '.agw-header{padding:12px 14px;font-weight:600;border-bottom:1px solid var(--border,#e5e7eb);display:flex;align-items:center;gap:8px}',
       '.agw-header svg{width:20px;height:20px}',
