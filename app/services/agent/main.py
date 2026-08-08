@@ -38,8 +38,8 @@ async def chat(body: ChatRequest, request: Request):
 
     async def sse():
         try:
-            async for token in stream_turn(body.conversation_id, body.message, user_jwt):
-                yield f"data: {json.dumps({'delta': token}, ensure_ascii=False)}\n\n"
+            async for chunk in stream_turn(body.conversation_id, body.message, user_jwt):
+                yield f"data: {chunk.model_dump_json()}\n\n"
             yield "event: done\ndata: {}\n\n"
         except Exception as error:
             logger.exception("Falha no /chat")

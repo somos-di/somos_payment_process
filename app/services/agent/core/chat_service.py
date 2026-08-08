@@ -3,7 +3,9 @@ from typing import AsyncIterator
 
 from constants.system_prompt import SYSTEM_PROMPT
 from gateways import get_azure_gateway, get_conversation_gateway, get_mcp_gateway
+from models.chat import ActionsChunk, DeltaChunk, ProcessAction, StreamChunk
 
+from .actions import collect_actions
 from .streaming import ToolCallAccumulator
 from .tool_mapper import to_openai_tool, tool_result_to_text
 
@@ -14,7 +16,7 @@ def _system_prompt(mcp_instructions: str | None) -> str:
     return SYSTEM_PROMPT
 
 
-async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) -> AsyncIterator[str]:
+async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) -> AsyncIterator[StreamChunk]:
     azure = get_azure_gateway()
     mcp_gateway = get_mcp_gateway()
     conversations = get_conversation_gateway()
@@ -27,6 +29,7 @@ async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) ->
             messages = [{"role": "system", "content": _system_prompt(getattr(init, "instructions", None))}]
         messages.append({"role": "user", "content": user_message})
 
+        actions: dict[str, ProcessAction] = {}
         while True:
             calls = ToolCallAccumulator()
             assistant_text = ""
@@ -40,7 +43,7 @@ async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) ->
                 delta = choice.delta
                 if delta and delta.content:
                     assistant_text += delta.content
-                    yield delta.content
+                    yield DeltaChunk(delta=delta.content)
                 if delta and delta.tool_calls:
                     calls.add(delta.tool_calls)
                 if choice.finish_reason:
@@ -51,12 +54,21 @@ async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) ->
                     messages.append({"role": "assistant", "content": assistant_text})
                 break
 
-            await _resolve_tool_round(session, messages, assistant_text, calls.ordered())
+            await _resolve_tool_round(session, messages, assistant_text, calls.ordered(), actions)
+
+        if actions:
+            yield ActionsChunk(actions=list(actions.values()))
 
         await conversations.save(conversation_id, messages)
 
 
-async def _resolve_tool_round(session, messages: list[dict], assistant_text: str, ordered_calls: list[dict]) -> None:
+async def _resolve_tool_round(
+    session,
+    messages: list[dict],
+    assistant_text: str,
+    ordered_calls: list[dict],
+    actions: dict[str, ProcessAction],
+) -> None:
     messages.append(
         {
             "role": "assistant",
@@ -77,6 +89,7 @@ async def _resolve_tool_round(session, messages: list[dict], assistant_text: str
             args = json.loads(call["args"] or "{}")
             result = await session.call_tool(call["name"], args)
             output = tool_result_to_text(result)
+            collect_actions(call["name"], output, actions)
         except Exception as error:
             output = json.dumps({"error": str(error)}, ensure_ascii=False)
         messages.append({"role": "tool", "tool_call_id": call["id"], "content": output})
