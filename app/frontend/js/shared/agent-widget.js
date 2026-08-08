@@ -114,7 +114,27 @@
       '.agw-send{border:none;background:var(--accent,#2563eb);color:#fff;border-radius:10px;padding:0 14px;cursor:pointer;font-size:16px}',
       '.agw-send:disabled{opacity:.5;cursor:default}',
       '.agw-resize{position:absolute;top:0;left:0;width:16px;height:16px;cursor:nwse-resize;z-index:3}',
-      '.agw-resize::before{content:"";position:absolute;top:6px;left:6px;width:6px;height:6px;border-top:2px solid var(--muted,#9ca3af);border-left:2px solid var(--muted,#9ca3af);border-top-left-radius:3px;opacity:.6}'
+      '.agw-resize::before{content:"";position:absolute;top:6px;left:6px;width:6px;height:6px;border-top:2px solid var(--muted,#9ca3af);border-left:2px solid var(--muted,#9ca3af);border-top-left-radius:3px;opacity:.6}',
+      '.agw-actions{display:flex;flex-direction:column;gap:8px}',
+      '.agw-act-head{font-size:12px;font-weight:600;color:var(--muted,#6b7280);text-transform:uppercase;letter-spacing:.03em}',
+      '.agw-actcard{border:1px solid var(--border,#e5e7eb);border-radius:12px;background:var(--surface-2,#f7f8fa);padding:10px 12px;display:flex;flex-direction:column;gap:10px}',
+      '.agw-act-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}',
+      '.agw-act-f{display:flex;flex-direction:column;gap:1px;min-width:0}',
+      '.agw-act-f span{font-size:11px;color:var(--muted,#6b7280)}',
+      '.agw-act-f b{font-size:13px;font-weight:600;word-break:break-word}',
+      '.agw-act-f:last-child{grid-column:1 / -1}',
+      '.agw-act-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
+      '.agw-act-btn{border:none;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}',
+      '.agw-act-btn:disabled{opacity:.5;cursor:default}',
+      '.agw-act-yes{background:#22c55e;color:#fff}',
+      '.agw-act-no{background:#ef4444;color:#fff}',
+      '.agw-act-cancel{background:var(--surface-3,#e5e7eb);color:var(--text,#1f2937)}',
+      '.agw-act-q{font-size:13px;flex:1 1 100%}',
+      '.agw-act-reason{flex:1 1 100%;resize:vertical;border:1px solid var(--border,#e5e7eb);border-radius:9px;padding:8px;font-size:13px;font-family:inherit;background:var(--surface,#fff);color:var(--text,#1f2937);outline:none}',
+      '.agw-act-done{font-size:13px;font-weight:600}',
+      '.agw-act-done.ok{color:#16a34a}',
+      '.agw-act-done.warn{color:#d97706}',
+      '.agw-act-done.err{color:#dc2626}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -213,6 +233,110 @@
     elements.body.scrollTop = elements.body.scrollHeight;
   }
 
+  function money(value) {
+    return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function fmtDate(value) {
+    if (!value) return '—';
+    var parts = String(value).slice(0, 10).split('-');
+    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(value);
+  }
+
+  function invalidateApprovalCaches() {
+    if (!window.Store) return;
+    ['my_approvals', 'financeiro', 'financeiro_integrados', 'history', 'no_approver'].forEach(function (key) {
+      window.Store.invalidate(key);
+    });
+  }
+
+  function actionField(label, value) {
+    return '<div class="agw-act-f"><span>' + mdEscape(label) + '</span><b>' + mdEscape(value) + '</b></div>';
+  }
+
+  function settle(card, message, css) {
+    var foot = card.querySelector('.agw-act-foot');
+    foot.className = 'agw-act-foot agw-act-done ' + css;
+    foot.textContent = message;
+  }
+
+  function approveFlow(card, action, foot) {
+    foot.innerHTML = '';
+    var question = element('span', 'agw-act-q', 'Confirmar a aprovação do processo #' + mdEscape(String(action.id)) + '?');
+    var confirm = element('button', 'agw-act-btn agw-act-yes', 'Confirmar');
+    var cancel = element('button', 'agw-act-btn agw-act-cancel', 'Cancelar');
+    foot.appendChild(question);
+    foot.appendChild(confirm);
+    foot.appendChild(cancel);
+    cancel.addEventListener('click', function () { renderFoot(card, action, foot); });
+    confirm.addEventListener('click', function () {
+      confirm.disabled = true;
+      cancel.disabled = true;
+      window.API.post('/processes/' + action.uuid + '/approve')
+        .then(function () { invalidateApprovalCaches(); settle(card, 'Processo #' + action.id + ' aprovado.', 'ok'); })
+        .catch(function (error) { settle(card, 'Falha ao aprovar: ' + (error && error.message ? error.message : error), 'err'); });
+    });
+  }
+
+  function rejectFlow(card, action, foot) {
+    foot.innerHTML = '';
+    var reason = element('textarea', 'agw-act-reason');
+    reason.rows = 2;
+    reason.maxLength = 500;
+    reason.placeholder = 'Motivo da reprovação (obrigatório — fica no histórico)…';
+    var confirm = element('button', 'agw-act-btn agw-act-no', 'Confirmar reprovação');
+    confirm.disabled = true;
+    var cancel = element('button', 'agw-act-btn agw-act-cancel', 'Cancelar');
+    foot.appendChild(reason);
+    foot.appendChild(confirm);
+    foot.appendChild(cancel);
+    reason.focus();
+    reason.addEventListener('input', function () { confirm.disabled = !reason.value.trim(); });
+    cancel.addEventListener('click', function () { renderFoot(card, action, foot); });
+    confirm.addEventListener('click', function () {
+      var text = reason.value.trim();
+      if (!text) return;
+      confirm.disabled = true;
+      cancel.disabled = true;
+      window.API.post('/processes/' + action.uuid + '/reject', { reason: text })
+        .then(function () { invalidateApprovalCaches(); settle(card, 'Processo #' + action.id + ' reprovado.', 'warn'); })
+        .catch(function (error) { settle(card, 'Falha ao reprovar: ' + (error && error.message ? error.message : error), 'err'); });
+    });
+  }
+
+  function renderFoot(card, action, foot) {
+    foot.innerHTML = '';
+    var approve = element('button', 'agw-act-btn agw-act-yes', 'Aprovar');
+    var reject = element('button', 'agw-act-btn agw-act-no', 'Reprovar');
+    foot.appendChild(approve);
+    foot.appendChild(reject);
+    approve.addEventListener('click', function () { approveFlow(card, action, foot); });
+    reject.addEventListener('click', function () { rejectFlow(card, action, foot); });
+  }
+
+  function renderActions(list) {
+    if (!window.API) return;
+    var block = element('div', 'agw-actions');
+    block.appendChild(element('div', 'agw-act-head', 'Aprovar ou reprovar'));
+    list.forEach(function (action) {
+      var card = element('div', 'agw-actcard');
+      card.innerHTML = '<div class="agw-act-grid">'
+        + actionField('Processo', '#' + action.id)
+        + actionField('Empresa', action.empresa || '—')
+        + actionField('Obra', action.obra || '—')
+        + actionField('Valor', money(action.valor))
+        + actionField('Vencimento', fmtDate(action.vencimento))
+        + actionField('Descrição', action.descricao || '—')
+        + '</div>';
+      var foot = element('div', 'agw-act-foot');
+      card.appendChild(foot);
+      renderFoot(card, action, foot);
+      block.appendChild(card);
+    });
+    elements.body.appendChild(block);
+    scrollBottom();
+  }
+
   async function onSubmit(event) {
     event.preventDefault();
     var text = elements.input.value.trim();
@@ -226,6 +350,7 @@
     target.innerHTML = TYPING;
     var accumulator = '';
     var streaming = false;
+    var actions = [];
 
     function stopTyping() {
       if (!streaming) {
@@ -262,13 +387,14 @@
           try { data = JSON.parse(payload); } catch (error) { continue; }
           stopTyping();
           if (data.error) accumulator += '\n[erro] ' + data.error;
+          else if (data.actions) actions = data.actions;
           else if (data.delta) accumulator += data.delta;
-          target.innerHTML = renderMd(accumulator);
-          scrollBottom();
+          if (!data.actions) { target.innerHTML = renderMd(accumulator); scrollBottom(); }
         }
       }
       stopTyping();
       if (!accumulator) target.textContent = 'Sem resposta.';
+      if (actions.length) renderActions(actions);
     } catch (error) {
       stopTyping();
       target.textContent = 'Erro: ' + (error && error.message ? error.message : String(error));
