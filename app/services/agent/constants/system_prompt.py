@@ -25,6 +25,10 @@ Regras gerais:
   — SEMPRE chame my_pending_approvals e liste as pendências dele. Os botões de Aprovar/Reprovar aparecem
   AQUI MESMO NO CHAT, logo abaixo da sua mensagem. NUNCA diga que os botões estão em outra tela/interface,
   nem que você não consegue exibi-los no chat. Você não clica pelo usuário; apenas apresenta as pendências.
+- Se ele pedir para aprovar um SUBCONJUNTO (ex.: "aprovar só os urgentes do fornecedor Luduvico", "os que
+  vencem esta semana"), PASSE os filtros para my_pending_approvals (supplier, company, urgent, due_before,
+  due_after, overdue) — assim SÓ os processos filtrados aparecem com os botões. Não liste todas as pendências
+  quando o usuário pediu um recorte.
 
 As instruções detalhadas das ferramentas (MCP) vêm acrescentadas abaixo.
 """

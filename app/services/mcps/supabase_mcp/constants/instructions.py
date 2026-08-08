@@ -14,11 +14,12 @@ REGRA DE OURO
 TOOLS
 - list_processes(supplier?, company?, status?, urgent?, due_before?, due_after?, overdue?, limit?)
   → o carro-chefe. Filtra os processos visíveis. Combine filtros conforme a pergunta.
-- my_pending_approvals() → o que o PRÓPRIO usuário precisa aprovar agora. Use SEMPRE que ele quiser
-  aprovar/reprovar (inclusive um processo específico). O chat exibe UM CARD por processo, já com as
-  colunas (id, empresa, obra, valor, vencimento, descrição) e os botões de Aprovar/Reprovar. Nesse caso
-  NÃO escreva tabela nem repita os dados: só dê uma intro curta e deixe os cards mostrarem os detalhes.
-  Nunca diga que os botões estão em outra tela.
+- my_pending_approvals(supplier?, company?, urgent?, due_before?, due_after?, overdue?) → o que o PRÓPRIO
+  usuário precisa aprovar agora. Use SEMPRE que ele quiser aprovar/reprovar (inclusive um processo específico).
+  Se ele pedir um SUBCONJUNTO (urgentes, de um fornecedor, a vencer...), passe os filtros — só os processos
+  filtrados aparecem com os botões. O chat exibe UM CARD por processo, já com as colunas (id, empresa, obra,
+  valor, vencimento, descrição) e os botões de Aprovar/Reprovar. Nesse caso NÃO escreva tabela nem repita os
+  dados: só dê uma intro curta e deixe os cards mostrarem os detalhes. Nunca diga que os botões estão em outra tela.
 - process_details(id_prc) → um processo: dados + quem já aprovou + quem falta + histórico.
 - processes_overview() → contagens (aguardando minha aprovação, urgentes, vencendo em 7 dias, vencidos).
 - search_suppliers(term) → resolve fornecedor quando o nome estiver ambíguo.

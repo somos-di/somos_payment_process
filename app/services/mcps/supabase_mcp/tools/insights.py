@@ -41,11 +41,25 @@ async def list_processes(
 
 
 async def my_pending_approvals(
+    supplier: str | None = None,
+    company: str | None = None,
+    urgent: bool | None = None,
+    due_before: str | None = None,
+    due_after: str | None = None,
+    overdue: bool = False,
     supabase_gateway: SupabaseGateway = Depends(get_supabase_gateway),
     user_jwt: str = Depends(get_user_jwt),
 ) -> list[dict] | str:
-    rows = await supabase_gateway.my_pending_approvals(user_jwt)
-    return rows or "Você não tem nenhum processo aguardando a sua aprovação."
+    rows = await supabase_gateway.my_pending_approvals(
+        user_jwt,
+        supplier=supplier,
+        company=company,
+        urgent=urgent,
+        due_before=due_before,
+        due_after=due_after,
+        overdue=overdue,
+    )
+    return rows or "Você não tem processos aguardando a sua aprovação com esses critérios."
 
 
 async def process_details(
@@ -102,7 +116,12 @@ tools = (
         name="my_pending_approvals",
         description=(
             "Lista os processos que estão aguardando a aprovação DO PRÓPRIO usuário logado agora. "
-            "Use quando ele perguntar 'o que tenho para aprovar', 'minhas aprovações pendentes' etc."
+            "Use quando ele perguntar 'o que tenho para aprovar' e SEMPRE que ele quiser aprovar/reprovar. "
+            "Aceita os MESMOS filtros opcionais de list_processes para RESTRINGIR o que aparece com os botões: "
+            "supplier (fornecedor), company (empresa), urgent (true/false), due_before/due_after (YYYY-MM-DD), "
+            "overdue (true = vencidos). Ex.: 'quero aprovar os urgentes do fornecedor X' → "
+            "my_pending_approvals(supplier='X', urgent=true). Sem filtro, retorna todas as pendências. "
+            "O filtro só RESTRINGE dentro do que ele já pode aprovar — nunca amplia nem traz processo de outro."
         ),
         tags=_TAGS,
         annotations=_READ_ONLY,
