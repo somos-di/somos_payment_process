@@ -206,6 +206,12 @@
     state.conversationId = newId();
     bubble.addEventListener('click', toggle);
     form.addEventListener('submit', onSubmit);
+    document.addEventListener('mousedown', function (event) {
+      if (state.open && !elements.root.contains(event.target)) {
+        state.open = false;
+        elements.root.classList.remove('agw-open');
+      }
+    });
   }
 
   function toggle() {
