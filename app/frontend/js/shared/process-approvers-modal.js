@@ -80,6 +80,8 @@
     renderCol('next');
 
     try {
+      window.Store.invalidateKey('approvers', uuid);
+      window.Store.invalidateKey('eligible_approvers', uuid);
       data.done = await window.Store.get('approvers', uuid);
       renderCol('done');
       data.elig = await window.Store.get('eligible_approvers', uuid);
