@@ -19,6 +19,8 @@ def _parse_rows(output: str) -> list[object]:
         parsed = json.loads(output)
     except (ValueError, TypeError):
         return []
+    if isinstance(parsed, dict):
+        parsed = parsed.get("result")
     return parsed if isinstance(parsed, list) else []
 
 
