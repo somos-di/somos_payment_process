@@ -112,9 +112,48 @@
       '.agw-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border,#e5e7eb)}',
       '.agw-input{flex:1;padding:9px 12px;border:1px solid var(--border,#e5e7eb);border-radius:10px;font-size:14px;outline:none;background:var(--surface,#fff);color:var(--text,#1f2937)}',
       '.agw-send{border:none;background:var(--accent,#2563eb);color:#fff;border-radius:10px;padding:0 14px;cursor:pointer;font-size:16px}',
-      '.agw-send:disabled{opacity:.5;cursor:default}'
+      '.agw-send:disabled{opacity:.5;cursor:default}',
+      '.agw-resize{position:absolute;top:0;left:0;width:16px;height:16px;cursor:nwse-resize;z-index:3}',
+      '.agw-resize::before{content:"";position:absolute;top:6px;left:6px;width:6px;height:6px;border-top:2px solid var(--muted,#9ca3af);border-left:2px solid var(--muted,#9ca3af);border-top-left-radius:3px;opacity:.6}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  function applySavedSize(panel) {
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem('agw-size') || 'null'); } catch (error) { saved = null; }
+    if (saved && saved.w && saved.h) {
+      panel.style.width = saved.w + 'px';
+      panel.style.height = saved.h + 'px';
+    }
+  }
+
+  function setupResize(panel, grip) {
+    var startX, startY, startW, startH, dragging = false;
+    function onMove(event) {
+      if (!dragging) return;
+      var maxW = window.innerWidth - 40;
+      var maxH = window.innerHeight - 90;
+      panel.style.width = Math.max(320, Math.min(maxW, startW + (startX - event.clientX))) + 'px';
+      panel.style.height = Math.max(360, Math.min(maxH, startH + (startY - event.clientY))) + 'px';
+    }
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.userSelect = '';
+      try { localStorage.setItem('agw-size', JSON.stringify({ w: panel.offsetWidth, h: panel.offsetHeight })); } catch (error) { }
+    }
+    grip.addEventListener('mousedown', function (event) {
+      event.preventDefault();
+      dragging = true;
+      startX = event.clientX; startY = event.clientY;
+      startW = panel.offsetWidth; startH = panel.offsetHeight;
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
   }
 
   function build() {
@@ -122,7 +161,7 @@
     var root = element('div', 'agw-root');
     var bubble = element('button', 'agw-bubble', ROBOT);
     var panel = element('div', 'agw-panel');
-    panel.appendChild(element('div', 'agw-header', ROBOT + '<span>Assistente</span>'));
+    panel.appendChild(element('div', 'agw-header', '<span>Tulipa</span>'));
     var body = element('div', 'agw-body');
     var form = element('form', 'agw-form');
     var input = element('input', 'agw-input');
@@ -134,6 +173,11 @@
     form.appendChild(send);
     panel.appendChild(body);
     panel.appendChild(form);
+    var grip = element('div', 'agw-resize');
+    grip.title = 'Arraste para redimensionar';
+    panel.appendChild(grip);
+    applySavedSize(panel);
+    setupResize(panel, grip);
     root.appendChild(panel);
     root.appendChild(bubble);
     document.body.appendChild(root);
