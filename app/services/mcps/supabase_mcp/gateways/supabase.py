@@ -87,20 +87,37 @@ class SupabaseGateway:
         rows = response.data or []
         return rows[0] if rows else None
 
-    async def my_pending_approvals(self, user_jwt: str, limit: int = 50) -> list[dict]:
+    async def my_pending_approvals(
+        self,
+        user_jwt: str,
+        supplier: str | None = None,
+        company: str | None = None,
+        urgent: bool | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        overdue: bool = False,
+        limit: int = 50,
+    ) -> list[dict]:
         client = await self._client(user_jwt)
         try:
             pending = await client.rpc("my_pending_approvals", {}).execute()
             ids = [row["id_prc"] for row in (pending.data or []) if row.get("id_prc")][:limit]
             if not ids:
                 return []
-            response = await (
-                client.table("v_processes")
-                .select(_PROCESS_FIELDS)
-                .in_("id_prc", ids)
-                .order("due_date_prc")
-                .execute()
-            )
+            query = client.table("v_processes").select(_PROCESS_FIELDS).in_("id_prc", ids)
+            if supplier:
+                query = query.ilike("fornecedor_nome", f"%{supplier}%")
+            if company:
+                query = query.ilike("empresa_nome", f"%{company}%")
+            if urgent is not None:
+                query = query.eq("is_urgent_prc", "true" if urgent else "false")
+            if overdue:
+                query = query.lt("due_date_prc", date.today().isoformat())
+            if due_before:
+                query = query.lte("due_date_prc", due_before)
+            if due_after:
+                query = query.gte("due_date_prc", due_after)
+            response = await query.order("due_date_prc").execute()
         except APIError as error:
             raise RuntimeError(f"Falha ao buscar aprovações pendentes: {error.message}") from error
         return response.data or []
