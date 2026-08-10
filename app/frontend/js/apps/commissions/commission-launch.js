@@ -24,7 +24,7 @@
     + '</style>'
     + '<div class="cl-wrap">'
     + '<div class="cl-head">Dados da comissão</div>'
-    + '<div class="cl-sub">Selecione o empreendimento (define a trilha SOMOS/PARTINI). Sem parcelas e sem aprovação — segue direto para validação da trilha.</div>'
+    + '<div class="cl-sub">Selecione o empreendimento (define a trilha SOMOS/PARTINI). Sem parcelas e sem aprovação - segue direto para validação da trilha.</div>'
     + '<div class="form-grid cols-2">'
     + '<div class="field full"><label>Empreendimento</label><select id="cl-emp"><option value="">Carregando…</option></select></div>'
     + '<div class="field"><label>Unidade</label><input id="cl-unit" placeholder="Ex.: Apto 101 / Torre A" maxlength="100"></div>'
@@ -59,7 +59,7 @@
       var rows = (await window.Store.get('comm_empreendimentos') || []).filter(function (item) { return item.active_cem; });
       selectElement('cl-emp').innerHTML = '<option value="">Selecione o empreendimento</option>' + rows.map(function (row) {
         byId[row.id_cem] = row;
-        return '<option value="' + escapeHtml(row.id_cem) + '">' + escapeHtml(row.name_cem) + ' — ' + escapeHtml(row.trilha) + '</option>';
+        return '<option value="' + escapeHtml(row.id_cem) + '">' + escapeHtml(row.name_cem) + ' - ' + escapeHtml(row.trilha) + '</option>';
       }).join('');
     } catch (error) { selectElement('cl-emp').innerHTML = '<option value="">Erro ao carregar</option>'; toast('Falha ao carregar empreendimentos: ' + error.message); }
 

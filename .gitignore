@@ -4,7 +4,7 @@ node_modules/
 dist/
 **/dist/
 
-# segredos — NUNCA versionar (mantém só os .env.example)
+# segredos - NUNCA versionar (mantém só os .env.example)
 .env
 **/.env
 !**/.env.example

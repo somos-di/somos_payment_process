@@ -17,12 +17,12 @@
         const emailEl = document.getElementById('user-email')
         const avatarEl = document.getElementById('user-avatar')
         if (user) {
-            const handle = (user.name || (user.email || '').split('@')[0]) || '—'
+            const handle = (user.name || (user.email || '').split('@')[0]) || '-'
             if (nameEl) nameEl.textContent = handle
             if (emailEl) emailEl.textContent = user.email || ''
             if (avatarEl) avatarEl.textContent = (handle[0] || '·').toUpperCase()
         } else {
-            if (nameEl) nameEl.textContent = '—'
+            if (nameEl) nameEl.textContent = '-'
             if (emailEl) emailEl.textContent = ''
             if (avatarEl) avatarEl.textContent = '·'
         }

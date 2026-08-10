@@ -244,7 +244,7 @@
   }
 
   function fmtDate(value) {
-    if (!value) return '—';
+    if (!value) return '-';
     var parts = String(value).slice(0, 10).split('-');
     return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(value);
   }
@@ -289,7 +289,7 @@
     var reason = element('textarea', 'agw-act-reason');
     reason.rows = 2;
     reason.maxLength = 500;
-    reason.placeholder = 'Motivo da reprovação (obrigatório — fica no histórico)…';
+    reason.placeholder = 'Motivo da reprovação (obrigatório - fica no histórico)…';
     var confirm = element('button', 'agw-act-btn agw-act-no', 'Confirmar reprovação');
     confirm.disabled = true;
     var cancel = element('button', 'agw-act-btn agw-act-cancel', 'Cancelar');
@@ -328,11 +328,11 @@
       var card = element('div', 'agw-actcard');
       card.innerHTML = '<div class="agw-act-grid">'
         + actionField('Processo', '#' + action.id)
-        + actionField('Empresa', action.empresa || '—')
-        + actionField('Obra', action.obra || '—')
+        + actionField('Empresa', action.empresa || '-')
+        + actionField('Obra', action.obra || '-')
         + actionField('Valor', money(action.valor))
         + actionField('Vencimento', fmtDate(action.vencimento))
-        + actionField('Descrição', action.descricao || '—')
+        + actionField('Descrição', action.descricao || '-')
         + '</div>';
       var foot = element('div', 'agw-act-foot');
       card.appendChild(foot);

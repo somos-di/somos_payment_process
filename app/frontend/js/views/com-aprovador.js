@@ -53,8 +53,8 @@ async function initView_com_aprovador() {
           + '<td>' + escapeHtml(row.tipo_nome) + '</td><td>' + money(row.value_prc) + '</td>'
           + '<td>' + statusBadge(row.status_step_prc, row.status_nome) + '</td>'
           + '<td><span class="ca-prog ' + (done ? 'done' : 'wait') + '">' + approverTotal + '/' + requiredLevel + '</span></td>'
-          + '<td class="ca-dias">' + (row.dias_desde_criacao != null ? row.dias_desde_criacao + 'd' : '—') + '</td>'
-          + '<td class="ca-aprovs" title="' + escapeHtml(approverNames) + '">' + escapeHtml(approverNames || '—') + '</td>'
+          + '<td class="ca-dias">' + (row.dias_desde_criacao != null ? row.dias_desde_criacao + 'd' : '-') + '</td>'
+          + '<td class="ca-aprovs" title="' + escapeHtml(approverNames) + '">' + escapeHtml(approverNames || '-') + '</td>'
           + '<td style="text-align:right;white-space:nowrap"></td></tr>';
       });
       html += '</tbody></table></div>';

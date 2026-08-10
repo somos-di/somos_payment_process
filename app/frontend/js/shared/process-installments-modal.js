@@ -17,7 +17,7 @@
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML =
       '<div class="modal-box lg"><button class="modal-x" aria-label="Fechar">×</button>'
-      + '<div class="modal-title">Parcelas — Processo #' + escapeHtml(process.id_prc) + '</div>'
+      + '<div class="modal-title">Parcelas - Processo #' + escapeHtml(process.id_prc) + '</div>'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">'
       + '<button class="btn btn-light" id="pm-add">+ Adicionar parcela</button>'
       + '<div id="pm-soma" class="section-sub" style="margin:0"></div></div>'

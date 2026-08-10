@@ -9,7 +9,7 @@ com **tsx** para carregar TypeScript (ESM). Sem dependências extras.
 npm test
 ```
 
-(equivale a `node --import tsx --test "tests/**/*.test.ts"` — requer Node 21+ para o glob).
+(equivale a `node --import tsx --test "tests/**/*.test.ts"` - requer Node 21+ para o glob).
 
 ## Convenções
 
@@ -20,5 +20,5 @@ npm test
 
 ## Exemplo
 
-Veja `validators.test.ts` — cobre as regras anti-abuso (`boundedRecord`, limites de
+Veja `validators.test.ts` - cobre as regras anti-abuso (`boundedRecord`, limites de
 tamanho de texto/arquivo) sem tocar em banco ou rede.

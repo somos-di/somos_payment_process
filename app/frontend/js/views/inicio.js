@@ -1,6 +1,6 @@
 function initView_inicio() {
   var user = (window.Auth && window.Auth.getUser()) || {}
-  var name = user.name || (user.email || '').split('@')[0] || '—'
+  var name = user.name || (user.email || '').split('@')[0] || '-'
   var nameEl = document.getElementById('home-user-name')
   var emailEl = document.getElementById('home-user-email')
   if (nameEl) nameEl.textContent = name
@@ -17,7 +17,7 @@ function loadQuoteOfTheDay() {
     var textEl = document.getElementById('home-quote-text')
     var authorEl = document.getElementById('home-quote-author')
     if (textEl) textEl.textContent = '“' + quote.text_qot + '”'
-    if (authorEl) authorEl.textContent = quote.author_qot ? '— ' + quote.author_qot : ''
+    if (authorEl) authorEl.textContent = quote.author_qot ? '- ' + quote.author_qot : ''
     if (box) box.style.opacity = '1'
-  }).catch(function () {})
+  }).catch(function () { })
 }

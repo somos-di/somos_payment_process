@@ -15,7 +15,7 @@ async function initView_sync() {
       + '<td>' + escapeHtml(catalogItem.uau_table_uat) + '</td>'
       + '<td>' + escapeHtml(catalogItem.supabase_uau_table_uat) + '</td>'
       + '<td>' + escapeHtml(catalogItem.uau_table_id_uat) + '</td>'
-      + '<td class="st">—</td>'
+      + '<td class="st">-</td>'
       + '<td style="text-align:right"><button class="btn btn-light sync-one" data-id="' + catalogItem.id_uat + '">Sincronizar</button></td></tr>';
   }).join('');
 

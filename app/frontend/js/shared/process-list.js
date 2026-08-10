@@ -1,7 +1,7 @@
 (function () {
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '-'; }
   function statusBadge(step, name) {
     var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
 
@@ -68,7 +68,7 @@
       o.innerHTML = '<div class="modal-box" style="width:480px"><div class="modal-title">Confirmação</div>'
         + '<div style="font-size:14px;color:var(--text-2);line-height:1.5">' + escapeHtml(message) + '</div>'
         + '<textarea data-reason rows="3" maxlength="500" style="margin-top:12px" '
-        + 'placeholder="Explique o motivo (obrigatório — ficará registrado no histórico do processo)…"></textarea>'
+        + 'placeholder="Explique o motivo (obrigatório - ficará registrado no histórico do processo)…"></textarea>'
         + '<div class="modal-actions"><button class="btn btn-light" data-x>Cancelar</button>'
         + '<button class="btn ' + (danger ? 'btn-danger' : 'btn-primary') + '" data-ok disabled>Confirmar</button></div></div>';
       var reasonTextarea = o.querySelector('[data-reason]'), isSuccess = o.querySelector('[data-ok]');
@@ -175,14 +175,14 @@
             return query.in('process_app', uuids).order('approved_at_app');
           });
           (list || []).forEach(function (item) {
-            (approversByUuid[item.process_app] = approversByUuid[item.process_app] || []).push(item.approver_name || '—');
+            (approversByUuid[item.process_app] = approversByUuid[item.process_app] || []).push(item.approver_name || '-');
           });
         } catch (error) { }
       }
 
       function approversCell(process) {
         var names = approversByUuid[process.uuid_prc] || [];
-        if (!names.length) return '<span style="color:var(--muted)">—</span>';
+        if (!names.length) return '<span style="color:var(--muted)">-</span>';
         var joined = names.join(', ');
         return '<span class="badge ok" title="' + escapeHtml(joined) + '">' + names.length + '</span> '
           + '<span class="pl-approvers" title="' + escapeHtml(joined) + '">' + escapeHtml(joined) + '</span>';
@@ -243,13 +243,13 @@
               + '<td><span class="id-cell">' + escapeHtml(entry.id_prc)
               + (entry.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
               + '</span></td><td>' + escapeHtml(entry.empresa_nome) + '</td><td>' + escapeHtml(entry.obra_nome) + '</td>'
-              + '<td>' + (entry.fornecedor_nome ? escapeHtml(entry.fornecedor_nome) : '<span style="color:var(--muted)">—</span>') + '</td>'
-              + '<td>' + (entry.description_prc ? escapeHtml(entry.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
+              + '<td>' + (entry.fornecedor_nome ? escapeHtml(entry.fornecedor_nome) : '<span style="color:var(--muted)">-</span>') + '</td>'
+              + '<td>' + (entry.description_prc ? escapeHtml(entry.description_prc) : '<span style="color:var(--muted)">-</span>') + '</td>'
               + '<td>' + escapeHtml(entry.tipo_nome) + '</td>'
               + '<td>' + money(entry.value_prc) + '</td><td>' + fmtDate(entry.due_date_prc) + '</td>'
               + '<td>' + statusBadge(entry.status_step_prc, entry.status_nome) + '</td>'
               + (options.extraColumns || []).map(function (item) {
-                var value = item.render ? item.render(entry) : (entry[item.col] == null || entry[item.col] === '' ? '<span style="color:var(--muted)">—</span>' : escapeHtml(entry[item.col]));
+                var value = item.render ? item.render(entry) : (entry[item.col] == null || entry[item.col] === '' ? '<span style="color:var(--muted)">-</span>' : escapeHtml(entry[item.col]));
                 return '<td>' + value + '</td>';
               }).join('')
               + (showApprovers ? '<td style="white-space:nowrap">' + approversCell(entry) + '</td>' : '')

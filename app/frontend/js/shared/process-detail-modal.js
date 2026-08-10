@@ -1,7 +1,7 @@
 (function () {
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function formatDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function formatDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '-'; }
   function fmtDT(d) {
     if (!d) return '';
     var date = new Date(d);
@@ -9,7 +9,7 @@
     return date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   function fieldBox(label, value) {
-    var displayValue = (value === null || value === undefined || value === '') ? '—' : value;
+    var displayValue = (value === null || value === undefined || value === '') ? '-' : value;
     return '<div class="pd-field"><label>' + escapeHtml(label) + '</label><div class="pd-field-box">' + escapeHtml(displayValue) + '</div></div>';
   }
 

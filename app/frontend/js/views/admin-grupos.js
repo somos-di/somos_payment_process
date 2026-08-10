@@ -81,7 +81,7 @@ async function initView_admin_grupos() {
       var checked = set.has(listItem.id_grp) ? 'checked' : '';
       return '<label class="ag-group-row"><input type="checkbox" data-g="' + listItem.id_grp + '" ' + checked + '>'
         + '<span><span class="gname">' + escapeHtml(listItem.name_grp) + '</span>'
-        + (listItem.description_grp ? '<span class="gdesc"> — ' + escapeHtml(listItem.description_grp) + '</span>' : '') + '</span>'
+        + (listItem.description_grp ? '<span class="gdesc"> - ' + escapeHtml(listItem.description_grp) + '</span>' : '') + '</span>'
         + groupTags(listItem) + '</label>';
     }).join('') : '<div class="empty">Nenhum grupo encontrado.</div>';
     box.querySelectorAll('input[type=checkbox]').forEach(function (checkbox) { checkbox.addEventListener('change', onToggleGroup); });
@@ -120,7 +120,7 @@ async function initView_admin_grupos() {
       try {
         await window.API.post('/admin/users/uau', { id_usr: currentUser.id_usr, uau_user: value || null });
         currentUser.uau_user_usr = value || null;
-        valEl.textContent = value || '—';
+        valEl.textContent = value || '-';
         valEl.classList.toggle('empty', !value);
         show(false);
         toast('Usuário UAU salvo.', true);
@@ -138,7 +138,7 @@ async function initView_admin_grupos() {
       + '<div><div class="section-title" style="font-size:16px">' + escapeHtml(currentUser.name_usr || (currentUser.email_usr || '').split('@')[0]) + '</div>'
       + '<div class="section-sub" style="margin:2px 0 6px">' + escapeHtml(currentUser.email_usr || '') + '</div>'
       + '<div class="ag-uau"><span class="ag-uau-lbl">UAU:</span>'
-      + '<span class="ag-uau-view"><b class="ag-uau-val' + (uauUser ? '' : ' empty') + '">' + escapeHtml(uauUser || '—') + '</b>'
+      + '<span class="ag-uau-view"><b class="ag-uau-val' + (uauUser ? '' : ' empty') + '">' + escapeHtml(uauUser || '-') + '</b>'
       + '<button type="button" class="ag-uau-pen btn-icon btn btn-light" title="Editar usuário UAU">' + SVG_PEN + '</button></span>'
       + '<span class="ag-uau-form" hidden><input class="ag-uau-input" placeholder="usuário UAU">'
       + '<button type="button" class="ag-uau-save btn btn-primary">Salvar</button>'

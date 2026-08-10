@@ -118,7 +118,7 @@ async function initView_editar_processo() {
   if (isAwaiting) {
     selectElement('ep-reenviar').hidden = true;
     selectElement('ep-voltar').setAttribute('href', '#/meus-lancamentos');
-    selectElement('ep-sub').textContent = 'Altere os dados do processo — as alterações são salvas automaticamente enquanto ninguém aprovar.';
+    selectElement('ep-sub').textContent = 'Altere os dados do processo - as alterações são salvas automaticamente enquanto ninguém aprovar.';
   }
   ready = true;
 
@@ -172,7 +172,7 @@ async function initView_editar_processo() {
     var total = parseVal(selectElement('ep-valor').value) || 0, soma = installmentsSum();
     var isSuccess = installments.length > 0 && Math.abs(soma - total) < 0.01;
     element.textContent = installments.length
-      ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (isSuccess ? ' ✓' : ' — ajuste para bater com o valor'))
+      ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (isSuccess ? ' ✓' : ' - ajuste para bater com o valor'))
       : 'Nenhuma parcela. Gere as parcelas a partir do valor e do 1º vencimento.';
     element.classList.toggle('bad', !isSuccess);
   }

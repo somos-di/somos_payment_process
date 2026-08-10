@@ -2,7 +2,7 @@ async function initView_financeiro() {
   var selectElement = function (id) { return document.getElementById(id); };
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '-'; }
   function toast(message, isSuccess) {
     var t = document.createElement('div'); t.textContent = message;
     t.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;box-shadow:var(--shadow-md);'
@@ -110,13 +110,13 @@ async function initView_financeiro() {
       var alerts = buildAlerts(entry);
       html += '<tr data-i="' + index + '" style="cursor:pointer">'
         + '<td>' + escapeHtml(entry.id_prc) + '</td><td>' + escapeHtml(entry.empresa_nome) + '</td><td>' + escapeHtml(entry.obra_nome) + '</td>'
-        + '<td>' + (entry.fornecedor_nome ? escapeHtml(entry.fornecedor_nome) : '<span style="color:var(--muted)">—</span>') + '</td>'
-        + '<td>' + (entry.description_prc ? escapeHtml(entry.description_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
-        + '<td>' + escapeHtml(entry.fiscal_doc_prc || '—') + '</td>'
-        + '<td>' + (entry.uau_number_prc ? escapeHtml(entry.uau_number_prc) : '<span style="color:var(--muted)">—</span>') + '</td>'
+        + '<td>' + (entry.fornecedor_nome ? escapeHtml(entry.fornecedor_nome) : '<span style="color:var(--muted)">-</span>') + '</td>'
+        + '<td>' + (entry.description_prc ? escapeHtml(entry.description_prc) : '<span style="color:var(--muted)">-</span>') + '</td>'
+        + '<td>' + escapeHtml(entry.fiscal_doc_prc || '-') + '</td>'
+        + '<td>' + (entry.uau_number_prc ? escapeHtml(entry.uau_number_prc) : '<span style="color:var(--muted)">-</span>') + '</td>'
         + '<td><span class="badge ' + statusCls(entry.status_step_prc) + '">' + escapeHtml(entry.status_nome) + '</span></td>'
         + '<td>' + fmtDate(entry.due_date_prc) + '</td><td>' + money(entry.value_prc) + '</td>'
-        + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + index + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">—</span>') + '</td>'
+        + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + index + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">-</span>') + '</td>'
         + '<td class="fin-acts"></td></tr>';
     });
     html += '</tbody></table></div>';

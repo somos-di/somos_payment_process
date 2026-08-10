@@ -9,7 +9,7 @@ async function initView_reaprovals() {
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function formatDateTime(d) {
-    if (!d) return '—';
+    if (!d) return '-';
     try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return String(d); }
   }
@@ -35,12 +35,12 @@ async function initView_reaprovals() {
         + '<td>' + escapeHtml(entry.id_rap) + '</td>'
         + '<td>' + escapeHtml(formatDateTime(entry.created_at_rap)) + '</td>'
         + '<td>' + escapeHtml(entry.company_rap) + '</td>'
-        + '<td>' + escapeHtml(entry.cost_center_rap || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.cost_center_rap || '-') + '</td>'
         + '<td>' + escapeHtml(entry.process_rap) + '</td>'
         + '<td>' + escapeHtml(entry.installment_rap) + '</td>'
-        + '<td>' + escapeHtml(entry.approver_rap || '—') + '</td>'
-        + '<td>' + escapeHtml(entry.message_rap || '—') + '</td>'
-        + '<td>' + escapeHtml(entry.author_nome || '—') + '</td></tr>';
+        + '<td>' + escapeHtml(entry.approver_rap || '-') + '</td>'
+        + '<td>' + escapeHtml(entry.message_rap || '-') + '</td>'
+        + '<td>' + escapeHtml(entry.author_nome || '-') + '</td></tr>';
     });
     html += '</tbody></table></div>';
     selectElement('ra-hist').innerHTML = html;

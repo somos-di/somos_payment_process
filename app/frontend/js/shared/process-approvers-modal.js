@@ -8,7 +8,7 @@
   var SVG_WAIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>';
 
   function personRow(approver) {
-    var name = approver.name || approver.email || '—';
+    var name = approver.name || approver.email || '-';
     var subject = (approver.name && approver.email && approver.name !== approver.email) ? approver.email : '';
     var tag = approver.group_name || ('Nível ' + approver.level);
     return '<div class="u-card">'

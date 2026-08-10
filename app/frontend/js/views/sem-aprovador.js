@@ -26,7 +26,7 @@ async function initView_sem_aprovador() {
     var groups = candidates.map(function (candidate) {
       var missingTags = missingTag('empresa', candidate.falta_empresa) + missingTag('obra', candidate.falta_obra) + missingTag('tipo', candidate.falta_tipo) + missingTag('usuário no grupo', candidate.falta_usuario);
       return '<div class="na-grp"><b>' + escapeHtml(candidate.grupo) + '</b> <span style="color:var(--muted)">(nível ' + escapeHtml(candidate.nivel) + ')</span><br>'
-        + (missingTags || '<span class="na-ok">tudo ok — recarregue</span>') + '</div>';
+        + (missingTags || '<span class="na-ok">tudo ok - recarregue</span>') + '</div>';
     }).join('');
     return '<div class="na-diag"><h4>Existe regra, mas o(s) grupo(s) não estão completos:</h4>' + groups
       + '<div class="na-note">Cadastre o que falta em <b>Grupos &amp; Usuários</b> (permissões por empresa/obra/tipo e vínculo de usuário).</div></div>';

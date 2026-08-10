@@ -2,9 +2,9 @@ async function initView_comissoes() {
   var selectElement = function (id) { return document.getElementById(id); };
   function escapeHtml(text) { return String(text == null ? '' : text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function formatDate(date) { return date ? String(date).split('T')[0].split('-').reverse().join('/') : '—'; }
+  function formatDate(date) { return date ? String(date).split('T')[0].split('-').reverse().join('/') : '-'; }
   function formatDateTime(date) {
-    if (!date) return '—';
+    if (!date) return '-';
     try { return new Date(date).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return String(date); }
   }
@@ -70,11 +70,11 @@ async function initView_comissoes() {
     data.forEach(function (entry, index) {
       html += '<tr data-i="' + index + '">'
         + '<td>' + escapeHtml(entry.id_com) + '</td>'
-        + '<td>' + escapeHtml(entry.empreendimento_nome || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.empreendimento_nome || '-') + '</td>'
         + '<td>' + escapeHtml(entry.trilha) + '</td>'
-        + '<td>' + escapeHtml(entry.unit_com || '—') + '</td>'
-        + '<td>' + escapeHtml(entry.seller_name_com || '—') + '</td>'
-        + '<td>' + escapeHtml(entry.client_name_com || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.unit_com || '-') + '</td>'
+        + '<td>' + escapeHtml(entry.seller_name_com || '-') + '</td>'
+        + '<td>' + escapeHtml(entry.client_name_com || '-') + '</td>'
         + '<td>' + money(entry.value_com) + '</td>'
         + '<td><span class="badge ' + (STATUS_CLS[entry.status_step_com] || '') + '">' + escapeHtml(entry.status_nome) + '</span></td>'
         + '<td class="fin-acts" style="white-space:nowrap;text-align:right"></td></tr>';
@@ -171,7 +171,7 @@ async function initView_comissoes() {
 
   async function openDetail(c) {
     function fieldBox(label, value) {
-      var displayValue = (value === null || value === undefined || value === '') ? '—' : value;
+      var displayValue = (value === null || value === undefined || value === '') ? '-' : value;
       return '<div class="pd-field"><label>' + escapeHtml(label) + '</label><div class="pd-field-box">' + escapeHtml(displayValue) + '</div></div>';
     }
     var nfAttachmentUrl = c.nf_url_com, boletoAttachmentUrl = c.boleto_url_com, firstUrl = nfAttachmentUrl || boletoAttachmentUrl;
@@ -186,7 +186,7 @@ async function initView_comissoes() {
     o.innerHTML = '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
       + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
       + '<div data-pane="dados" class="pane pd-detail">'
-      + '<div class="pd-fields"><h3>Comissão #' + escapeHtml(c.id_com) + ' — ' + escapeHtml(c.status_nome) + '</h3>'
+      + '<div class="pd-fields"><h3>Comissão #' + escapeHtml(c.id_com) + ' - ' + escapeHtml(c.status_nome) + '</h3>'
       + fieldBox('Empreendimento', c.empreendimento_nome)
       + fieldBox('Empresa', c.empresa_nome || c.company_com)
       + fieldBox('Obra', c.building_com)
