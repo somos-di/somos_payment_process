@@ -20,7 +20,7 @@ const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'gr
 
 const READ_RPCS = new Set<string>([
   'my_pending_approvals', 'my_pending_approval_groups', 'my_launchable_kinds',
-  'completed_approvals', 'eligible_approvers', 'next_levels',
+  'completed_approvals', 'eligible_approvers', 'next_levels', 'quote_of_the_day',
 ]);
 
 export class DataService {
