@@ -14,7 +14,7 @@ async function initView_comissoes_empreendimentos() {
   }
 
   var currentUser = (window.Auth && window.Auth.getUser && window.Auth.getUser()) || {};
-  selectElement('ce-author').textContent = 'Autor do cadastro: ' + (currentUser.name || currentUser.email || '—');
+  selectElement('ce-author').textContent = 'Autor do cadastro: ' + (currentUser.name || currentUser.email || '-');
 
   var editingId = null;
 
@@ -96,7 +96,7 @@ async function initView_comissoes_empreendimentos() {
         + '<td>' + escapeHtml(entry.empresa_nome) + ' <span style="color:var(--muted)">(' + escapeHtml(entry.company_cem) + ')</span></td>'
         + '<td>' + escapeHtml(entry.obra_nome) + ' <span style="color:var(--muted)">(' + escapeHtml(entry.building_cem) + ')</span></td>'
         + '<td><span class="badge ' + (entry.somos_cem ? 'ok' : 'blue') + '">' + escapeHtml(entry.trilha) + '</span></td>'
-        + '<td>' + escapeHtml(entry.author_nome || '—') + '</td>'
+        + '<td>' + escapeHtml(entry.author_nome || '-') + '</td>'
         + '<td>' + (entry.active_cem ? 'Sim' : '<span style="color:var(--muted)">Não</span>') + '</td>'
         + '<td style="white-space:nowrap;text-align:right">'
         + '<button class="btn btn-light" data-edit="' + index + '" style="margin-left:6px">Editar</button>'

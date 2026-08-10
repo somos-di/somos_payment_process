@@ -45,7 +45,7 @@ test('CacheManager: miss chama fetcher e popula; hit não refaz', async () => {
   assert.equal(calls, 1);
 });
 
-test('CacheManager: resiliente — erro no Redis cai pro fetcher', async () => {
+test('CacheManager: resiliente - erro no Redis cai pro fetcher', async () => {
   const redis: any = { get: async () => { throw new Error('down'); }, set: async () => { throw new Error('down'); } };
   const cacheManager = new CacheManager(redis, 1000);
   assert.equal(await cacheManager.wrap('k', async () => 7), 7);

@@ -38,7 +38,7 @@ async function initView_gestao_processos() {
     o.innerHTML = '<div class="modal-box" style="width:760px;max-width:96vw;max-height:92vh;overflow:auto">'
       + '<button class="modal-x" aria-label="Fechar">×</button>'
       + '<div class="modal-title">Editar Processo #' + escapeHtml(process.id_prc) + '</div>'
-      + '<div class="gp-uau" style="margin:-4px 0 12px">Nº UAU (não editável): <b>' + escapeHtml(process.uau_number_prc || '—') + '</b></div>'
+      + '<div class="gp-uau" style="margin:-4px 0 12px">Nº UAU (não editável): <b>' + escapeHtml(process.uau_number_prc || '-') + '</b></div>'
       + '<div class="gp-modal-grid">'
       + '<div class="gp-sec">Dados Gerais</div>'
       + '<div class="field"><label>Empresa</label><select id="gp-empresa"></select></div>'
@@ -70,7 +70,7 @@ async function initView_gestao_processos() {
 
       + '<div class="gp-sec">Motivo da alteração</div>'
       + '<div class="field full gp-reason"><label>Por que está alterando este processo? (obrigatório)</label>'
-      + '<textarea id="gp-reason" rows="2" maxlength="500" placeholder="Descreva o motivo — ficará no histórico do processo."></textarea></div>'
+      + '<textarea id="gp-reason" rows="2" maxlength="500" placeholder="Descreva o motivo - ficará no histórico do processo."></textarea></div>'
       + '</div>'
       + '<div class="modal-actions"><button class="btn btn-light" id="gp-cancel">Cancelar</button>'
       + '<button class="btn btn-primary" id="gp-save">Salvar alteração</button></div>'
@@ -168,7 +168,7 @@ async function initView_gestao_processos() {
       var element = o.querySelector('#gp-parc-sum'); if (!element) return;
       var total = parseVal(o.querySelector('#gp-valor').value) || 0, soma = installmentsSum();
       var isSuccess = installments.length > 0 && Math.abs(soma - total) < 0.01;
-      element.textContent = installments.length ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (isSuccess ? ' ✓' : ' — diferente do valor')) : 'Sem parcelas.';
+      element.textContent = installments.length ? ('Soma das parcelas: R$ ' + fmtBR(soma) + ' de R$ ' + fmtBR(total) + (isSuccess ? ' ✓' : ' - diferente do valor')) : 'Sem parcelas.';
       element.classList.toggle('bad', installments.length > 0 && !isSuccess);
     }
     function renderInstallments() {

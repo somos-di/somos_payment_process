@@ -199,7 +199,7 @@ async function initView_solicitar() {
       var response = await SB.upload(file);
       attachments[key] = response ? response.url : null;
       selectElement('sol-' + (key === 'boleto' ? 'boleto' : 'nf') + '-name').textContent = file.name;
-    } catch (error) { toast('Anexo não enviado (' + (error.message || 'storage') + ') — verifique o bucket "attachments".'); }
+    } catch (error) { toast('Anexo não enviado (' + (error.message || 'storage') + ') - verifique o bucket "attachments".'); }
   }
   selectElement('sol-boleto').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'boleto'); });
   selectElement('sol-nf').addEventListener('change', function () { if (this.files[0]) upload(this.files[0], 'nf'); });
@@ -221,13 +221,13 @@ async function initView_solicitar() {
     if (step < 4) { step++; show(); }
   });
 
-  function optionText(selector) { var o = selector.options[selector.selectedIndex]; return o ? o.text : '—'; }
+  function optionText(selector) { var o = selector.options[selector.selectedIndex]; return o ? o.text : '-'; }
   selectElement('sol-save').addEventListener('click', function () {
     var rows = [
-      ['Empresa', optionText(selectElement('sol-empresa'))], ['Obra', optionText(selectElement('sol-obra'))], ['Fornecedor', personInput.value || '—'],
-      ['Apropriação', apin.value || '—'], ['Tipo de Processo', optionText(selectElement('sol-tipo'))],
+      ['Empresa', optionText(selectElement('sol-empresa'))], ['Obra', optionText(selectElement('sol-obra'))], ['Fornecedor', personInput.value || '-'],
+      ['Apropriação', apin.value || '-'], ['Tipo de Processo', optionText(selectElement('sol-tipo'))],
       ['Urgente', selectElement('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText(selectElement('sol-tipodoc'))],
-      ['Nº Documento', selectElement('sol-numdoc').value || '—'], ['Data de Emissão', selectElement('sol-emissao').value || '—'],
+      ['Nº Documento', selectElement('sol-numdoc').value || '-'], ['Data de Emissão', selectElement('sol-emissao').value || '-'],
       ['Valor Total Bruto', 'R$ ' + fmtBR(parseVal(selectElement('sol-valor').value) || 0)], ['Parcelas', String(installments.length)],
     ];
     var o = document.createElement('div'); o.className = 'modal-overlay';

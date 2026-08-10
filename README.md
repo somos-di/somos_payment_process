@@ -1,6 +1,6 @@
 # Processo de Pagamento
 
-App de aprovação de pagamentos — **backend Fastify (TypeScript)** + **frontend JS puro** + **Supabase (Postgres)**.
+App de aprovação de pagamentos - **backend Fastify (TypeScript)** + **frontend JS puro** + **Supabase (Postgres)**.
 
 - Frontend não tem chaves nem `supabase-js`: fala só com o backend; sessão em **cookie httpOnly**.
 - Backend guarda as chaves do Supabase e faz as operações privilegiadas (sync UAU, escrita).
@@ -42,9 +42,9 @@ e build das imagens Docker (backend + frontend).
 ## Estrutura
 
 ```
-app/backend   — Fastify (controllers/services/gateways/routes), Dockerfile
-app/frontend  — HTML/JS/CSS estáticos + nginx.conf, Dockerfile
-app/database  — setup_payment_process.sql (gitignored)
+app/backend   - Fastify (controllers/services/gateways/routes), Dockerfile
+app/frontend  - HTML/JS/CSS estáticos + nginx.conf, Dockerfile
+app/database  - setup_payment_process.sql (gitignored)
 docker-compose.yaml
 ```
 

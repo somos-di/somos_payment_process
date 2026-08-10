@@ -75,7 +75,7 @@ async function initView_solicitar_massa() {
     var kinds = [];
     try { kinds = await window.Store.get('process_kinds'); } catch (error) { }
     var rows = [
-      ['COMO PREENCHER — LANÇAMENTO EM MASSA'],
+      ['COMO PREENCHER - LANÇAMENTO EM MASSA'],
       ['Preencha a aba "Processos" (uma linha por processo) e importe o arquivo nesta tela.'],
       ['Não renomeie as colunas do cabeçalho. Datas: AAAA-MM-DD ou DD/MM/AAAA. Valores: 1000,00.'],
       [],
@@ -92,9 +92,9 @@ async function initView_solicitar_massa() {
       ['Valor Total', 'SIM', 'Valor TOTAL do processo (ex.: 1000,00).'],
       ['Nº Documento Fiscal', 'não', 'Número do documento fiscal (apenas números).'],
       ['Qtd. Parcelas', 'não', 'Qtd. de parcelas mensais a partir do vencimento (vazio = 1); o valor total é dividido igualmente.'],
-      ['Tipo de Processo (ID)', 'SIM', 'ID do tipo de processo — consulte a tabela abaixo.'],
+      ['Tipo de Processo (ID)', 'SIM', 'ID do tipo de processo - consulte a tabela abaixo.'],
       [],
-      ['TIPOS DE PROCESSO — use o ID na coluna "Tipo de Processo (ID)"'],
+      ['TIPOS DE PROCESSO - use o ID na coluna "Tipo de Processo (ID)"'],
       ['ID', 'Tipo'],
     ].concat((kinds || []).map(function (item) { return [item.id_pkn, item.name_pkn]; }));
     var worksheet = XLSX.utils.aoa_to_sheet(rows);
@@ -183,7 +183,7 @@ async function initView_solicitar_massa() {
     selectElement('lm-body').innerHTML = importedRows.slice(0, maxErrorsShown).map(function (item) {
       return '<tr>' + COLUMN_MAP.map(function (COLUMN_MAPItem) {
         var value = cell(COLUMN_MAPItem, item);
-        if (value === null || value === '') return '<td><span style="color:var(--muted)">—</span></td>';
+        if (value === null || value === '') return '<td><span style="color:var(--muted)">-</span></td>';
 
         var extra = '';
         if (NAME_RESOLVERS[COLUMN_MAPItem.key]) {

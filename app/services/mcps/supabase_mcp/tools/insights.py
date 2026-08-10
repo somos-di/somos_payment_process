@@ -37,7 +37,9 @@ async def list_processes(
         overdue=overdue,
         limit=limit,
     )
-    return rows or "Nenhum processo encontrado com esses critérios (dentro do seu acesso)."
+    return (
+        rows or "Nenhum processo encontrado com esses critérios (dentro do seu acesso)."
+    )
 
 
 async def my_pending_approvals(
@@ -59,7 +61,9 @@ async def my_pending_approvals(
         due_after=due_after,
         overdue=overdue,
     )
-    return rows or "Você não tem processos aguardando a sua aprovação com esses critérios."
+    return (
+        rows or "Você não tem processos aguardando a sua aprovação com esses critérios."
+    )
 
 
 async def process_details(
@@ -121,7 +125,7 @@ tools = (
             "supplier (fornecedor), company (empresa), urgent (true/false), due_before/due_after (YYYY-MM-DD), "
             "overdue (true = vencidos). Ex.: 'quero aprovar os urgentes do fornecedor X' → "
             "my_pending_approvals(supplier='X', urgent=true). Sem filtro, retorna todas as pendências. "
-            "O filtro só RESTRINGE dentro do que ele já pode aprovar — nunca amplia nem traz processo de outro."
+            "O filtro só RESTRINGE dentro do que ele já pode aprovar - nunca amplia nem traz processo de outro."
         ),
         tags=_TAGS,
         annotations=_READ_ONLY,
