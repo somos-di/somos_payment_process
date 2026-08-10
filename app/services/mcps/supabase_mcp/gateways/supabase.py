@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from postgrest import APIError
 from supabase import create_async_client, AsyncClient
@@ -10,6 +10,12 @@ _PROCESS_FIELDS = (
     "id_prc,uuid_prc,empresa_nome,obra_nome,fornecedor_nome,tipo_nome,"
     "value_prc,status_nome,status_step_prc,is_urgent_prc,due_date_prc,description_prc"
 )
+
+_BR_TZ = timezone(timedelta(hours=-3))
+
+
+def _br_today() -> date:
+    return datetime.now(_BR_TZ).date()
 
 
 class SupabaseGateway:
@@ -62,7 +68,7 @@ class SupabaseGateway:
             if urgent is not None:
                 query = query.eq("is_urgent_prc", "true" if urgent else "false")
             if overdue:
-                query = query.lt("due_date_prc", date.today().isoformat())
+                query = query.lt("due_date_prc", _br_today().isoformat())
             if due_before:
                 query = query.lte("due_date_prc", due_before)
             if due_after:
@@ -112,7 +118,7 @@ class SupabaseGateway:
             if urgent is not None:
                 query = query.eq("is_urgent_prc", "true" if urgent else "false")
             if overdue:
-                query = query.lt("due_date_prc", date.today().isoformat())
+                query = query.lt("due_date_prc", _br_today().isoformat())
             if due_before:
                 query = query.lte("due_date_prc", due_before)
             if due_after:
@@ -168,8 +174,8 @@ class SupabaseGateway:
 
     async def processes_overview(self, user_jwt: str) -> dict:
         client = await self._client(user_jwt)
-        today = date.today().isoformat()
-        soon = (date.today() + timedelta(days=7)).isoformat()
+        today = _br_today().isoformat()
+        soon = (_br_today() + timedelta(days=7)).isoformat()
         try:
             pending = await client.rpc("my_pending_approvals", {}).execute()
             processes = await (
