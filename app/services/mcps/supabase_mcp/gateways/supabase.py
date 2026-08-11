@@ -78,6 +78,48 @@ class SupabaseGateway:
             raise RuntimeError(f"Falha ao consultar processos: {error.message}") from error
         return response.data or []
 
+    async def count_processes(
+        self,
+        user_jwt: str,
+        status: str | None = None,
+        company: str | None = None,
+        supplier: str | None = None,
+        urgent: bool | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        created_before: str | None = None,
+        created_after: str | None = None,
+        updated_before: str | None = None,
+        updated_after: str | None = None,
+    ) -> int:
+        client = await self._client(user_jwt)
+        try:
+            query = client.table("v_processes").select("id_prc", count="exact", head=True)
+            if status:
+                query = query.ilike("status_nome", f"%{status}%")
+            if company:
+                query = query.ilike("empresa_nome", f"%{company}%")
+            if supplier:
+                query = query.ilike("fornecedor_nome", f"%{supplier}%")
+            if urgent is not None:
+                query = query.eq("is_urgent_prc", "true" if urgent else "false")
+            if due_before:
+                query = query.lte("due_date_prc", due_before)
+            if due_after:
+                query = query.gte("due_date_prc", due_after)
+            if created_before:
+                query = query.lte("created_at_prc", created_before)
+            if created_after:
+                query = query.gte("created_at_prc", created_after)
+            if updated_before:
+                query = query.lte("updated_at_prc", updated_before)
+            if updated_after:
+                query = query.gte("updated_at_prc", updated_after)
+            response = await query.execute()
+        except APIError as error:
+            raise RuntimeError(f"Falha ao contar processos: {error.message}") from error
+        return response.count or 0
+
     async def get_process_by_id(self, user_jwt: str, id_prc: int) -> dict | None:
         client = await self._client(user_jwt)
         try:

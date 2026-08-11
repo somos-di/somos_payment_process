@@ -99,6 +99,51 @@ async def search_suppliers(
     return suppliers or "Nenhum fornecedor encontrado."
 
 
+async def count_processes(
+    status: str | None = None,
+    company: str | None = None,
+    supplier: str | None = None,
+    urgent: bool | None = None,
+    due_before: str | None = None,
+    due_after: str | None = None,
+    created_before: str | None = None,
+    created_after: str | None = None,
+    updated_before: str | None = None,
+    updated_after: str | None = None,
+    supabase_gateway: SupabaseGateway = Depends(get_supabase_gateway),
+    user_jwt: str = Depends(get_user_jwt),
+) -> dict:
+    total = await supabase_gateway.count_processes(
+        user_jwt,
+        status=status,
+        company=company,
+        supplier=supplier,
+        urgent=urgent,
+        due_before=due_before,
+        due_after=due_after,
+        created_before=created_before,
+        created_after=created_after,
+        updated_before=updated_before,
+        updated_after=updated_after,
+    )
+    return {"total": total}
+
+
+async def process_approvers(
+    id_prc: int,
+    supabase_gateway: SupabaseGateway = Depends(get_supabase_gateway),
+    user_jwt: str = Depends(get_user_jwt),
+) -> dict | str:
+    process = await supabase_gateway.get_process_by_id(user_jwt, id_prc)
+    if not process:
+        return f"Processo {id_prc} não encontrado (ou fora do seu acesso)."
+    uuid = process.get("uuid_prc")
+    return {
+        "ja_aprovaram": await supabase_gateway.get_completed_approvals(user_jwt, uuid),
+        "podem_aprovar": await supabase_gateway.get_eligible_approvers(user_jwt, uuid),
+    }
+
+
 tools = (
     Tool.from_function(
         list_processes,
@@ -158,6 +203,33 @@ tools = (
         description=(
             "Busca fornecedores por nome/CPF/CNPJ. Use quando o nome do fornecedor for ambíguo, antes de "
             "filtrar processos por ele. Para listar os processos do fornecedor, prefira list_processes(supplier=<nome>)."
+        ),
+        tags=_TAGS,
+        annotations=_READ_ONLY,
+    ),
+    Tool.from_function(
+        count_processes,
+        name="count_processes",
+        description=(
+            "Retorna APENAS a QUANTIDADE (total) de processos que batem nos filtros — use quando a pergunta "
+            "for 'quantos...'. Filtros combináveis: `status` (texto do status, ex.: 'integrado', 'cancelado', "
+            "'financeiro', 'aprovação'), `company`, `supplier`, `urgent`, `due_before`/`due_after` (vencimento), "
+            "`created_before`/`created_after` (criação), `updated_before`/`updated_after` (última mudança de status). "
+            "Todas as datas em YYYY-MM-DD; para um dia específico use o par _after=<dia> e _before=<dia seguinte>. "
+            "Exemplos: 'quantos venceram ontem' → due_after=<ontem>, due_before=<hoje>; 'quantos integrados hoje' → "
+            "status='integrado', updated_after=<hoje>; 'quantos cancelados semana passada' → status='cancelado', "
+            "updated_after=<início da semana passada>, updated_before=<início desta semana>. Retorna {\"total\": N}."
+        ),
+        tags=_TAGS,
+        annotations=_READ_ONLY,
+    ),
+    Tool.from_function(
+        process_approvers,
+        name="process_approvers",
+        description=(
+            "Retorna os aprovadores de UM processo pelo número visível `id_prc`: quem JÁ APROVOU (ja_aprovaram) "
+            "e quem AINDA PODE aprovar na etapa atual (podem_aprovar). Mais enxuto que process_details — NÃO traz "
+            "histórico nem os dados do processo. Use para 'quem aprova o X', 'quem já aprovou o X', 'quem falta aprovar o X'."
         ),
         tags=_TAGS,
         annotations=_READ_ONLY,

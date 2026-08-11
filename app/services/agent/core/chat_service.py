@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator
 
 from constants.system_prompt import SYSTEM_PROMPT
@@ -10,10 +11,19 @@ from .streaming import ToolCallAccumulator
 from .tool_mapper import to_openai_tool, tool_result_to_text
 
 
+_BR_TZ = timezone(timedelta(hours=-3))
+
+
 def _system_prompt(mcp_instructions: str | None) -> str:
+    hoje = datetime.now(_BR_TZ).strftime("%Y-%m-%d")
+    base = (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Data de hoje (America/Sao_Paulo, UTC-3): {hoje}. Use-a para resolver datas relativas "
+        f"(hoje, ontem, esta semana, semana passada, este mês) em YYYY-MM-DD antes de chamar as ferramentas."
+    )
     if mcp_instructions:
-        return f"{SYSTEM_PROMPT}\n\n{mcp_instructions}"
-    return SYSTEM_PROMPT
+        return f"{base}\n\n{mcp_instructions}"
+    return base
 
 
 async def stream_turn(conversation_id: str, user_message: str, user_jwt: str) -> AsyncIterator[StreamChunk]:
