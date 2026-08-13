@@ -20,5 +20,5 @@ jobs:
             cd /var/www/somos_payment_process
             git fetch --prune origin main
             git reset --hard origin/main
-            docker compose up -d --build
+            docker compose up -d --build --remove-orphans
             docker image prune -f
