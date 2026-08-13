@@ -36,7 +36,7 @@
 
     upload: function (file, endpoint) {
       return new Promise(function (resolve, reject) {
-        var MAX_FILE_BYTES = 14 * 1024 * 1024;
+        var MAX_FILE_BYTES = 20 * 1024 * 1024;
         if (file && file.size > MAX_FILE_BYTES) {
           reject(new Error('Arquivo excede o limite de 14 MB.')); return;
         }
