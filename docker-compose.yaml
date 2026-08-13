@@ -47,36 +47,10 @@ services:
     networks:
       - somos
 
-  supabase_mcp:
-    build: ./app/services/mcps/supabase_mcp
-    env_file:
-      - ./app/services/mcps/supabase_mcp/.env
-    expose:
-      - "8000"
-    restart: unless-stopped
-    logging: *default-logging
-    networks:
-      - somos
-
-  agent:
-    build: ./app/services/agent
-    env_file:
-      - ./app/services/agent/.env
-    environment:
-      SUPABASE_MCP_URL: http://supabase_mcp:8000/mcp
-      REDIS_URL: redis://redis:6379
-    expose:
-      - "8100"
-    depends_on:
-      supabase_mcp:
-        condition: service_started
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    logging: *default-logging
-    networks:
-      - somos
-
 networks:
+  # Criada manualmente no droplet (uma vez): docker network create somos_net
+  # Assim todos os composes (payment, mcp, agent, creator) só ENTRAM nela,
+  # sem depender da ordem de subida.
   somos:
     name: somos_net
+    external: true
