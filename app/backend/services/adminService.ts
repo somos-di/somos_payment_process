@@ -9,10 +9,10 @@ export class AdminService {
     return unwrap(adminClient().from('users')
       .update({ uau_user_usr: uauUser && uauUser.trim() ? uauUser.trim() : null }).eq('id_usr', user));
   }
-  createGroup(name: string, description: string | null, restrictLaunch: boolean) {
+  createGroup(name: string, description: string | null, restrictLaunch: boolean, level: number) {
     return unwrap(adminClient().from('groups')
-      .insert({ name_grp: name, description_grp: description, restrict_launch_kinds_grp: restrictLaunch })
-      .select('id_grp,name_grp,description_grp,restrict_launch_kinds_grp').single());
+      .insert({ name_grp: name, description_grp: description, restrict_launch_kinds_grp: restrictLaunch, level_grp: level })
+      .select('id_grp,name_grp,description_grp,restrict_launch_kinds_grp,level_grp').single());
   }
 
   addMembership(user: string, group: number) {

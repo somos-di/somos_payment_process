@@ -8,6 +8,7 @@ const GroupSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(200).optional(),
   restrictLaunch: z.boolean().optional().default(false),
+  level: z.number().int().min(1).max(4),
 });
 
 export class AdminController {
@@ -21,7 +22,7 @@ export class AdminController {
 
   async createGroup(request: FastifyRequest, reply: FastifyReply) {
     const group = GroupSchema.parse(request.body);
-    const data = await this.service.createGroup(group.name, group.description ?? null, group.restrictLaunch);
+    const data = await this.service.createGroup(group.name, group.description ?? null, group.restrictLaunch, group.level);
     return reply.status(201).send({ success: true, data });
   }
 
