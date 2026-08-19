@@ -10,12 +10,12 @@ const READ_RESOURCES = new Set<string>([
   'v_processes', 'v_processes_no_approver', 'v_empresas', 'v_obras', 'v_fornecedores',
   'v_compositions', 'compositions', 'process_kinds', 'document_kinds', 'status_kind', 'companies',
   'cost_centers', 'persons', 'departments', 'uau_tables', 'installments', 'process_history',
-  'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_single_approver', 'v_with_approver', 'v_my_approvals', 'v_financeiro', 'v_financeiro_integrados', 'v_processes_admin', 'processes', 'groups', 'users_group',
+  'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'v_financeiro_integrados', 'v_processes_admin', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
   'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind', 'v_comm_history',
 ]);
 
-const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'v_with_approver', 'groups', 'users_group',
+const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules']);
 
 const READ_RPCS = new Set<string>([

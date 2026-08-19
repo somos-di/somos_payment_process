@@ -5,9 +5,7 @@
         ROUTES: { DEFAULT: 'inicio', LOGIN: 'login' },
         AUTH: { REFRESH_LEEWAY_SECONDS: 30 },
 
-        PARAMS: {
-            comAprovador: { slowDays: 5 },
-        },
+        PARAMS: {},
         PROCESS_KINDS: {},
         MESSAGE_KINDS: {},
         STEPS: {},

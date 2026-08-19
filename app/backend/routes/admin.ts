@@ -9,6 +9,4 @@ export function registerAdminRoutes(app: FastifyInstance, admin_center: AdminCon
   app.post('/admin/users-group', admin, admin_center.addMembership);
   app.post('/admin/users-group/delete', admin, admin_center.removeMembership);
   app.post('/admin/users/uau', admin, admin_center.setUau);
-  app.post('/admin/permissions', admin, admin_center.addPermission);
-  app.post('/admin/permissions/delete', admin, admin_center.removePermission);
 }
