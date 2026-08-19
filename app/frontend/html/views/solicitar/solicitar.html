@@ -88,10 +88,10 @@
 
       <div class="sol-step" data-step="1">
         <div class="form-grid cols-2">
-          <div class="field"><label>Empresa</label>
-            <select id="sol-empresa">
-              <option value="">Carregando…</option>
-            </select>
+          <div class="field sol-search-wrap"><label>Empresa</label>
+            <input id="sol-empresa-input" placeholder="Busque a empresa pelo nome ou código" autocomplete="off">
+            <input type="hidden" id="sol-empresa">
+            <div class="sol-results" id="sol-empresa-results"></div>
           </div>
           <div class="field"><label>Obra</label>
             <select id="sol-obra" disabled>

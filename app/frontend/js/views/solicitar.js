@@ -17,7 +17,7 @@ async function initView_solicitar() {
     { n: 3, t: 'Parcelamento', d: 'Definição dos vencimentos.' },
     { n: 4, t: 'Anexos', d: 'Upload de documentos.' },
   ];
-  var step = 1, installments = [], appropriationMap = {}, appropriationOptions = [], attachments = { boleto: null, nf: null }, userId = null, deptId = null;
+  var step = 1, installments = [], appropriationMap = {}, appropriationOptions = [], attachments = { boleto: null, nf: null }, userId = null, deptId = null, companyOptions = [];
 
   function renderStepper() {
     selectElement('sol-stepper').innerHTML = STEPS.map(function (STEPSItem) {
@@ -59,7 +59,7 @@ async function initView_solicitar() {
     }).join('');
   }
   try {
-    fill(selectElement('sol-empresa'), await window.Store.get('empresas'), 'codigo', 'nome', 'Selecione uma empresa');
+    companyOptions = (await window.Store.get('empresas')) || [];
 
     var kinds = (await window.Store.get('launchable_kinds')) || [];
     var payKinds = kinds.filter(function (kind) { return String(kind.name_pkn || '').trim().toLowerCase() !== 'comissão'; });
@@ -86,8 +86,8 @@ async function initView_solicitar() {
   }
   selectElement('sol-tipo').addEventListener('change', applyMode);
 
-  selectElement('sol-empresa').addEventListener('change', async function () {
-    var company = this.value;
+  var companyInput = selectElement('sol-empresa-input'), companyResults = selectElement('sol-empresa-results');
+  async function loadBuildings(company) {
     var building = selectElement('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
     resetAppropriation('Selecione uma obra');
     if (company) {
@@ -95,9 +95,37 @@ async function initView_solicitar() {
         var buildings = await window.Store.get('obras', company);
         fill(building, buildings, 'codigo', 'nome', 'Selecione uma obra'); building.disabled = false;
       } catch (error) { building.innerHTML = '<option value="">Erro</option>'; building.disabled = false; }
+    } else {
+      building.innerHTML = '<option value="">Selecione uma empresa</option>';
     }
     show();
+  }
+  function renderCompanies(term) {
+    term = (term || '').toLowerCase().trim();
+    var list = companyOptions.filter(function (company) {
+      return !term || String(company.nome).toLowerCase().indexOf(term) >= 0 || String(company.codigo).toLowerCase().indexOf(term) >= 0;
+    }).slice(0, 100);
+    companyResults.innerHTML = list.length
+      ? list.map(function (company) { return '<div class="it" data-code="' + escapeHtml(company.codigo) + '" data-nome="' + escapeHtml(company.nome) + '">' + escapeHtml(company.nome) + '<small>' + escapeHtml(company.codigo) + '</small></div>'; }).join('')
+      : '<div class="it">Nada encontrado</div>';
+    companyResults.classList.add('show');
+    companyResults.querySelectorAll('.it[data-code]').forEach(function (item) {
+      item.addEventListener('click', function () {
+        selectElement('sol-empresa').value = item.getAttribute('data-code');
+        companyInput.value = item.getAttribute('data-nome');
+        companyResults.classList.remove('show');
+        loadBuildings(item.getAttribute('data-code'));
+      });
+    });
+  }
+  companyInput.addEventListener('focus', function () { renderCompanies(companyInput.value); });
+  companyInput.addEventListener('input', function () {
+    selectElement('sol-empresa').value = '';
+    var building = selectElement('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Selecione uma empresa</option>';
+    resetAppropriation('Selecione empresa e obra primeiro');
+    renderCompanies(companyInput.value); show();
   });
+  document.addEventListener('click', function (event) { if (!companyInput.contains(event.target) && !companyResults.contains(event.target)) companyResults.classList.remove('show'); });
   selectElement('sol-obra').addEventListener('change', async function () {
     var company = selectElement('sol-empresa').value, building = this.value;
     resetAppropriation('Carregando…');
@@ -224,7 +252,7 @@ async function initView_solicitar() {
   function optionText(selector) { var o = selector.options[selector.selectedIndex]; return o ? o.text : '-'; }
   selectElement('sol-save').addEventListener('click', function () {
     var rows = [
-      ['Empresa', optionText(selectElement('sol-empresa'))], ['Obra', optionText(selectElement('sol-obra'))], ['Fornecedor', personInput.value || '-'],
+      ['Empresa', selectElement('sol-empresa-input').value || '-'], ['Obra', optionText(selectElement('sol-obra'))], ['Fornecedor', personInput.value || '-'],
       ['Apropriação', apin.value || '-'], ['Tipo de Processo', optionText(selectElement('sol-tipo'))],
       ['Urgente', selectElement('sol-urgente').value === '1' ? 'SIM' : 'NÃO'], ['Tipo de Documento', optionText(selectElement('sol-tipodoc'))],
       ['Nº Documento', selectElement('sol-numdoc').value || '-'], ['Data de Emissão', selectElement('sol-emissao').value || '-'],
@@ -294,7 +322,12 @@ async function initView_solicitar() {
     setSelectIfOption(selectElement('sol-tipo'), data.payment_kind_id);
     applyMode();
 
-    if (setSelectIfOption(selectElement('sol-empresa'), data.company_id)) {
+    var prefillCompany = data.company_id != null
+      ? companyOptions.filter(function (company) { return String(company.codigo) === String(data.company_id); })[0]
+      : null;
+    if (prefillCompany) {
+      selectElement('sol-empresa').value = prefillCompany.codigo;
+      selectElement('sol-empresa-input').value = prefillCompany.nome;
       var building = selectElement('sol-obra'); building.disabled = true; building.innerHTML = '<option value="">Carregando…</option>';
       resetAppropriation('Carregando…');
       try {
