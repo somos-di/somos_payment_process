@@ -2,6 +2,11 @@
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function money(value) { return (Number(value) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
   function fmtDate(d) { return d ? String(d).split('T')[0].split('-').reverse().join('/') : '-'; }
+  function clip(text, maxPx) {
+    if (text == null || text === '') return '<span style="color:var(--muted)">-</span>';
+    var safe = escapeHtml(text);
+    return '<span class="clip" style="max-width:' + maxPx + 'px" title="' + safe + '">' + safe + '</span>';
+  }
   function statusBadge(step, name) {
     var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
 
@@ -242,9 +247,9 @@
               + (batch ? '<td style="text-align:center"><input type="checkbox" data-check="' + escapeHtml(entry.uuid_prc) + '"' + (selected[entry.uuid_prc] ? ' checked' : '') + '></td>' : '')
               + '<td><span class="id-cell">' + escapeHtml(entry.id_prc)
               + (entry.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
-              + '</span></td><td>' + escapeHtml(entry.empresa_nome) + '</td><td>' + escapeHtml(entry.obra_nome) + '</td>'
-              + '<td>' + (entry.fornecedor_nome ? escapeHtml(entry.fornecedor_nome) : '<span style="color:var(--muted)">-</span>') + '</td>'
-              + '<td>' + (entry.description_prc ? escapeHtml(entry.description_prc) : '<span style="color:var(--muted)">-</span>') + '</td>'
+              + '</span></td><td>' + clip(entry.empresa_nome, 160) + '</td><td>' + clip(entry.obra_nome, 110) + '</td>'
+              + '<td>' + clip(entry.fornecedor_nome, 130) + '</td>'
+              + '<td>' + clip(entry.description_prc, 220) + '</td>'
               + '<td>' + escapeHtml(entry.tipo_nome) + '</td>'
               + '<td>' + money(entry.value_prc) + '</td><td>' + fmtDate(entry.due_date_prc) + '</td>'
               + '<td>' + statusBadge(entry.status_step_prc, entry.status_nome) + '</td>'
