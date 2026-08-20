@@ -75,7 +75,7 @@ async function initView_editar_processo() {
   selectElement('ep-urgente').value = process.is_urgent_prc ? '1' : '0';
   selectElement('ep-numdoc').value = process.fiscal_doc_prc || '';
   selectElement('ep-emissao').value = process.issue_date_prc || '';
-  selectElement('ep-venc').min = MIN_DUE_DATE;
+  selectElement('ep-venc').min = process.is_urgent_prc ? '' : MIN_DUE_DATE;
   selectElement('ep-venc').value = process.due_date_prc || '';
   selectElement('ep-valor').value = process.value_prc != null ? 'R$ ' + fmtBR(process.value_prc) : '';
   selectElement('ep-historico').value = process.description_prc || '';
@@ -122,7 +122,9 @@ async function initView_editar_processo() {
   }
   ready = true;
 
-  function dueDateValid() { var value = selectElement('ep-venc').value; return !!value && value >= MIN_DUE_DATE; }
+  function isUrgent() { return selectElement('ep-urgente').value === '1'; }
+  function applyDueDateMin() { selectElement('ep-venc').min = isUrgent() ? '' : MIN_DUE_DATE; }
+  function dueDateValid() { var value = selectElement('ep-venc').value; return !!value && (isUrgent() || value >= MIN_DUE_DATE); }
   function toggleDueDateError() { selectElement('ep-venc-erro').style.display = dueDateValid() || !selectElement('ep-venc').value ? 'none' : 'block'; }
 
   function collect() {
@@ -246,6 +248,7 @@ async function initView_editar_processo() {
     selectElement(item).addEventListener('change', scheduleSave); selectElement(item).addEventListener('input', scheduleSave);
   });
   selectElement('ep-venc').addEventListener('change', function () { toggleDueDateError(); scheduleSave(); });
+  selectElement('ep-urgente').addEventListener('change', function () { applyDueDateMin(); toggleDueDateError(); });
   selectElement('ep-valor').addEventListener('input', function () { updateSum(); scheduleSave(); });
   selectElement('ep-valor').addEventListener('blur', function () { var n = parseVal(this.value); if (n != null) this.value = 'R$ ' + fmtBR(n); updateSum(); });
   selectElement('ep-gerar').addEventListener('click', generateInstallments);
