@@ -4,61 +4,57 @@
         -webkit-overflow-scrolling: auto;
     }
 
-    .table-scroll table {
+    .table-scroll table,
+    .table-scroll tbody,
+    .table-scroll tbody tr,
+    .table-scroll tbody td {
+        display: block;
+        width: auto;
         min-width: 0;
-        width: 100%;
     }
 
     .table-scroll thead {
         display: none;
     }
 
-    .table-scroll tbody {
-        display: block;
-    }
-
     .table-scroll tbody tr {
-        display: block;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 8px 14px;
-        margin-bottom: 12px;
+        padding: 6px 14px 10px;
+        margin: 0 0 12px;
         box-shadow: var(--shadow-md);
+    }
+
+    .table-scroll tbody td[data-label="Descrição"],
+    .table-scroll tbody td[data-label="Aprovações"] {
+        display: none;
     }
 
     .table-scroll tbody td {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: baseline;
         gap: 12px;
-        padding: 7px 0 !important;
+        padding: 5px 0 !important;
         border: 0 !important;
-        font-size: 13px !important;
+        font-size: 13.5px !important;
         text-align: right;
     }
 
     .table-scroll tbody td::before {
         content: attr(data-label);
-        color: var(--muted);
-        font-weight: 600;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .03em;
-        text-align: left;
         flex: 0 0 auto;
-    }
-
-    .table-scroll tbody td.pl-actions-cell::before {
-        content: none;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        text-align: left;
     }
 
     .table-scroll tbody td .clip {
-        max-width: 58vw;
-    }
-
-    .table-scroll tbody td[data-label="#"] {
-        padding-bottom: 2px !important;
+        max-width: 62vw;
     }
 
     .table-scroll tbody td[data-label="#"] .id-cell {
@@ -66,18 +62,26 @@
         font-weight: 700;
     }
 
-    .table-scroll .pl-check {
-        justify-content: flex-start;
+    .table-scroll tbody td[data-label="Valor"] {
+        font-weight: 700;
+        font-size: 15px !important;
     }
 
-    .table-scroll .pl-actions-cell {
+    .table-scroll .pl-check {
+        justify-content: space-between;
+    }
+
+    .table-scroll tbody td.pl-actions-cell {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        justify-content: flex-end;
         padding-top: 10px !important;
-        margin-top: 4px;
+        margin-top: 6px;
         border-top: 1px solid var(--border) !important;
+    }
+
+    .table-scroll tbody td.pl-actions-cell::before {
+        content: none;
     }
 
     .table-scroll .pl-actions-cell .btn {
