@@ -61,10 +61,10 @@ async function initView_admin_grupos() {
   }
 
   function groupTags(g) {
-    var tags = '';
+    var tags = '<span class="badge">Nível ' + (g.level_grp || 1) + '</span>';
     if (g.restrict_launch_kinds_grp) tags += '<span class="badge violet">Lançador</span>';
     if (g.is_urgent_approver_grp) tags += '<span class="badge warn">Urgência</span>';
-    return tags ? '<span class="gtags">' + tags + '</span>' : '';
+    return '<span class="gtags">' + tags + '</span>';
   }
 
   function renderGroupList() {
@@ -160,6 +160,10 @@ async function initView_admin_grupos() {
     o.innerHTML = '<div class="modal-box" style="width:480px"><div class="modal-title">Novo grupo</div>'
       + '<div class="field" style="margin-bottom:12px"><label>Nome</label><input data-name maxlength="80" placeholder="Ex.: Lançadores Obra X"></div>'
       + '<div class="field" style="margin-bottom:12px"><label>Descrição (opcional)</label><input data-desc maxlength="200"></div>'
+      + '<div class="field" style="margin-bottom:12px"><label>Nível (alçada de aprovação)</label>'
+      + '<select data-level style="width:100%">'
+      + '<option value="1">Nível 1</option><option value="2">Nível 2</option>'
+      + '<option value="3">Nível 3</option><option value="4">Nível 4</option></select></div>'
       + '<label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);cursor:pointer">'
       + '<input type="checkbox" data-restrict style="width:16px;height:16px;accent-color:var(--accent)">'
       + 'Grupo <b>lançador</b>: membros só veem/lançam os tipos concedidos ao grupo (tela Permissões)</label>'
@@ -177,6 +181,7 @@ async function initView_admin_grupos() {
           name: nameEl.value.trim(),
           description: (o.querySelector('[data-desc]').value || '').trim() || undefined,
           restrictLaunch: o.querySelector('[data-restrict]').checked,
+          level: Number(o.querySelector('[data-level]').value),
         });
         groups.push(created);
         groups.sort(function (group, index) { return String(group.name_grp).localeCompare(index.name_grp); });
