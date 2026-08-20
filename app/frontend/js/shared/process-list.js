@@ -575,8 +575,11 @@
   };
 
   function applyProcessFilters(s, kind, term, filters, reembolso) {
-    if (reembolso) s = s.ilike('tipo_nome', '%reembolso%');
-    else if (kind) s = s.eq('kind_prc', Number(kind));
+    if (reembolso) {
+      var pkinds = (window.CONFIG && window.CONFIG.PROCESS_KINDS) || {};
+      var reembolsoIds = Object.keys(pkinds).filter(function (id) { return /reembolso/i.test(pkinds[id] || ''); }).map(Number);
+      s = reembolsoIds.length ? s.in('kind_prc', reembolsoIds) : s.ilike('tipo_nome', '%reembolso%');
+    } else if (kind) s = s.eq('kind_prc', Number(kind));
     var activeFilters = filters || {};
     var comps = Array.isArray(activeFilters.company) ? activeFilters.company : (activeFilters.company ? [activeFilters.company] : []);
     var builds = Array.isArray(activeFilters.building) ? activeFilters.building : (activeFilters.building ? [activeFilters.building] : []);
