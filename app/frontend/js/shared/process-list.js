@@ -244,21 +244,21 @@
             + (showApprovers ? '<th>Aprovações</th>' : '') + '<th></th></tr></thead><tbody>';
           data.forEach(function (entry, index) {
             html += '<tr data-i="' + index + '" style="cursor:pointer">'
-              + (batch ? '<td style="text-align:center"><input type="checkbox" data-check="' + escapeHtml(entry.uuid_prc) + '"' + (selected[entry.uuid_prc] ? ' checked' : '') + '></td>' : '')
-              + '<td><span class="id-cell">' + escapeHtml(entry.id_prc)
+              + (batch ? '<td class="pl-check" data-label="Selecionar" style="text-align:center"><input type="checkbox" data-check="' + escapeHtml(entry.uuid_prc) + '"' + (selected[entry.uuid_prc] ? ' checked' : '') + '></td>' : '')
+              + '<td data-label="#"><span class="id-cell">' + escapeHtml(entry.id_prc)
               + (entry.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
-              + '</span></td><td>' + clip(entry.empresa_nome, 160) + '</td><td>' + clip(entry.obra_nome, 110) + '</td>'
-              + '<td>' + clip(entry.fornecedor_nome, 130) + '</td>'
-              + '<td>' + clip(entry.description_prc, 220) + '</td>'
-              + '<td>' + escapeHtml(entry.tipo_nome) + '</td>'
-              + '<td>' + money(entry.value_prc) + '</td><td>' + fmtDate(entry.due_date_prc) + '</td>'
-              + '<td>' + statusBadge(entry.status_step_prc, entry.status_nome) + '</td>'
+              + '</span></td><td data-label="Empresa">' + clip(entry.empresa_nome, 160) + '</td><td data-label="Obra">' + clip(entry.obra_nome, 110) + '</td>'
+              + '<td data-label="Fornecedor">' + clip(entry.fornecedor_nome, 130) + '</td>'
+              + '<td data-label="Descrição">' + clip(entry.description_prc, 220) + '</td>'
+              + '<td data-label="Tipo">' + escapeHtml(entry.tipo_nome) + '</td>'
+              + '<td data-label="Valor">' + money(entry.value_prc) + '</td><td data-label="Vencimento">' + fmtDate(entry.due_date_prc) + '</td>'
+              + '<td data-label="Status">' + statusBadge(entry.status_step_prc, entry.status_nome) + '</td>'
               + (options.extraColumns || []).map(function (item) {
                 var value = item.render ? item.render(entry) : (entry[item.col] == null || entry[item.col] === '' ? '<span style="color:var(--muted)">-</span>' : escapeHtml(entry[item.col]));
-                return '<td>' + value + '</td>';
+                return '<td data-label="' + escapeHtml(item.label || '') + '">' + value + '</td>';
               }).join('')
-              + (showApprovers ? '<td style="white-space:nowrap">' + approversCell(entry) + '</td>' : '')
-              + '<td style="white-space:nowrap;text-align:right"></td></tr>';
+              + (showApprovers ? '<td data-label="Aprovações" style="white-space:nowrap">' + approversCell(entry) + '</td>' : '')
+              + '<td class="pl-actions-cell" style="white-space:nowrap;text-align:right"></td></tr>';
           });
           html += '</tbody></table></div>';
           bodyEl.innerHTML = html;
