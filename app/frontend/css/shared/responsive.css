@@ -39,10 +39,10 @@
     }
 
     .table-scroll tbody td {
-        padding: 5px 0 5px 14px !important;
+        padding: 5px 0 !important;
         border: 0 !important;
         font-size: 14px !important;
-        text-align: left;
+        text-align: center;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
@@ -50,7 +50,7 @@
     .table-scroll tbody td::before {
         content: attr(data-label);
         display: block;
-        margin: 0 0 1px -14px;
+        margin: 0 0 2px 0;
         color: var(--muted);
         font-size: 11px;
         font-weight: 600;
@@ -78,7 +78,7 @@
 
     .table-scroll tbody td.pl-actions-cell {
         display: flex;
-        justify-content: flex-start;
+        justify-content: center;
         align-items: center;
         gap: 8px;
         padding: 12px 0 2px !important;
@@ -100,5 +100,29 @@
         max-width: 94vw !important;
         max-height: 90vh;
         overflow: auto;
+    }
+
+    .modal-box.xl {
+        width: auto !important;
+        max-width: 94vw !important;
+        height: auto !important;
+        max-height: 92vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    .modal-box.xl .pd-detail,
+    .modal-box.xl .pd-fields {
+        overflow: visible !important;
+    }
+
+    .pd-doc-frame {
+        min-height: 0 !important;
+        height: 52vh !important;
+    }
+
+    .pd-doc-open {
+        flex: 1 1 auto;
+        text-align: center;
     }
 }

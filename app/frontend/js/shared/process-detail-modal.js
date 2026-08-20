@@ -26,7 +26,9 @@
         + '<div class="pd-doc-tabs">'
         + (fiscalDocUrl ? '<button class="pd-doc-tab active" data-url="' + escapeHtml(fiscalDocUrl) + '">Nota Fiscal</button>' : '')
         + (boletoUrl ? '<button class="pd-doc-tab' + (fiscalDocUrl ? '' : ' active') + '" data-url="' + escapeHtml(boletoUrl) + '">Boleto</button>' : '')
-        + '</div></div>'
+        + '</div>'
+        + '<a class="pd-doc-open" href="' + escapeHtml(firstUrl) + '" target="_blank" rel="noopener">Abrir ↗</a>'
+        + '</div>'
         + '<iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe>'
         + '</div>';
     }
@@ -66,11 +68,14 @@
     });
 
     var frame = o.querySelector('.pd-doc-frame');
+    var openLink = o.querySelector('.pd-doc-open');
     o.querySelectorAll('.pd-doc-tab').forEach(function (documentTab) {
       documentTab.addEventListener('click', function () {
         o.querySelectorAll('.pd-doc-tab').forEach(function (otherDocumentTab) { otherDocumentTab.classList.remove('active'); });
         documentTab.classList.add('active');
-        if (frame) frame.src = documentTab.getAttribute('data-url');
+        var url = documentTab.getAttribute('data-url');
+        if (frame) frame.src = url;
+        if (openLink) openLink.setAttribute('href', url);
       });
     });
 
