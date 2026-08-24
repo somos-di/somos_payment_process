@@ -1505,8 +1505,18 @@ tbody tr:hover td {
   margin-top: 12px;
 }
 
+@media (max-width: 1300px) {
+  .form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 1100px) {
   .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kpis {
     grid-template-columns: repeat(2, 1fr);
   }
 }
