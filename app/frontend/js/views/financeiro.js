@@ -114,11 +114,11 @@ async function initView_financeiro() {
     data.forEach(function (entry, index) {
       var alerts = buildAlerts(entry);
       html += '<tr data-i="' + index + '" style="cursor:pointer">'
-        + '<td>' + escapeHtml(entry.id_prc) + '</td><td>' + clip(entry.empresa_nome, 150) + '</td><td>' + clip(entry.obra_nome, 110) + '</td>'
-        + '<td>' + clip(entry.fornecedor_nome, 130) + '</td>'
-        + '<td>' + clip(entry.description_prc, 240) + '</td>'
-        + '<td>' + clip(entry.fiscal_doc_prc, 110) + '</td>'
-        + '<td>' + clip(entry.uau_number_prc, 90) + '</td>'
+        + '<td>' + escapeHtml(entry.id_prc) + '</td><td>' + clip(entry.empresa_nome, 132) + '</td><td>' + clip(entry.obra_nome, 100) + '</td>'
+        + '<td>' + clip(entry.fornecedor_nome, 116) + '</td>'
+        + '<td>' + clip(entry.description_prc, 190) + '</td>'
+        + '<td>' + clip(entry.fiscal_doc_prc, 95) + '</td>'
+        + '<td>' + clip(entry.uau_number_prc, 78) + '</td>'
         + '<td><span class="badge ' + statusCls(entry.status_step_prc) + '">' + escapeHtml(entry.status_nome) + '</span></td>'
         + '<td>' + fmtDate(entry.due_date_prc) + '</td><td>' + money(entry.value_prc) + '</td>'
         + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + index + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">-</span>') + '</td>'
