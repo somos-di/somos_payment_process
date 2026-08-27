@@ -177,15 +177,18 @@ async function initView_comissoes() {
     var nfAttachmentUrl = c.nf_url_com, boletoAttachmentUrl = c.boleto_url_com, firstUrl = nfAttachmentUrl || boletoAttachmentUrl;
     var docHtml = '';
     if (firstUrl) {
-      docHtml = '<div class="pd-doc"><div class="pd-doc-head"><div class="pd-doc-tabs">'
+      docHtml = '<div class="pd-doc">'
+        + '<div class="pd-doc-head"><div class="pd-doc-tabs">'
         + (nfAttachmentUrl ? '<button class="pd-doc-tab active" data-url="' + escapeHtml(nfAttachmentUrl) + '">Nota Fiscal</button>' : '')
         + (boletoAttachmentUrl ? '<button class="pd-doc-tab' + (nfAttachmentUrl ? '' : ' active') + '" data-url="' + escapeHtml(boletoAttachmentUrl) + '">Boleto</button>' : '')
-        + '</div></div><iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe></div>';
+        + '</div>'
+        + '<a class="pd-doc-open" href="' + escapeHtml(firstUrl) + '" target="_blank" rel="noopener">Abrir ↗</a>'
+        + '</div>'
+        + '<iframe class="pd-doc-frame" src="' + escapeHtml(firstUrl) + '" title="Documento"></iframe></div>';
     }
     var o = document.createElement('div'); o.className = 'modal-overlay';
     o.innerHTML = '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
-      + '<div class="tabs"><button class="tab active" data-t="dados">Detalhes</button><button class="tab" data-t="hist">Histórico</button></div>'
-      + '<div data-pane="dados" class="pane pd-detail">'
+      + '<div class="pd-detail">'
       + '<div class="pd-fields"><h3>Comissão #' + escapeHtml(c.id_com) + ' - ' + escapeHtml(c.status_nome) + '</h3>'
       + fieldBox('Empreendimento', c.empreendimento_nome)
       + fieldBox('Empresa', c.empresa_nome || c.company_com)
@@ -202,32 +205,43 @@ async function initView_comissoes() {
       + fieldBox('Celular', c.seller_phone_com)
       + fieldBox('Valor', money(c.value_com))
       + fieldBox('Observação', c.note_com)
-      + '</div>' + docHtml + '</div>'
-      + '<div data-pane="hist" class="pane" hidden><div class="col-body">…</div></div></div>';
+      + '</div>'
+      + docHtml
+      + '<div class="pd-hist">'
+      + '<div class="pd-hist-head"><h3>Histórico</h3>'
+      + '<button type="button" class="pd-hist-toggle" aria-label="Recolher histórico">›</button></div>'
+      + '<div class="pd-hist-body col-body">…</div>'
+      + '</div>'
+      + '</div></div>';
     o.addEventListener('click', function (event) { if (event.target === o || event.target.classList.contains('modal-x')) o.remove(); });
-    o.querySelectorAll('.tab').forEach(function (tabButton) {
-      tabButton.addEventListener('click', function () {
-        o.querySelectorAll('.tab').forEach(function (otherTab) { otherTab.classList.remove('active'); }); tabButton.classList.add('active');
-        o.querySelectorAll('.pane').forEach(function (pane) { pane.hidden = (pane.getAttribute('data-pane') !== tabButton.getAttribute('data-t')); });
-      });
+    var modalBox = o.querySelector('.modal-box');
+    var histToggle = o.querySelector('.pd-hist-toggle');
+    if (histToggle) histToggle.addEventListener('click', function () {
+      var collapsed = modalBox.classList.toggle('hist-collapsed');
+      histToggle.textContent = collapsed ? '‹' : '›';
+      histToggle.setAttribute('aria-label', collapsed ? 'Expandir histórico' : 'Recolher histórico');
     });
     var frame = o.querySelector('.pd-doc-frame');
+    var openLink = o.querySelector('.pd-doc-open');
     o.querySelectorAll('.pd-doc-tab').forEach(function (documentTab) {
       documentTab.addEventListener('click', function () {
         o.querySelectorAll('.pd-doc-tab').forEach(function (otherDocumentTab) { otherDocumentTab.classList.remove('active'); });
-        documentTab.classList.add('active'); if (frame) frame.src = documentTab.getAttribute('data-url');
+        documentTab.classList.add('active');
+        var url = documentTab.getAttribute('data-url');
+        if (frame) frame.src = url;
+        if (openLink) openLink.setAttribute('href', url);
       });
     });
     document.body.appendChild(o);
     try {
       var hist = await window.Store.get('comm_history', c.uuid_com);
-      o.querySelector('[data-pane="hist"] .col-body').innerHTML = (hist && hist.length)
+      o.querySelector('.pd-hist-body').innerHTML = (hist && hist.length)
         ? '<ul class="timeline">' + hist.map(function (histItem) {
           return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
             + '<div class="tl-meta">' + escapeHtml(histItem.user_nome || 'Sistema') + ' · ' + escapeHtml(formatDateTime(histItem.created_at_chs)) + '</div></div></li>';
         }).join('') + '</ul>'
         : '<div class="empty">Sem histórico.</div>';
-    } catch (error) { o.querySelector('[data-pane="hist"] .col-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
+    } catch (error) { o.querySelector('.pd-hist-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }
 
   ['com-search', 'com-trilha', 'com-status'].forEach(function (item) { selectElement(item).addEventListener('input', render); selectElement(item).addEventListener('change', render); });

@@ -36,7 +36,7 @@
     o.innerHTML =
       '<div class="modal-box xl' + (firstUrl ? '' : ' no-doc') + '"><button class="modal-x" aria-label="Fechar">×</button>'
       + '<div class="pd-detail">'
-      + '<div class="pd-fields"><h3>Dados Gerais</h3>'
+      + '<div class="pd-fields"><h3>Dados Gerais <span style="color:var(--muted);font-weight:600">#' + escapeHtml(process.id_prc) + '</span></h3>'
       + fieldBox('Descrição', process.description_prc)
       + fieldBox('Empresa', process.empresa_nome || process.company_prc)
       + fieldBox('Obra', process.obra_nome || process.building_prc)

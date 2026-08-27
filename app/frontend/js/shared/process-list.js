@@ -210,6 +210,8 @@
             && filters.building.map(function (buildingItem) { return String(buildingItem).toUpperCase(); }).indexOf(String(outItem.building_prc || '').toUpperCase()) < 0) return false;
           if (filters.status && filters.status.length && filters.status.map(Number).indexOf(Number(outItem.status_step_prc)) < 0) return false;
           if (filters.urgent !== '' && !!outItem.is_urgent_prc !== (filters.urgent === '1')) return false;
+          if (filters.fornecedor && String(outItem.fornecedor_nome || '').toLowerCase().indexOf(String(filters.fornecedor).toLowerCase()) < 0) return false;
+          if (filters.descricao && String(outItem.description_prc || '').toLowerCase().indexOf(String(filters.descricao).toLowerCase()) < 0) return false;
           if (filters.from || filters.to) {
             var d = isoDay(outItem[dateField]);
             if (!d) return false;
@@ -590,6 +592,10 @@
     if (activeFilters.urgent === '1' || activeFilters.urgent === '0') s = s.eq('is_urgent_prc', activeFilters.urgent === '1');
     if (activeFilters.from) s = s.gte('due_date_prc', activeFilters.from);
     if (activeFilters.to) s = s.lte('due_date_prc', activeFilters.to);
+    var fornecedor = (activeFilters.fornecedor || '').replace(/[,()*%]/g, ' ').trim();
+    if (fornecedor) s = s.ilike('fornecedor_nome', '%' + fornecedor + '%');
+    var descricao = (activeFilters.descricao || '').replace(/[,()*%]/g, ' ').trim();
+    if (descricao) s = s.ilike('description_prc', '%' + descricao + '%');
     term = (term || '').trim();
     if (term) {
       var safe = term.replace(/[,()*%]/g, ' ').trim();

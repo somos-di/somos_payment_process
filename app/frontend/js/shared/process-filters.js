@@ -10,6 +10,12 @@
     buildingsCache[company] = rows || [];
     return buildingsCache[company];
   }
+  async function loadAllBuildings() {
+    if (buildingsCache.__all__) return buildingsCache.__all__;
+    var rows = await window.SB.select('v_obras', function (query) { return query.order('nome'); });
+    buildingsCache.__all__ = rows || [];
+    return buildingsCache.__all__;
+  }
 
   var STYLE_ID = 'pf-ms-style';
   function ensureStyle() {
@@ -32,7 +38,21 @@
       + '.pf-ms-pop .pf-ms-opt:hover{background:var(--surface-2)}'
       + '.pf-ms-pop .pf-ms-opt input{flex:none;margin:0;width:15px;height:15px;pointer-events:none}'
       + '.pf-ms-pop .pf-ms-opt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      + '.pf-ms-pop .pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}';
+      + '.pf-ms-pop .pf-ms-empty{padding:6px;color:var(--muted);font-size:12.5px}'
+      + '.pf-active{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}'
+      + '.pf-chip{display:inline-flex;align-items:flex-end;gap:4px}'
+      + '.pf-daterange{display:inline-flex;gap:6px}'
+      + '.pf-chip .pf-txt{padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:12.5px;min-width:160px}'
+      + '.pf-chip-x{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:6px;width:24px;height:30px;cursor:pointer;font-size:15px;line-height:1;flex:none}'
+      + '.pf-chip-x:hover{color:var(--danger);border-color:var(--danger)}'
+      + '.pf-add{position:relative}'
+      + '.pf-add-btn{border:1px dashed var(--border);background:var(--surface);color:var(--text-2);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}'
+      + '.pf-add-btn:hover{border-color:var(--accent);color:var(--accent)}'
+      + '.pf-add-menu{position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:6px;display:none}'
+      + '.pf-add-menu.open{display:block}'
+      + '.pf-add-opt{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text)}'
+      + '.pf-add-opt:hover{background:var(--surface-2)}'
+      + '.pf-add-empty{padding:8px 10px;color:var(--muted);font-size:12.5px}';
     document.head.appendChild(styleElement);
   }
 
@@ -106,95 +126,157 @@
     };
   }
 
+  var FIELDS = [
+    { key: 'company', label: 'Empresa' },
+    { key: 'building', label: 'Obra' },
+    { key: 'fornecedor', label: 'Fornecedor' },
+    { key: 'descricao', label: 'Descrição' },
+    { key: 'date', label: 'Vencimento (de–até)' },
+    { key: 'status', label: 'Status' },
+    { key: 'urgent', label: 'Urgente' },
+  ];
+
   window.ProcessFilters = {
     mount: async function (container, options) {
       options = options || {};
       ensureStyle();
-      var storageKey = 'filters:' + (options.storageKey || 'global');
+      var storageKey = 'pfbuilder:' + (options.storageKey || 'global');
       var saved = {};
       try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (error) { saved = {}; }
+      var savedVals = (saved && saved.values) || {};
+      var savedAdded = (saved && saved.added) || {};
 
-      var statusMulti = !!options.multiStatus;
       var companyMS = makeMultiSelect('Empresa', { allLabel: 'Todas', onChange: onCompanyChange });
       var buildingMS = makeMultiSelect('Obra', { allLabel: 'Todas', onChange: emit });
-      var statusMS = statusMulti ? makeMultiSelect('Status', { allLabel: 'Todos', onChange: emit }) : null;
+      var statusMS = makeMultiSelect('Status', { allLabel: 'Todos', onChange: emit });
 
-      var dates = document.createElement('span'); dates.style.display = 'contents';
-      dates.innerHTML =
-        '<label class="pf-field">De<input type="date" data-pf="from"></label>'
-        + '<label class="pf-field">Até<input type="date" data-pf="to"></label>';
-      var statusSingle = document.createElement('span'); statusSingle.style.display = 'contents';
-      if (!statusMulti) statusSingle.innerHTML = '<label class="pf-field">Status<select data-pf="status"><option value="">Todos</option></select></label>';
-      var urgentWrap = document.createElement('span'); urgentWrap.style.display = 'contents';
-      urgentWrap.innerHTML = '<label class="pf-field">Urgente<select data-pf="urgent">'
-        + '<option value="">Todos</option><option value="1">Sim</option><option value="0">Não</option></select></label>';
+      function textField(label, placeholder) {
+        var f = document.createElement('label'); f.className = 'pf-field'; f.textContent = label;
+        var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'pf-txt'; inp.placeholder = placeholder || '';
+        var timer = null;
+        inp.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(emit, 350); });
+        f.appendChild(inp);
+        return { el: f, input: inp };
+      }
+      var fornecedorField = textField('Fornecedor', 'Nome do fornecedor…');
+      var descricaoField = textField('Descrição', 'Texto da descrição…');
+
+      var urgentField = document.createElement('label'); urgentField.className = 'pf-field'; urgentField.textContent = 'Urgente';
+      var urgentSel = document.createElement('select');
+      urgentSel.innerHTML = '<option value="">Todos</option><option value="1">Sim</option><option value="0">Não</option>';
+      urgentField.appendChild(urgentSel);
+      urgentSel.addEventListener('change', emit);
+
+      var dateField = document.createElement('span'); dateField.className = 'pf-daterange';
+      dateField.innerHTML = '<label class="pf-field">De<input type="date" data-d="from"></label><label class="pf-field">Até<input type="date" data-d="to"></label>';
+      var dateFrom = dateField.querySelector('[data-d="from"]');
+      var dateTo = dateField.querySelector('[data-d="to"]');
+      dateFrom.addEventListener('change', emit); dateTo.addEventListener('change', emit);
+
+      var CTRL = {
+        company: { el: companyMS.el, setSaved: function () { companyMS.setValues(asArray(savedVals.company)); }, clear: function () { companyMS.clear(); } },
+        building: { el: buildingMS.el, setSaved: function () { }, clear: function () { buildingMS.clear(); } },
+        status: { el: statusMS.el, setSaved: function () { statusMS.setValues(asArray(savedVals.status)); }, clear: function () { statusMS.clear(); } },
+        urgent: { el: urgentField, setSaved: function () { urgentSel.value = savedVals.urgent || ''; }, clear: function () { urgentSel.value = ''; } },
+        fornecedor: { el: fornecedorField.el, setSaved: function () { fornecedorField.input.value = savedVals.fornecedor || ''; }, clear: function () { fornecedorField.input.value = ''; } },
+        descricao: { el: descricaoField.el, setSaved: function () { descricaoField.input.value = savedVals.descricao || ''; }, clear: function () { descricaoField.input.value = ''; } },
+        date: { el: dateField, setSaved: function () { dateFrom.value = savedVals.from || ''; dateTo.value = savedVals.to || ''; }, clear: function () { dateFrom.value = ''; dateTo.value = ''; } },
+      };
 
       container.innerHTML = '';
-      container.appendChild(companyMS.el);
-      container.appendChild(buildingMS.el);
-      container.appendChild(dates);
-      if (statusMulti) container.appendChild(statusMS.el); else container.appendChild(statusSingle);
-      container.appendChild(urgentWrap);
+      var active = document.createElement('div'); active.className = 'pf-active';
+      var addWrap = document.createElement('div'); addWrap.className = 'pf-add';
+      addWrap.innerHTML = '<button type="button" class="pf-add-btn">+ Filtro</button><div class="pf-add-menu"></div>';
+      container.appendChild(active);
+      container.appendChild(addWrap);
+      var addBtn = addWrap.querySelector('.pf-add-btn');
+      var addMenu = addWrap.querySelector('.pf-add-menu');
 
-      var element = {};
-      container.querySelectorAll('[data-pf]').forEach(function (item) { element[item.getAttribute('data-pf')] = item; });
+      var added = {};
+
+      function renderAddMenu() {
+        var avail = FIELDS.filter(function (f) { return !added[f.key]; });
+        if (!avail.length) { addMenu.innerHTML = '<div class="pf-add-empty">Todos os filtros adicionados</div>'; return; }
+        addMenu.innerHTML = avail.map(function (f) { return '<button type="button" class="pf-add-opt" data-k="' + f.key + '">' + escapeHtml(f.label) + '</button>'; }).join('');
+        addMenu.querySelectorAll('.pf-add-opt').forEach(function (b) {
+          b.addEventListener('click', function () { addMenu.classList.remove('open'); addField(b.getAttribute('data-k')); });
+        });
+      }
+      addBtn.addEventListener('click', function () { renderAddMenu(); addMenu.classList.toggle('open'); });
+      document.addEventListener('click', function (event) { if (!addWrap.contains(event.target)) addMenu.classList.remove('open'); });
+
+      function addField(key, restoring) {
+        if (added[key]) return;
+        var chip = document.createElement('div'); chip.className = 'pf-chip'; chip.setAttribute('data-field', key);
+        chip.appendChild(CTRL[key].el);
+        var x = document.createElement('button'); x.type = 'button'; x.className = 'pf-chip-x'; x.title = 'Remover filtro'; x.textContent = '×';
+        x.addEventListener('click', function () { removeField(key); });
+        chip.appendChild(x);
+        active.appendChild(chip);
+        added[key] = chip;
+        if (!restoring) {
+          if (key === 'building' || key === 'company') refreshBuildings(null);
+          emit();
+        }
+      }
+
+      function removeField(key) {
+        var chip = added[key]; if (!chip) return;
+        CTRL[key].clear();
+        chip.remove(); delete added[key];
+        emit();
+      }
+
+      async function refreshBuildings(keepValues) {
+        if (!added.building) return;
+        var comps = added.company ? companyMS.getValues() : [];
+        var seen = {}, opts = [];
+        var source = comps.length ? [] : await loadAllBuildings();
+        for (var index = 0; index < comps.length; index++) source = source.concat(await loadBuildings(comps[index]));
+        source.forEach(function (row) {
+          var value = String(row.codigo);
+          if (seen[value]) return; seen[value] = 1;
+          opts.push({ value: value, label: row.nome });
+        });
+        buildingMS.setOptions(opts);
+        if (keepValues) buildingMS.setValues(keepValues);
+      }
+
+      async function onCompanyChange() { await refreshBuildings(buildingMS.getValues()); emit(); }
+
+      function getValues() {
+        return {
+          company: added.company ? companyMS.getValues() : [],
+          building: added.building ? buildingMS.getValues() : [],
+          status: added.status ? statusMS.getValues() : [],
+          urgent: added.urgent ? urgentSel.value : '',
+          fornecedor: added.fornecedor ? fornecedorField.input.value.trim() : '',
+          descricao: added.descricao ? descricaoField.input.value.trim() : '',
+          from: added.date ? dateFrom.value : '',
+          to: added.date ? dateTo.value : '',
+        };
+      }
+      function persist() {
+        var addedKeys = {}; Object.keys(added).forEach(function (k) { addedKeys[k] = true; });
+        try { localStorage.setItem(storageKey, JSON.stringify({ added: addedKeys, values: getValues() })); } catch (error) { }
+      }
+      function emit() { persist(); if (options.onChange) options.onChange(getValues()); }
 
       var companies = [];
       try { companies = await window.Store.get('empresas'); } catch (error) { companies = []; }
       companyMS.setOptions((companies || []).map(function (item) { return { value: String(item.codigo), label: item.nome }; }));
 
       var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
-      var statusOpts = Object.keys(steps).map(function (item) { return { value: String(item), label: steps[item] }; });
-      if (statusMulti) statusMS.setOptions(statusOpts);
-      else element.status.innerHTML = '<option value="">Todos</option>' + statusOpts.map(function (statusOpt) {
-        return '<option value="' + escapeHtml(statusOpt.value) + '">' + escapeHtml(statusOpt.label) + '</option>';
-      }).join('');
+      statusMS.setOptions(Object.keys(steps).map(function (item) { return { value: String(item), label: steps[item] }; }));
 
-      async function refreshBuildings(keepValues) {
-        var comps = companyMS.getValues();
-        buildingMS.setDisabled(!comps.length);
-        var seen = {}, options = [];
-        for (var index = 0; index < comps.length; index++) {
-          var rows = await loadBuildings(comps[index]);
-          rows.forEach(function (row) {
-            var value = String(row.codigo);
-            if (seen[value]) return; seen[value] = 1;
-            options.push({ value: value, label: row.nome });
-          });
-        }
-        buildingMS.setOptions(options);
-        if (keepValues) buildingMS.setValues(keepValues);
-      }
-
-      async function onCompanyChange() { await refreshBuildings(null); emit(); }
-
-      function getValues() {
-        return {
-          company: companyMS.getValues(), building: buildingMS.getValues(),
-          from: element.from.value, to: element.to.value,
-          status: statusMulti ? statusMS.getValues() : element.status.value,
-          urgent: element.urgent.value,
-        };
-      }
-      function persist() { try { localStorage.setItem(storageKey, JSON.stringify(getValues())); } catch (error) { } }
-      function emit() { persist(); if (options.onChange) options.onChange(getValues()); }
-
-      companyMS.setValues(asArray(saved.company));
-      await refreshBuildings(asArray(saved.building));
-      element.from.value = saved.from || '';
-      element.to.value = saved.to || '';
-      if (statusMulti) statusMS.setValues(asArray(saved.status)); else element.status.value = saved.status || '';
-      element.urgent.value = saved.urgent || '';
-
-      (statusMulti ? ['from', 'to', 'urgent'] : ['from', 'to', 'status', 'urgent'])
-        .forEach(function (item) { element[item].addEventListener('change', emit); });
+      Object.keys(CTRL).forEach(function (key) { CTRL[key].setSaved(); });
+      FIELDS.forEach(function (f) { if (savedAdded[f.key]) addField(f.key, true); });
+      if (added.building) await refreshBuildings(asArray(savedVals.building));
 
       return {
         getValues: getValues,
         clear: function () {
-          companyMS.clear(); buildingMS.clear(); buildingMS.setDisabled(true);
-          element.from.value = ''; element.to.value = ''; element.urgent.value = '';
-          if (statusMulti) statusMS.clear(); else element.status.value = '';
+          Object.keys(added).slice().forEach(function (key) { CTRL[key].clear(); added[key].remove(); delete added[key]; });
           try { localStorage.removeItem(storageKey); } catch (error) { }
           if (options.onChange) options.onChange(getValues());
         },
