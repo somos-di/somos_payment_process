@@ -21,6 +21,9 @@ export class MeasurementController {
     const body = hasBody ? JSON.stringify(request.body) : undefined;
 
     const result = await this.gateway.forward(method, upstreamPath, body, context.uau_user || '');
-    return reply.status(result.status).header('content-type', result.contentType).send(result.body);
+    const payload = result.contentType.includes('text/html')
+      ? result.body.replace('<head>', '<head><script>window.MED_BASE="/api/v1/medicao";</script>')
+      : result.body;
+    return reply.status(result.status).header('content-type', result.contentType).send(payload);
   }
 }
