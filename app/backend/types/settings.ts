@@ -20,6 +20,12 @@ export interface ProcessCreatorSettings {
   timeoutMs: number;
 }
 
+export interface MeasurementSettings {
+  baseUrl: string;
+  token: string;
+  timeoutMs: number;
+}
+
 export interface AppSettings {
   port: number;
   host: string;
@@ -40,4 +46,5 @@ export interface AppSettings {
   integration: IntegrationSettings;
   reapproval: ReapprovalSettings;
   processCreator: ProcessCreatorSettings;
+  measurement: MeasurementSettings;
 }

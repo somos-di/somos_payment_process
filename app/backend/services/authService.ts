@@ -83,14 +83,16 @@ export class AuthService {
   async me(token: string, id: string, email: string): Promise<UserProfile> {
     const client = userClient(token);
     const { data, error } = await client
-      .from('users').select('name_usr, department_usr, is_admin').eq('id_usr', id).maybeSingle();
+      .from('users').select('name_usr, department_usr, is_admin, uau_user_usr').eq('id_usr', id).maybeSingle();
     if (error) throw new AppError(error.message, 400, 'supabase');
-    let isFinanceiro = false, isCommission = false;
+    let isFinanceiro = false, isCommission = false, isMedicao = false;
     try { isFinanceiro = !!(await unwrap(client.rpc('is_financeiro_member'))); } catch { }
     try { isCommission = !!(await unwrap(client.rpc('is_commission_member'))); } catch { }
+    try { isMedicao = !!(await unwrap(client.rpc('is_medicao_member'))); } catch { }
     return {
       id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null,
-      is_admin: !!data?.is_admin, is_financeiro: isFinanceiro, is_commission: isCommission,
+      is_admin: !!data?.is_admin, is_financeiro: isFinanceiro, is_commission: isCommission, is_medicao: isMedicao,
+      uau_user: data?.uau_user_usr ?? null,
     };
   }
 }

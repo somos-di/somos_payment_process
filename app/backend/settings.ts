@@ -48,6 +48,11 @@ export function getSettings(): AppSettings {
       token: process.env.PROCESS_CREATOR_TOKEN || '',
       timeoutMs: Number(process.env.PROCESS_CREATOR_TIMEOUT_MS || 120000),
     },
+    measurement: {
+      baseUrl: process.env.MEASUREMENT_URL || 'http://somos_measurement_creation:8000',
+      token: process.env.MEASUREMENT_TOKEN || '',
+      timeoutMs: Number(process.env.MEASUREMENT_TIMEOUT_MS || 120000),
+    },
   };
   return cachedSettings;
 }

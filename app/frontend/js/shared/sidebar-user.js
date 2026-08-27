@@ -7,6 +7,8 @@
         document.querySelectorAll('[data-fin-only]').forEach(function (item) { item.style.display = finShow })
         const commShow = (user && (user.is_commission || user.is_financeiro || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (item) { item.style.display = commShow })
+        const medShow = (user && (user.is_medicao || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="medicao"]').forEach(function (item) { item.style.display = medShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }

@@ -21,6 +21,7 @@ const ROUTES = {
     'reaprovals': { title: 'Reaprovações', appDir: 'reapprovals', parentLabel: 'Administração', admin: true },
     'comissoes': { title: 'Pagamento de Comissões', appDir: 'commissions', parentLabel: 'Comissões', commission: true },
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
+    'criar-medicao': { title: 'Criação de Medição', folder: 'medicao', parentLabel: 'Medição', medicao: true },
 }
 
 const loadedScripts = new Set()
@@ -182,6 +183,13 @@ async function loadView(route, params) {
     if (meta.commission) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_commission && !u.is_financeiro && !u.is_admin)) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    if (meta.medicao) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_medicao && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }
