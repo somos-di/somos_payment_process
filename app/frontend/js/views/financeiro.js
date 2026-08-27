@@ -87,7 +87,7 @@ async function initView_financeiro() {
     var output = rows;
     var t = (selectElement('fin-search').value || '').toLowerCase().trim();
     if (t) {
-      output = output.filter(function (outItem) { return [outItem.id_prc, outItem.empresa_nome, outItem.obra_nome, outItem.description_prc, outItem.fornecedor_nome, outItem.fiscal_doc_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
+      output = output.filter(function (outItem) { return [outItem.id_prc, outItem.empresa_nome, outItem.obra_nome, outItem.description_prc, outItem.fornecedor_nome, outItem.fiscal_doc_prc, outItem.uau_number_prc].join(' ').toLowerCase().indexOf(t) >= 0; });
     }
     return output.filter(function (outItem) {
       if (filters.company && filters.company.length && filters.company.map(String).indexOf(String(outItem.company_prc)) < 0) return false;
@@ -97,6 +97,7 @@ async function initView_financeiro() {
       if (filters.urgent !== '' && !!outItem.is_urgent_prc !== (filters.urgent === '1')) return false;
       if (filters.fornecedor && String(outItem.fornecedor_nome || '').toLowerCase().indexOf(String(filters.fornecedor).toLowerCase()) < 0) return false;
       if (filters.descricao && String(outItem.description_prc || '').toLowerCase().indexOf(String(filters.descricao).toLowerCase()) < 0) return false;
+      if (filters.uau && String(outItem.uau_number_prc || '').toLowerCase().indexOf(String(filters.uau).toLowerCase()) < 0) return false;
       if (filters.from || filters.to) {
         var d = isoDay(outItem.due_date_prc);
         if (!d) return false;

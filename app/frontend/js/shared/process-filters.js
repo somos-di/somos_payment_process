@@ -131,6 +131,7 @@
     { key: 'building', label: 'Obra' },
     { key: 'fornecedor', label: 'Fornecedor' },
     { key: 'descricao', label: 'Descrição' },
+    { key: 'uau', label: 'Nº UAU' },
     { key: 'date', label: 'Vencimento (de–até)' },
     { key: 'status', label: 'Status' },
     { key: 'urgent', label: 'Urgente' },
@@ -160,6 +161,7 @@
       }
       var fornecedorField = textField('Fornecedor', 'Nome do fornecedor…');
       var descricaoField = textField('Descrição', 'Texto da descrição…');
+      var uauField = textField('Nº UAU', 'Número do UAU…');
 
       var urgentField = document.createElement('label'); urgentField.className = 'pf-field'; urgentField.textContent = 'Urgente';
       var urgentSel = document.createElement('select');
@@ -180,6 +182,7 @@
         urgent: { el: urgentField, setSaved: function () { urgentSel.value = savedVals.urgent || ''; }, clear: function () { urgentSel.value = ''; } },
         fornecedor: { el: fornecedorField.el, setSaved: function () { fornecedorField.input.value = savedVals.fornecedor || ''; }, clear: function () { fornecedorField.input.value = ''; } },
         descricao: { el: descricaoField.el, setSaved: function () { descricaoField.input.value = savedVals.descricao || ''; }, clear: function () { descricaoField.input.value = ''; } },
+        uau: { el: uauField.el, setSaved: function () { uauField.input.value = savedVals.uau || ''; }, clear: function () { uauField.input.value = ''; } },
         date: { el: dateField, setSaved: function () { dateFrom.value = savedVals.from || ''; dateTo.value = savedVals.to || ''; }, clear: function () { dateFrom.value = ''; dateTo.value = ''; } },
       };
 
@@ -252,6 +255,7 @@
           urgent: added.urgent ? urgentSel.value : '',
           fornecedor: added.fornecedor ? fornecedorField.input.value.trim() : '',
           descricao: added.descricao ? descricaoField.input.value.trim() : '',
+          uau: added.uau ? uauField.input.value.trim() : '',
           from: added.date ? dateFrom.value : '',
           to: added.date ? dateTo.value : '',
         };

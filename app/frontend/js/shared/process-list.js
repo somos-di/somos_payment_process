@@ -201,7 +201,7 @@
         var t = (search.value || '').toLowerCase().trim();
         if (t) {
           output = output.filter(function (outItem) {
-            return [outItem.empresa_nome, outItem.obra_nome, outItem.description_prc, outItem.fornecedor_nome, outItem.tipo_nome, outItem.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
+            return [outItem.empresa_nome, outItem.obra_nome, outItem.description_prc, outItem.fornecedor_nome, outItem.tipo_nome, outItem.uau_number_prc, outItem.id_prc].join(' ').toLowerCase().indexOf(t) >= 0;
           });
         }
         output = output.filter(function (outItem) {
@@ -212,6 +212,7 @@
           if (filters.urgent !== '' && !!outItem.is_urgent_prc !== (filters.urgent === '1')) return false;
           if (filters.fornecedor && String(outItem.fornecedor_nome || '').toLowerCase().indexOf(String(filters.fornecedor).toLowerCase()) < 0) return false;
           if (filters.descricao && String(outItem.description_prc || '').toLowerCase().indexOf(String(filters.descricao).toLowerCase()) < 0) return false;
+          if (filters.uau && String(outItem.uau_number_prc || '').toLowerCase().indexOf(String(filters.uau).toLowerCase()) < 0) return false;
           if (filters.from || filters.to) {
             var d = isoDay(outItem[dateField]);
             if (!d) return false;
@@ -596,12 +597,15 @@
     if (fornecedor) s = s.ilike('fornecedor_nome', '%' + fornecedor + '%');
     var descricao = (activeFilters.descricao || '').replace(/[,()*%]/g, ' ').trim();
     if (descricao) s = s.ilike('description_prc', '%' + descricao + '%');
+    var uau = (activeFilters.uau || '').replace(/[,()*%]/g, ' ').trim();
+    if (uau) s = s.ilike('uau_number_prc', '%' + uau + '%');
     term = (term || '').trim();
     if (term) {
       var safe = term.replace(/[,()*%]/g, ' ').trim();
       if (safe) {
         var orConditions = ['empresa_nome.ilike.%' + safe + '%', 'obra_nome.ilike.%' + safe + '%',
-        'description_prc.ilike.%' + safe + '%', 'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%'];
+        'description_prc.ilike.%' + safe + '%', 'fornecedor_nome.ilike.%' + safe + '%', 'tipo_nome.ilike.%' + safe + '%',
+        'uau_number_prc.ilike.%' + safe + '%'];
         if (/^\d+$/.test(safe)) orConditions.push('id_prc.eq.' + safe);
         s = s.or(orConditions.join(','));
       }
