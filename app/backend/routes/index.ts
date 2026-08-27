@@ -5,6 +5,7 @@ import { registerAdminRoutes } from './admin.js';
 import { registerProtectedAuthRoutes, registerPublicAuthRoutes } from './auth.js';
 import { registerCatalogRoutes } from './catalog.js';
 import { registerDataRoutes } from './data.js';
+import { registerMeasurementRoutes } from './medicao.js';
 import { registerProcessesRoutes } from './processes.js';
 import { registerSyncRoutes } from './sync.js';
 
@@ -19,5 +20,6 @@ export function registerProtectedRoutes(app: FastifyInstance, controller_center:
   registerDataRoutes(app, controller_center.data);
   registerAdminRoutes(app, controller_center.admin);
   registerCatalogRoutes(app, controller_center.catalog);
+  registerMeasurementRoutes(app, controller_center.measurement);
   initApps(app);
 }

@@ -31,4 +31,6 @@ export interface UserProfile extends AuthenticatedUser {
   is_admin: boolean;
   is_financeiro: boolean;
   is_commission: boolean;
+  is_medicao: boolean;
+  uau_user: string | null;
 }

@@ -4,8 +4,10 @@ import { AdminController } from '../controllers/adminController.js';
 import { AuthController } from '../controllers/authController.js';
 import { CatalogController } from '../controllers/catalogController.js';
 import { DataController } from '../controllers/dataController.js';
+import { MeasurementController } from '../controllers/measurementController.js';
 import { ProcessesController } from '../controllers/processesController.js';
 import { SyncController } from '../controllers/syncController.js';
+import { MeasurementGateway } from '../gateways/measurement.js';
 import { ProcessCreatorGateway } from '../gateways/processCreator.js';
 import { createRedisClient } from '../gateways/redis.js';
 import { UauGateway } from '../gateways/uau.js';
@@ -29,6 +31,7 @@ export function createContainer(): Container {
   const catalogService = new CatalogService(cache);
   const uauIntegrationService = new UauIntegrationService(catalogService);
   const processCreatorGateway = new ProcessCreatorGateway(settings);
+  const measurementGateway = new MeasurementGateway(settings);
   const uauSyncService = new UauSyncService(uauGateway, warmer);
   const authService = new AuthService();
   const dataService = new DataService(cache);
@@ -41,6 +44,7 @@ export function createContainer(): Container {
     data: new DataController(dataService),
     admin: new AdminController(adminService),
     catalog: new CatalogController(catalogService),
+    measurement: new MeasurementController(measurementGateway),
   };
   return { controllers, authService, warmer };
 }
