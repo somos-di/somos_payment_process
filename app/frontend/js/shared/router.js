@@ -26,6 +26,19 @@ const ROUTES = {
 
 const loadedScripts = new Set()
 
+const ASSET_V = (function () {
+    try {
+        const self = document.querySelector('script[src*="shared/router.js"]')
+        const match = self && self.src.match(/[?&]v=([^&]+)/)
+        return match ? match[1] : ''
+    } catch (error) { return '' }
+})()
+
+function withVersion(url) {
+    if (!ASSET_V) return url
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + ASSET_V
+}
+
 function setupSidebar() {
 
     if (typeof window.setupShell === 'function') window.setupShell()
@@ -202,8 +215,8 @@ async function loadView(route, params) {
     window.routeParams = params
 
     try {
-        const htmlUrl = meta.appDir ? ('html/apps/' + meta.appDir + '/' + route + '.html') : window.CONFIG.VIEW_TEMPLATE(meta.folder, route)
-        const jsUrl = meta.appDir ? ('js/apps/' + meta.appDir + '/' + route + '.js') : ('js/views/' + route + '.js')
+        const htmlUrl = withVersion(meta.appDir ? ('html/apps/' + meta.appDir + '/' + route + '.html') : window.CONFIG.VIEW_TEMPLATE(meta.folder, route))
+        const jsUrl = withVersion(meta.appDir ? ('js/apps/' + meta.appDir + '/' + route + '.js') : ('js/views/' + route + '.js'))
         const html = await fetch(htmlUrl).then(function (r) {
             if (!r.ok) throw new Error('HTTP ' + r.status)
             return r.text()
