@@ -29,7 +29,15 @@ async function initView_criar_medicao() {
     });
     doc.querySelectorAll('script').forEach(function (old) {
       var script = document.createElement('script');
-      if (old.src) script.src = old.src; else script.textContent = old.textContent;
+      script.async = false;
+      if (old.src) {
+        script.src = old.src;
+      } else {
+        var blob = new Blob([old.textContent], { type: 'text/javascript' });
+        var blobUrl = URL.createObjectURL(blob);
+        script.src = blobUrl;
+        script.onload = function () { URL.revokeObjectURL(blobUrl); };
+      }
       target.appendChild(script);
     });
   }
