@@ -69,20 +69,23 @@ async function initView_financeiro() {
   function statusCls(step) { return ((window.CONFIG && window.CONFIG.STATUS_COLORS) || {})[step] || ''; }
   function isActionable(p) { return p.status_step_prc === window.CONFIG.STATUS.financeiro || p.status_step_prc === window.CONFIG.STATUS.erro; }
 
-  var FIN_SORT_COLS = [
-    { label: '#', col: 'id_prc', type: 'num' },
-    { label: 'Empresa', col: 'empresa_nome', type: 'text' },
-    { label: 'Obra', col: 'obra_nome', type: 'text' },
-    { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
-    { label: 'Descrição', col: 'description_prc', type: 'text' },
-    { label: 'Nota Fiscal', col: 'fiscal_doc_prc', type: 'text' },
-    { label: 'Nº UAU', col: 'uau_number_prc', type: 'text' },
-    { label: 'Status', col: 'status_nome', type: 'text' },
-    { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
-    { label: 'Valor Bruto', col: 'value_prc', type: 'num' },
+  var FIN_COLS = [
+    { col: 'id_prc', label: '#', type: 'num', width: 66 },
+    { col: 'empresa_nome', label: 'Empresa', type: 'text', width: 150 },
+    { col: 'obra_nome', label: 'Obra', type: 'text', width: 110 },
+    { col: 'fornecedor_nome', label: 'Fornecedor', type: 'text', width: 130 },
+    { col: 'description_prc', label: 'Descrição', type: 'text', width: 200 },
+    { col: 'fiscal_doc_prc', label: 'Nota Fiscal', type: 'text', width: 110 },
+    { col: 'uau_number_prc', label: 'Nº UAU', type: 'text', width: 90 },
+    { col: 'status_nome', label: 'Status', type: 'text', width: 130, render: function (e) { return '<span class="badge ' + statusCls(e.status_step_prc) + '">' + escapeHtml(e.status_nome) + '</span>'; } },
+    { col: 'due_date_prc', label: 'Vencimento', type: 'date', width: 110, render: function (e) { return fmtDate(e.due_date_prc); } },
+    { col: 'value_prc', label: 'Valor Bruto', type: 'num', width: 120, render: function (e) { return money(e.value_prc); } },
   ];
-  var FIN_SORT_TYPES = {}; FIN_SORT_COLS.forEach(function (FIN_SORT_COLSItem) { FIN_SORT_TYPES[FIN_SORT_COLSItem.col] = FIN_SORT_COLSItem.type; });
+  var FIN_SORT_TYPES = {}; FIN_COLS.forEach(function (c) { FIN_SORT_TYPES[c.col] = c.type; });
   var finSort = window.TableSort.load('sort:financeiro');
+  var finCols = window.ColumnTools.create({ storageKey: 'financeiro', columns: FIN_COLS, onChange: render });
+  var finActions = selectElement('fin-refresh').parentElement;
+  if (finActions) { finActions.insertAdjacentHTML('afterbegin', finCols.menuButton()); finCols.wireMenu(finActions); }
   function filtered() {
     var output = rows;
     var t = (selectElement('fin-search').value || '').toLowerCase().trim();
@@ -111,27 +114,23 @@ async function initView_financeiro() {
   function render() {
     var data = window.TableSort.sortRows(filtered(), finSort, FIN_SORT_TYPES);
     if (!data.length) { selectElement('fin-body').innerHTML = '<div class="empty">Nenhum processo.</div>'; return; }
-    var head = FIN_SORT_COLS.map(function (FIN_SORT_COLSItem) {
-      return '<th data-col="' + FIN_SORT_COLSItem.col + '">' + escapeHtml(FIN_SORT_COLSItem.label) + ' ' + window.TableSort.indicator(finSort, FIN_SORT_COLSItem.col) + '</th>';
-    }).join('');
-    var html = '<div class="table-scroll"><table><thead><tr>' + head + '<th>Alertas</th><th></th></tr></thead><tbody>';
+    var head = finCols.head(function (col) { return window.TableSort.indicator(finSort, col); });
+    var html = '<div class="table-scroll"><table class="ct-fixed" style="width:' + finCols.tableWidth([], [130, 190]) + 'px"><colgroup>'
+      + finCols.colgroup([], [130, 190]) + '</colgroup><thead><tr>' + head
+      + '<th class="ct-keep">Alertas</th><th class="ct-keep"></th></tr></thead><tbody>';
     data.forEach(function (entry, index) {
       var alerts = buildAlerts(entry);
       html += '<tr data-i="' + index + '" style="cursor:pointer">'
-        + '<td>' + escapeHtml(entry.id_prc) + '</td><td>' + clip(entry.empresa_nome, 132) + '</td><td>' + clip(entry.obra_nome, 100) + '</td>'
-        + '<td>' + clip(entry.fornecedor_nome, 116) + '</td>'
-        + '<td>' + clip(entry.description_prc, 190) + '</td>'
-        + '<td>' + clip(entry.fiscal_doc_prc, 95) + '</td>'
-        + '<td>' + clip(entry.uau_number_prc, 78) + '</td>'
-        + '<td><span class="badge ' + statusCls(entry.status_step_prc) + '">' + escapeHtml(entry.status_nome) + '</span></td>'
-        + '<td>' + fmtDate(entry.due_date_prc) + '</td><td>' + money(entry.value_prc) + '</td>'
-        + '<td>' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + index + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">-</span>') + '</td>'
-        + '<td class="fin-acts"></td></tr>';
+        + finCols.cells(entry)
+        + '<td class="ct-keep">' + (alerts.length ? '<button class="badge warn fin-alert" data-i="' + index + '" style="border:0;cursor:pointer">● Ver alertas (' + alerts.length + ')</button>' : '<span style="color:var(--muted)">-</span>') + '</td>'
+        + '<td class="fin-acts ct-keep"></td></tr>';
     });
     html += '</tbody></table></div>';
     selectElement('fin-body').innerHTML = html;
+    finCols.wireResize(selectElement('fin-body').querySelector('table.ct-fixed'), 0);
     selectElement('fin-body').querySelectorAll('th[data-col]').forEach(function (item) {
-      item.addEventListener('click', function () {
+      item.addEventListener('click', function (event) {
+        if (event.target.classList.contains('ct-resizer')) return;
         finSort = window.TableSort.cycle(finSort, item.getAttribute('data-col'));
         window.TableSort.save('sort:financeiro', finSort);
         render();

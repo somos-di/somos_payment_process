@@ -61,26 +61,32 @@ async function initView_comissoes() {
   var LABEL = { validate: 'Validar e anexar NF', finalize: 'Finalizar (Financeiro)', pendency: 'Devolver p/ correção', cancel: 'Cancelar' };
   var ACTION_CSS_CLASSES = { validate: 'btn-primary', finalize: 'btn-primary', pendency: 'btn-light', cancel: 'btn-danger' };
 
+  var COM_COLS = [
+    { col: 'id_com', label: '#', width: 66 },
+    { col: 'empreendimento_nome', label: 'Empreendimento', width: 180 },
+    { col: 'trilha', label: 'Trilha', width: 100 },
+    { col: 'unit_com', label: 'Unidade', width: 100 },
+    { col: 'seller_name_com', label: 'Vendedor', width: 160 },
+    { col: 'client_name_com', label: 'Cliente', width: 160 },
+    { col: 'value_com', label: 'Valor', width: 120, render: function (e) { return money(e.value_com); } },
+    { col: 'status_nome', label: 'Status', width: 130, render: function (e) { return '<span class="badge ' + (STATUS_CLS[e.status_step_com] || '') + '">' + escapeHtml(e.status_nome) + '</span>'; } },
+  ];
+  var comCols = window.ColumnTools.create({ storageKey: 'comissoes', columns: COM_COLS, onChange: render });
+  var comActions = selectElement('com-refresh').parentElement;
+  if (comActions) { comActions.insertAdjacentHTML('afterbegin', comCols.menuButton()); comCols.wireMenu(comActions); }
+
   function render() {
     var data = filtered();
     if (!data.length) { selectElement('com-body').innerHTML = '<div class="empty">Nenhuma comissão.</div>'; return; }
-    var html = '<div class="table-scroll"><table><thead><tr>'
-      + '<th>#</th><th>Empreendimento</th><th>Trilha</th><th>Unidade</th><th>Vendedor</th><th>Cliente</th>'
-      + '<th>Valor</th><th>Status</th><th></th></tr></thead><tbody>';
+    var html = '<div class="table-scroll"><table class="ct-fixed" style="width:' + comCols.tableWidth([], [380]) + 'px"><colgroup>'
+      + comCols.colgroup([], [380]) + '</colgroup><thead><tr>' + comCols.head() + '<th class="ct-keep"></th></tr></thead><tbody>';
     data.forEach(function (entry, index) {
-      html += '<tr data-i="' + index + '">'
-        + '<td>' + escapeHtml(entry.id_com) + '</td>'
-        + '<td>' + escapeHtml(entry.empreendimento_nome || '-') + '</td>'
-        + '<td>' + escapeHtml(entry.trilha) + '</td>'
-        + '<td>' + escapeHtml(entry.unit_com || '-') + '</td>'
-        + '<td>' + escapeHtml(entry.seller_name_com || '-') + '</td>'
-        + '<td>' + escapeHtml(entry.client_name_com || '-') + '</td>'
-        + '<td>' + money(entry.value_com) + '</td>'
-        + '<td><span class="badge ' + (STATUS_CLS[entry.status_step_com] || '') + '">' + escapeHtml(entry.status_nome) + '</span></td>'
-        + '<td class="fin-acts" style="white-space:nowrap;text-align:right"></td></tr>';
+      html += '<tr data-i="' + index + '">' + comCols.cells(entry)
+        + '<td class="fin-acts ct-keep" style="white-space:nowrap;text-align:right"></td></tr>';
     });
     html += '</tbody></table></div>';
     selectElement('com-body').innerHTML = html;
+    comCols.wireResize(selectElement('com-body').querySelector('table.ct-fixed'), 0);
 
     selectElement('com-body').querySelectorAll('tr[data-i]').forEach(function (row) {
       var commission = data[+row.getAttribute('data-i')], cell = row.lastElementChild;
