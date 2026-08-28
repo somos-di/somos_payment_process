@@ -30,7 +30,8 @@
     if (document.getElementById(TBL_STYLE_ID)) return;
     var st = document.createElement('style'); st.id = TBL_STYLE_ID;
     st.textContent =
-      '@media (min-width:821px){.pl-fixed{table-layout:fixed}'
+      '@media (min-width:821px){.pl-fixed{table-layout:fixed;width:max-content}'
+      + '.table-scroll table.pl-fixed{min-width:0}'
       + '.pl-fixed th,.pl-fixed td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pl-fixed th.pl-keep,.pl-fixed td.pl-keep{overflow:visible}}'
       + '.pl-fixed th{position:relative}'
