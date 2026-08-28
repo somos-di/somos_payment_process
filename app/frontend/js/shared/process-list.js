@@ -30,7 +30,7 @@
     if (document.getElementById(TBL_STYLE_ID)) return;
     var st = document.createElement('style'); st.id = TBL_STYLE_ID;
     st.textContent =
-      '@media (min-width:821px){.pl-fixed{table-layout:fixed;width:max-content}'
+      '@media (min-width:821px){.pl-fixed{table-layout:fixed}'
       + '.table-scroll table.pl-fixed{min-width:0}'
       + '.pl-fixed th,.pl-fixed td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pl-fixed th.pl-keep,.pl-fixed td.pl-keep{overflow:visible}}'
@@ -270,8 +270,10 @@
           bodyEl.innerHTML = '<div class="empty">' + escapeHtml(page > 0 ? 'Nada nesta página.' : (options.emptyText || 'Nenhum processo.')) + '</div>';
         } else {
           var vcols = visibleColumns();
+          var vwidths = vcols.map(function (c) { return (colState.widths[c.col] || c.width || 120); });
+          var totalW = (batch ? 38 : 0) + vwidths.reduce(function (a, b) { return a + b; }, 0) + (showApprovers ? 170 : 0) + 150;
           var colgroup = (batch ? '<col style="width:38px">' : '')
-            + vcols.map(function (c) { return '<col style="width:' + (colState.widths[c.col] || c.width || 120) + 'px">'; }).join('')
+            + vwidths.map(function (w) { return '<col style="width:' + w + 'px">'; }).join('')
             + (showApprovers ? '<col style="width:170px">' : '')
             + '<col style="width:150px">';
           var head = vcols.map(function (c) {
@@ -279,7 +281,7 @@
               + '<span class="pl-resizer" data-col="' + c.col + '"></span></th>';
           }).join('');
           var checkTh = batch ? '<th class="pl-keep" style="text-align:center"><input type="checkbox" data-check-all title="Selecionar todos"></th>' : '';
-          var html = '<div class="table-scroll"><table class="pl-fixed"><colgroup>' + colgroup + '</colgroup><thead><tr>' + checkTh + head
+          var html = '<div class="table-scroll"><table class="pl-fixed" style="width:' + totalW + 'px"><colgroup>' + colgroup + '</colgroup><thead><tr>' + checkTh + head
             + (showApprovers ? '<th class="pl-keep">Aprovações</th>' : '') + '<th class="pl-keep"></th></tr></thead><tbody>';
           data.forEach(function (entry, index) {
             html += '<tr data-i="' + index + '" style="cursor:pointer">'
@@ -305,20 +307,29 @@
             });
           });
 
+          var tableEl = bodyEl.querySelector('table.pl-fixed');
           bodyEl.querySelectorAll('.pl-resizer').forEach(function (rz) {
             rz.addEventListener('mousedown', function (event) {
               event.preventDefault(); event.stopPropagation();
               var colName = rz.getAttribute('data-col'), vi = -1;
               for (var k = 0; k < vcols.length; k++) { if (vcols[k].col === colName) { vi = k; break; } }
-              if (vi < 0) return;
+              if (vi < 0 || !tableEl) return;
               var colEl = bodyEl.querySelectorAll('colgroup col')[(batch ? 1 : 0) + vi];
               if (!colEl) return;
-              var startX = event.clientX, startW = colEl.getBoundingClientRect().width;
-              function onMove(e) { colEl.style.width = Math.max(56, Math.round(startW + (e.clientX - startX))) + 'px'; }
+              var startX = event.clientX;
+              var startW = parseInt(colEl.style.width, 10) || 120;
+              var startTableW = parseInt(tableEl.style.width, 10) || Math.round(tableEl.getBoundingClientRect().width);
+              document.body.style.userSelect = 'none';
+              function onMove(e) {
+                var newW = Math.max(56, startW + (e.clientX - startX));
+                colEl.style.width = newW + 'px';
+                tableEl.style.width = (startTableW + (newW - startW)) + 'px';
+              }
               function onUp() {
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
-                colState.widths[colName] = parseInt(colEl.style.width, 10) || Math.round(colEl.getBoundingClientRect().width);
+                document.body.style.userSelect = '';
+                colState.widths[colName] = parseInt(colEl.style.width, 10) || startW;
                 saveColState();
               }
               document.addEventListener('mousemove', onMove);
