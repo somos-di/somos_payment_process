@@ -1,13 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { DataService } from '../services/dataService.js';
-import type { QueryOp } from '../types/data.js';
+import type { CountMode, QueryOp } from '../types/data.js';
 import type { DataQueryRoute, DataRpcRoute } from '../types/http.js';
 import { MAX_UPLOAD_BASE64 } from '../validators/common.js';
 
 const QuerySchema = z.object({
   operations: z.array(z.array(z.any())).optional().default([]),
-  count: z.boolean().optional().default(false),
+  count: z.union([z.boolean(), z.enum(['exact', 'planned', 'estimated'])]).optional().default(false),
   head: z.boolean().optional().default(false),
 });
 const RpcSchema = z.object({ rpcArguments: z.record(z.any()).optional().default({}) });
@@ -27,8 +27,9 @@ export class DataController {
 
   async query(request: FastifyRequest<DataQueryRoute>, reply: FastifyReply) {
     const { operations, count, head } = QuerySchema.parse(request.body ?? {});
-    if (count || head) {
-      const countedResult = await this.service.query(request.accessToken!, request.params.resource, operations as QueryOp[], true, head);
+    const mode: CountMode | false = count === true ? 'exact' : count;
+    if (mode || head) {
+      const countedResult = await this.service.query(request.accessToken!, request.params.resource, operations as QueryOp[], mode || 'exact', head);
       return reply.send({ success: true, data: countedResult.data, count: countedResult.count });
     }
     const data = await this.service.query(request.accessToken!, request.params.resource, operations as QueryOp[]);

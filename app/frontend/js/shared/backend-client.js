@@ -32,6 +32,18 @@
       var response = await window.API.postFull('/data/' + resource, { operations: spec.__ops, count: true, head: true });
       return (response && response.count != null) ? response.count : 0;
     },
+
+    page: async function (resource, build, countMode) {
+      var spec = new Spec();
+      if (build) build(spec);
+      var body = { operations: spec.__ops };
+      if (countMode) body.count = countMode;
+      var response = await window.API.postFull('/data/' + resource, body);
+      return {
+        data: (response && response.data) || [],
+        count: (response && response.count != null) ? response.count : null,
+      };
+    },
     rpc: function (fn, args) { return window.API.post('/rpc/' + fn, { rpcArguments: args || {} }); },
 
     upload: function (file, endpoint) {

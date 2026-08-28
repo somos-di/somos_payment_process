@@ -494,11 +494,14 @@
         try {
           if (paged) {
 
-            if (options.fetchCount && total === null) {
-              total = await options.fetchCount({ term: term, filters: filters });
+            var pageResult = await options.fetchPage({ page: page, pageSize: pageSize, term: term, filters: filters, needCount: total === null });
+            if (Array.isArray(pageResult)) {
+              rows = pageResult;
+              if (options.fetchCount && total === null) total = await options.fetchCount({ term: term, filters: filters });
+            } else {
+              rows = (pageResult && pageResult.rows) || [];
+              if (pageResult && pageResult.total != null) total = pageResult.total;
             }
-
-            rows = (await options.fetchPage({ page: page, pageSize: pageSize, term: term, filters: filters })) || [];
             hasMore = total != null ? (page + 1) * pageSize < total : rows.length === pageSize;
           } else {
             rows = await options.load();
@@ -746,17 +749,11 @@
   window.fetchProcessesPage = function (kind, reembolso) {
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
-      return window.SB.select('v_processes', function (s) {
+      return window.SB.page('v_processes', function (s) {
         s = applyProcessFilters(s, kind, args.term, args.filters, reembolso);
         return s.order('id_prc', { ascending: false }).range(page * pageSize, page * pageSize + pageSize - 1);
-      });
-    };
-  };
-
-  window.fetchProcessesCount = function (kind, reembolso) {
-    return function (args) {
-      return window.SB.count('v_processes', function (s) {
-        return applyProcessFilters(s, kind, args.term, args.filters, reembolso);
+      }, args.needCount ? 'exact' : null).then(function (res) {
+        return { rows: res.data, total: res.count };
       });
     };
   };

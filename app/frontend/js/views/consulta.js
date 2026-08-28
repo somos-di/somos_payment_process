@@ -20,7 +20,6 @@ async function initView_consulta() {
   await window.ProcessList.mount(host, {
     emptyText: 'Nenhum processo encontrado para este tipo.',
     pageSize: 50,
-    fetchCount: window.fetchProcessesCount(kind || null, isReembolso),
     fetchPage: window.fetchProcessesPage(kind || null, isReembolso),
   });
 }
