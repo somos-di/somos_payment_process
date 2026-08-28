@@ -3,7 +3,7 @@ import type { CacheManager } from '../cache/cacheManager.js';
 import { AppError, NotFoundError } from '../errors.js';
 import { adminClient, unwrap, userClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
-import type { QueryOp, RpcArgs, UploadedFile } from '../types/data.js';
+import type { CountMode, QueryOp, RpcArgs, UploadedFile } from '../types/data.js';
 import { MAX_FILE_BYTES } from '../validators/common.js';
 
 const READ_RESOURCES = new Set<string>([
@@ -33,18 +33,18 @@ export class DataService {
     if (!data?.is_admin) throw new AppError('Acesso restrito a administradores', 403, 'forbidden');
   }
 
-  async query(token: string, resource: string, operations: QueryOp[], withCount = false, head = false): Promise<any> {
+  async query(token: string, resource: string, operations: QueryOp[], count: CountMode | false = false, head = false): Promise<any> {
     if (!READ_RESOURCES.has(resource)) throw new NotFoundError(`Recurso não permitido: ${resource}`);
     if (ADMIN_RESOURCES.has(resource)) await this.assertAdmin(token);
     if (this.cache && CACHEABLE_RESOURCES.has(resource)) {
-      const key = cacheKey(resource, operations, withCount, head);
-      return this.cache.wrap(key, () => this.runQuery(token, resource, operations, withCount, head));
+      const key = cacheKey(resource, operations, count, head);
+      return this.cache.wrap(key, () => this.runQuery(token, resource, operations, count, head));
     }
-    return this.runQuery(token, resource, operations, withCount, head);
+    return this.runQuery(token, resource, operations, count, head);
   }
 
-  private async runQuery(token: string, resource: string, operations: QueryOp[], withCount: boolean, head: boolean): Promise<any> {
-    const selectOptions = (withCount || head) ? { count: 'exact' as const, head } : undefined;
+  private async runQuery(token: string, resource: string, operations: QueryOp[], count: CountMode | false, head: boolean): Promise<any> {
+    const selectOptions = (count || head) ? { count: (count || 'exact') as CountMode, head } : undefined;
     let query: any = userClient(token).from(resource).select('*', selectOptions);
     for (const operation of operations || []) {
       const [operationName, ...operationArgs] = operation;
@@ -66,10 +66,10 @@ export class DataService {
           throw new AppError(`Operação não suportada: ${operationName}`, 400, 'data');
       }
     }
-    if (withCount || head) {
-      const { data, error, count } = await query;
+    if (count || head) {
+      const { data, error, count: total } = await query;
       if (error) throw new AppError((error as { message?: string }).message || 'Erro Supabase', 400, 'supabase');
-      return { data: data ?? [], count };
+      return { data: data ?? [], count: total };
     }
     return unwrap(query);
   }

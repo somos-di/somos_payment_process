@@ -6,7 +6,8 @@ import { CACHEABLE_RESOURCES, UAU_RESOURCES, cacheKey, resourcePrefix } from '..
 
 test('cacheKey: formato base e variação por count/head/ops', () => {
   assert.equal(cacheKey('v_obras', []), 'data:v_obras::[]');
-  assert.notEqual(cacheKey('v_obras', [], true), cacheKey('v_obras', []));
+  assert.notEqual(cacheKey('v_obras', [], 'exact'), cacheKey('v_obras', []));
+  assert.notEqual(cacheKey('v_obras', [], 'estimated'), cacheKey('v_obras', [], 'exact'));
   assert.notEqual(cacheKey('v_obras', [], false, true), cacheKey('v_obras', []));
   assert.notEqual(cacheKey('v_obras', [['eq', 'a', 1]]), cacheKey('v_obras', []));
 });
