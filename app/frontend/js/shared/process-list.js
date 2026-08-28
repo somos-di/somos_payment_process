@@ -325,16 +325,28 @@
             rz.addEventListener('mousedown', function (event) {
               event.preventDefault(); event.stopPropagation();
               var colEl = colElAt(vi); if (!colEl) return;
+              var nextCol = vcols[vi + 1] || null;
+              var nextColEl = nextCol ? colElAt(vi + 1) : null;
+              var nextName = nextCol ? nextCol.col : null;
               var startX = event.clientX;
               var startW = parseInt(colEl.style.width, 10) || 120;
+              var startNextW = nextColEl ? (parseInt(nextColEl.style.width, 10) || 120) : 0;
               var startTableW = parseInt(tableEl.style.width, 10) || Math.round(tableEl.getBoundingClientRect().width);
               rz.classList.add('dragging');
               document.body.style.userSelect = 'none';
               document.body.style.cursor = 'col-resize';
               function onMove(e) {
-                var newW = Math.max(56, startW + (e.clientX - startX));
-                colEl.style.width = newW + 'px';
-                tableEl.style.width = (startTableW + (newW - startW)) + 'px';
+                var delta = e.clientX - startX;
+                if (nextColEl) {
+                  if (delta < 56 - startW) delta = 56 - startW;
+                  if (delta > startNextW - 56) delta = startNextW - 56;
+                  colEl.style.width = (startW + delta) + 'px';
+                  nextColEl.style.width = (startNextW - delta) + 'px';
+                } else {
+                  var newW = Math.max(56, startW + delta);
+                  colEl.style.width = newW + 'px';
+                  tableEl.style.width = (startTableW + (newW - startW)) + 'px';
+                }
               }
               function onUp() {
                 document.removeEventListener('mousemove', onMove);
@@ -343,6 +355,7 @@
                 document.body.style.userSelect = '';
                 document.body.style.cursor = '';
                 colState.widths[colName] = parseInt(colEl.style.width, 10) || startW;
+                if (nextColEl && nextName) colState.widths[nextName] = parseInt(nextColEl.style.width, 10) || startNextW;
                 saveColState();
               }
               document.addEventListener('mousemove', onMove);
