@@ -129,6 +129,7 @@
   var FIELDS = [
     { key: 'company', label: 'Empresa' },
     { key: 'building', label: 'Obra' },
+    { key: 'kind', label: 'Tipo' },
     { key: 'fornecedor', label: 'Fornecedor' },
     { key: 'descricao', label: 'Descrição' },
     { key: 'date', label: 'Vencimento (de–até)' },
@@ -149,6 +150,7 @@
       var companyMS = makeMultiSelect('Empresa', { allLabel: 'Todas', onChange: onCompanyChange });
       var buildingMS = makeMultiSelect('Obra', { allLabel: 'Todas', onChange: emit });
       var statusMS = makeMultiSelect('Status', { allLabel: 'Todos', onChange: emit });
+      var kindMS = makeMultiSelect('Tipo', { allLabel: 'Todos', onChange: emit });
 
       function textField(label, placeholder) {
         var f = document.createElement('label'); f.className = 'pf-field'; f.textContent = label;
@@ -177,6 +179,7 @@
         company: { el: companyMS.el, setSaved: function () { companyMS.setValues(asArray(savedVals.company)); }, clear: function () { companyMS.clear(); } },
         building: { el: buildingMS.el, setSaved: function () { }, clear: function () { buildingMS.clear(); } },
         status: { el: statusMS.el, setSaved: function () { statusMS.setValues(asArray(savedVals.status)); }, clear: function () { statusMS.clear(); } },
+        kind: { el: kindMS.el, setSaved: function () { kindMS.setValues(asArray(savedVals.kind)); }, clear: function () { kindMS.clear(); } },
         urgent: { el: urgentField, setSaved: function () { urgentSel.value = savedVals.urgent || ''; }, clear: function () { urgentSel.value = ''; } },
         fornecedor: { el: fornecedorField.el, setSaved: function () { fornecedorField.input.value = savedVals.fornecedor || ''; }, clear: function () { fornecedorField.input.value = ''; } },
         descricao: { el: descricaoField.el, setSaved: function () { descricaoField.input.value = savedVals.descricao || ''; }, clear: function () { descricaoField.input.value = ''; } },
@@ -249,6 +252,7 @@
           company: added.company ? companyMS.getValues() : [],
           building: added.building ? buildingMS.getValues() : [],
           status: added.status ? statusMS.getValues() : [],
+          kind: added.kind ? kindMS.getValues() : [],
           urgent: added.urgent ? urgentSel.value : '',
           fornecedor: added.fornecedor ? fornecedorField.input.value.trim() : '',
           descricao: added.descricao ? descricaoField.input.value.trim() : '',
@@ -268,6 +272,11 @@
 
       var steps = (window.CONFIG && window.CONFIG.STEPS) || {};
       statusMS.setOptions(Object.keys(steps).map(function (item) { return { value: String(item), label: steps[item] }; }));
+
+      var kinds = (window.CONFIG && window.CONFIG.PROCESS_KINDS) || {};
+      kindMS.setOptions(Object.keys(kinds)
+        .filter(function (item) { return String(kinds[item] || '').trim().toLowerCase() !== 'comissão'; })
+        .map(function (item) { return { value: String(item), label: kinds[item] }; }));
 
       Object.keys(CTRL).forEach(function (key) { CTRL[key].setSaved(); });
       FIELDS.forEach(function (f) { if (savedAdded[f.key]) addField(f.key, true); });

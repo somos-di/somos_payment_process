@@ -209,6 +209,7 @@
           if (filters.building && filters.building.length
             && filters.building.map(function (buildingItem) { return String(buildingItem).toUpperCase(); }).indexOf(String(outItem.building_prc || '').toUpperCase()) < 0) return false;
           if (filters.status && filters.status.length && filters.status.map(Number).indexOf(Number(outItem.status_step_prc)) < 0) return false;
+          if (filters.kind && filters.kind.length && filters.kind.map(Number).indexOf(Number(outItem.kind_prc)) < 0) return false;
           if (filters.urgent !== '' && !!outItem.is_urgent_prc !== (filters.urgent === '1')) return false;
           if (filters.fornecedor && String(outItem.fornecedor_nome || '').toLowerCase().indexOf(String(filters.fornecedor).toLowerCase()) < 0) return false;
           if (filters.descricao && String(outItem.description_prc || '').toLowerCase().indexOf(String(filters.descricao).toLowerCase()) < 0) return false;
@@ -589,6 +590,8 @@
     if (builds.length) s = s.in('building_prc', builds);
     var statuses = Array.isArray(activeFilters.status) ? activeFilters.status : (activeFilters.status !== '' && activeFilters.status != null ? [activeFilters.status] : []);
     if (statuses.length) s = s.in('status_step_prc', statuses.map(Number));
+    var kindSel = Array.isArray(activeFilters.kind) ? activeFilters.kind : (activeFilters.kind ? [activeFilters.kind] : []);
+    if (kindSel.length) s = s.in('kind_prc', kindSel.map(Number));
     if (activeFilters.urgent === '1' || activeFilters.urgent === '0') s = s.eq('is_urgent_prc', activeFilters.urgent === '1');
     if (activeFilters.from) s = s.gte('due_date_prc', activeFilters.from);
     if (activeFilters.to) s = s.lte('due_date_prc', activeFilters.to);
