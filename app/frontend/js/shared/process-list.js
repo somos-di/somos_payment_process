@@ -25,6 +25,26 @@
   };
   var SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
 
+  var TBL_STYLE_ID = 'pl-tbl-style';
+  function ensureTableStyle() {
+    if (document.getElementById(TBL_STYLE_ID)) return;
+    var st = document.createElement('style'); st.id = TBL_STYLE_ID;
+    st.textContent =
+      '@media (min-width:821px){.pl-fixed{table-layout:fixed}'
+      + '.pl-fixed th,.pl-fixed td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '.pl-fixed th.pl-keep,.pl-fixed td.pl-keep{overflow:visible}}'
+      + '.pl-fixed th{position:relative}'
+      + '.pl-resizer{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;user-select:none}'
+      + '.pl-resizer:hover{background:var(--accent);opacity:.4}'
+      + '.pl-cols{position:relative}'
+      + '.pl-cols-menu{position:absolute;z-index:60;top:calc(100% + 4px);right:0;min-width:190px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:6px;display:none;max-height:320px;overflow:auto}'
+      + '.pl-cols-menu.open{display:block}'
+      + '.pl-cols-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer;white-space:nowrap}'
+      + '.pl-cols-opt:hover{background:var(--surface-2)}'
+      + '.pl-cols-opt input{width:15px;height:15px;flex:none}';
+    document.head.appendChild(st);
+  }
+
   function iconBtn(svg, cssClass, title, fn) {
     var b = document.createElement('button');
     b.className = 'btn btn-icon ' + cssClass; b.style.marginLeft = '6px';
@@ -120,6 +140,7 @@
 
   window.ProcessList = {
     mount: async function (host, options) {
+      ensureTableStyle();
       var paged = typeof options.fetchPage === 'function';
       var pageSize = options.pageSize || 50;
       var dateField = options.dateField || 'due_date_prc';
@@ -132,6 +153,7 @@
         + '<div class="pl-filters" id="pl-extra"></div>'
         + '<div class="pl-toolbar-actions">'
         + (options.batchAction ? '<button class="btn btn-primary" id="pl-batch" disabled>' + escapeHtml(options.batchAction.label || 'Aprovar selecionados') + '</button>' : '')
+        + '<div class="pl-cols"><button class="btn btn-light" id="pl-cols-btn" title="Mostrar, ocultar e redimensionar colunas">Colunas</button><div class="pl-cols-menu" id="pl-cols-menu"></div></div>'
         + '<button class="btn btn-light" id="pl-refresh" title="Recarregar os dados desta tela">'
         + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar</button>'
         + '<button class="btn btn-ghost" id="pl-clear">Limpar filtros</button></div>'
@@ -157,19 +179,25 @@
       var approversByUuid = {};
 
       var SORT_COLS = [
-        { label: '#', col: 'id_prc', type: 'num' },
-        { label: 'Empresa', col: 'empresa_nome', type: 'text' },
-        { label: 'Obra', col: 'obra_nome', type: 'text' },
-        { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text' },
-        { label: 'Descrição', col: 'description_prc', type: 'text' },
-        { label: 'Tipo', col: 'tipo_nome', type: 'text' },
-        { label: 'Valor', col: 'value_prc', type: 'num' },
-        { label: 'Vencimento', col: 'due_date_prc', type: 'date' },
-        { label: 'Status', col: 'status_nome', type: 'text' },
-      ].concat(options.extraColumns || []);
+        { label: '#', col: 'id_prc', type: 'num', width: 66, render: function (e) { return '<span class="id-cell">' + escapeHtml(e.id_prc) + (e.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '') + '</span>'; } },
+        { label: 'Empresa', col: 'empresa_nome', type: 'text', width: 160 },
+        { label: 'Obra', col: 'obra_nome', type: 'text', width: 110 },
+        { label: 'Fornecedor', col: 'fornecedor_nome', type: 'text', width: 140 },
+        { label: 'Descrição', col: 'description_prc', type: 'text', width: 240 },
+        { label: 'Tipo', col: 'tipo_nome', type: 'text', width: 120 },
+        { label: 'Valor', col: 'value_prc', type: 'num', width: 110, render: function (e) { return money(e.value_prc); } },
+        { label: 'Vencimento', col: 'due_date_prc', type: 'date', width: 110, render: function (e) { return fmtDate(e.due_date_prc); } },
+        { label: 'Status', col: 'status_nome', type: 'text', width: 130, render: function (e) { return statusBadge(e.status_step_prc, e.status_nome); } },
+      ].concat((options.extraColumns || []).map(function (ec) { return { label: ec.label, col: ec.col, type: ec.type || 'text', width: ec.width || 130, render: ec.render }; }));
       var SORT_TYPES = {}; SORT_COLS.forEach(function (SORT_COLSItem) { SORT_TYPES[SORT_COLSItem.col] = SORT_COLSItem.type || 'text'; });
       var sortKey = 'sort:' + (options.storageKey || (window.location.hash || 'view'));
       var sort = window.TableSort.load(sortKey);
+
+      var colStateKey = 'cols:' + (options.storageKey || (window.location.hash || 'view'));
+      var colState = { hidden: {}, widths: {} };
+      try { var savedCols = JSON.parse(localStorage.getItem(colStateKey) || 'null'); if (savedCols) { colState.hidden = savedCols.hidden || {}; colState.widths = savedCols.widths || {}; } } catch (error) { }
+      function saveColState() { try { localStorage.setItem(colStateKey, JSON.stringify(colState)); } catch (error) { } }
+      function visibleColumns() { return SORT_COLS.filter(function (c) { return !colState.hidden[c.col]; }); }
 
       async function loadApprovers() {
         approversByUuid = {};
@@ -240,38 +268,60 @@
         if (!data.length) {
           bodyEl.innerHTML = '<div class="empty">' + escapeHtml(page > 0 ? 'Nada nesta página.' : (options.emptyText || 'Nenhum processo.')) + '</div>';
         } else {
-          var head = SORT_COLS.map(function (SORT_COLSItem) {
-            return '<th data-col="' + SORT_COLSItem.col + '">' + escapeHtml(SORT_COLSItem.label) + ' ' + window.TableSort.indicator(sort, SORT_COLSItem.col) + '</th>';
+          var vcols = visibleColumns();
+          var colgroup = (batch ? '<col style="width:38px">' : '')
+            + vcols.map(function (c) { return '<col style="width:' + (colState.widths[c.col] || c.width || 120) + 'px">'; }).join('')
+            + (showApprovers ? '<col style="width:170px">' : '')
+            + '<col style="width:150px">';
+          var head = vcols.map(function (c) {
+            return '<th data-col="' + c.col + '">' + escapeHtml(c.label) + ' ' + window.TableSort.indicator(sort, c.col)
+              + '<span class="pl-resizer" data-col="' + c.col + '"></span></th>';
           }).join('');
-          var checkTh = batch ? '<th style="width:34px;text-align:center"><input type="checkbox" data-check-all title="Selecionar todos"></th>' : '';
-          var html = '<div class="table-scroll"><table><thead><tr>' + checkTh + head
-            + (showApprovers ? '<th>Aprovações</th>' : '') + '<th></th></tr></thead><tbody>';
+          var checkTh = batch ? '<th class="pl-keep" style="text-align:center"><input type="checkbox" data-check-all title="Selecionar todos"></th>' : '';
+          var html = '<div class="table-scroll"><table class="pl-fixed"><colgroup>' + colgroup + '</colgroup><thead><tr>' + checkTh + head
+            + (showApprovers ? '<th class="pl-keep">Aprovações</th>' : '') + '<th class="pl-keep"></th></tr></thead><tbody>';
           data.forEach(function (entry, index) {
             html += '<tr data-i="' + index + '" style="cursor:pointer">'
-              + (batch ? '<td class="pl-check" data-label="Selecionar" style="text-align:center"><input type="checkbox" data-check="' + escapeHtml(entry.uuid_prc) + '"' + (selected[entry.uuid_prc] ? ' checked' : '') + '></td>' : '')
-              + '<td data-label="#"><span class="id-cell">' + escapeHtml(entry.id_prc)
-              + (entry.is_urgent_prc ? '<span class="urgent-dot" title="Urgente" aria-label="Urgente"></span>' : '')
-              + '</span></td><td data-label="Empresa">' + clip(entry.empresa_nome, 160) + '</td><td data-label="Obra">' + clip(entry.obra_nome, 110) + '</td>'
-              + '<td data-label="Fornecedor">' + clip(entry.fornecedor_nome, 130) + '</td>'
-              + '<td data-label="Descrição">' + clip(entry.description_prc, 220) + '</td>'
-              + '<td data-label="Tipo">' + escapeHtml(entry.tipo_nome) + '</td>'
-              + '<td data-label="Valor">' + money(entry.value_prc) + '</td><td data-label="Vencimento">' + fmtDate(entry.due_date_prc) + '</td>'
-              + '<td data-label="Status">' + statusBadge(entry.status_step_prc, entry.status_nome) + '</td>'
-              + (options.extraColumns || []).map(function (item) {
-                var value = item.render ? item.render(entry) : (entry[item.col] == null || entry[item.col] === '' ? '<span style="color:var(--muted)">-</span>' : escapeHtml(entry[item.col]));
-                return '<td data-label="' + escapeHtml(item.label || '') + '">' + value + '</td>';
+              + (batch ? '<td class="pl-check pl-keep" data-label="Selecionar" style="text-align:center"><input type="checkbox" data-check="' + escapeHtml(entry.uuid_prc) + '"' + (selected[entry.uuid_prc] ? ' checked' : '') + '></td>' : '')
+              + vcols.map(function (c) {
+                var raw = entry[c.col];
+                var value = c.render ? c.render(entry) : ((raw == null || raw === '') ? '<span style="color:var(--muted)">-</span>' : escapeHtml(raw));
+                var title = c.render ? '' : ' title="' + escapeHtml(raw == null ? '' : raw) + '"';
+                return '<td data-label="' + escapeHtml(c.label) + '"' + title + '>' + value + '</td>';
               }).join('')
-              + (showApprovers ? '<td data-label="Aprovações" style="white-space:nowrap">' + approversCell(entry) + '</td>' : '')
-              + '<td class="pl-actions-cell" style="white-space:nowrap;text-align:right"></td></tr>';
+              + (showApprovers ? '<td class="pl-keep" data-label="Aprovações" style="white-space:nowrap">' + approversCell(entry) + '</td>' : '')
+              + '<td class="pl-actions-cell pl-keep" style="white-space:nowrap;text-align:right"></td></tr>';
           });
           html += '</tbody></table></div>';
           bodyEl.innerHTML = html;
 
           bodyEl.querySelectorAll('th[data-col]').forEach(function (item) {
-            item.addEventListener('click', function () {
+            item.addEventListener('click', function (event) {
+              if (event.target.classList.contains('pl-resizer')) return;
               sort = window.TableSort.cycle(sort, item.getAttribute('data-col'));
               window.TableSort.save(sortKey, sort);
               render();
+            });
+          });
+
+          bodyEl.querySelectorAll('.pl-resizer').forEach(function (rz) {
+            rz.addEventListener('mousedown', function (event) {
+              event.preventDefault(); event.stopPropagation();
+              var colName = rz.getAttribute('data-col'), vi = -1;
+              for (var k = 0; k < vcols.length; k++) { if (vcols[k].col === colName) { vi = k; break; } }
+              if (vi < 0) return;
+              var colEl = bodyEl.querySelectorAll('colgroup col')[(batch ? 1 : 0) + vi];
+              if (!colEl) return;
+              var startX = event.clientX, startW = colEl.getBoundingClientRect().width;
+              function onMove(e) { colEl.style.width = Math.max(56, Math.round(startW + (e.clientX - startX))) + 'px'; }
+              function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                colState.widths[colName] = parseInt(colEl.style.width, 10) || Math.round(colEl.getBoundingClientRect().width);
+                saveColState();
+              }
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup', onUp);
             });
           });
 
@@ -572,6 +622,26 @@
         selected = {}; updateBatchBtn();
         processFilters.clear();
       });
+
+      var colsBtn = host.querySelector('#pl-cols-btn');
+      var colsMenu = host.querySelector('#pl-cols-menu');
+      function buildColsMenu() {
+        colsMenu.innerHTML = SORT_COLS.map(function (c) {
+          return '<label class="pl-cols-opt"><input type="checkbox" data-c="' + escapeHtml(c.col) + '"' + (colState.hidden[c.col] ? '' : ' checked') + '> ' + escapeHtml(c.label) + '</label>';
+        }).join('');
+        colsMenu.querySelectorAll('input[data-c]').forEach(function (cb) {
+          cb.addEventListener('change', function () {
+            var col = cb.getAttribute('data-c');
+            if (!cb.checked && visibleColumns().length <= 1) { cb.checked = true; return; }
+            if (cb.checked) delete colState.hidden[col]; else colState.hidden[col] = true;
+            saveColState(); render();
+          });
+        });
+      }
+      if (colsBtn && colsMenu) {
+        colsBtn.addEventListener('click', function (event) { event.stopPropagation(); buildColsMenu(); colsMenu.classList.toggle('open'); });
+        document.addEventListener('click', function (event) { var wrap = host.querySelector('.pl-cols'); if (wrap && !wrap.contains(event.target)) colsMenu.classList.remove('open'); });
+      }
 
       await reload();
       return { reload: reload };
