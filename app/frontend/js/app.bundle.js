@@ -555,8 +555,9 @@
       + '.table-scroll table.ct-fixed{min-width:0}'
       + '.ct-fixed th,.ct-fixed td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.ct-fixed th.ct-keep,.ct-fixed td.ct-keep{overflow:visible}}'
-      + '.ct-fixed th{position:relative}'
+      + '.ct-fixed th{position:relative;text-align:center}'
       + '.ct-resizer{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;user-select:none;z-index:2}'
+      + '.ct-resizer.edge-left{left:0;right:auto}'
       + '.ct-resizer::before{content:"";position:absolute;left:3px;top:0;bottom:0;width:2px;background:transparent}'
       + '.ct-resizer:hover::before,.ct-resizer.dragging::before{background:var(--accent)}'
       + '.ct-cols{position:relative}'
@@ -596,9 +597,11 @@
             + (trailCols || []).map(function (w) { return '<col style="width:' + w + 'px">'; }).join('');
         },
         head: function (sortIndicator) {
-          return visible().map(function (c) {
+          return visible().map(function (c, i) {
             var ind = sortIndicator ? (' ' + sortIndicator(c.col)) : '';
-            return '<th data-col="' + escapeHtml(c.col) + '">' + escapeHtml(c.label) + ind
+            return '<th data-col="' + escapeHtml(c.col) + '">'
+              + (i === 0 ? '<span class="ct-resizer edge-left" data-col="' + escapeHtml(c.col) + '" data-edge="left"></span>' : '')
+              + escapeHtml(c.label) + ind
               + '<span class="ct-resizer" data-col="' + escapeHtml(c.col) + '"></span></th>';
           }).join('');
         },
@@ -631,7 +634,8 @@
             rz.addEventListener('mousedown', function (event) {
               event.preventDefault(); event.stopPropagation();
               var colEl = colElAt(vi); if (!colEl) return;
-              var nextCol = vcols[vi + 1] || null;
+              var edge = rz.getAttribute('data-edge');
+              var nextCol = (edge !== 'left') ? (vcols[vi + 1] || null) : null;
               var nextColEl = nextCol ? colElAt(vi + 1) : null;
               var nextName = nextCol ? nextCol.col : null;
               var startX = event.clientX;
@@ -643,7 +647,11 @@
               document.body.style.cursor = 'col-resize';
               function onMove(e) {
                 var delta = e.clientX - startX;
-                if (nextColEl) {
+                if (edge === 'left') {
+                  var lw = Math.max(56, startW - delta);
+                  colEl.style.width = lw + 'px';
+                  tableEl.style.width = (startTableW + (lw - startW)) + 'px';
+                } else if (nextColEl) {
                   if (delta < 56 - startW) delta = 56 - startW;
                   if (delta > startNextW - 56) delta = startNextW - 56;
                   colEl.style.width = (startW + delta) + 'px';
@@ -1240,8 +1248,9 @@
       + '.table-scroll table.pl-fixed{min-width:0}'
       + '.pl-fixed th,.pl-fixed td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pl-fixed th.pl-keep,.pl-fixed td.pl-keep{overflow:visible}}'
-      + '.pl-fixed th{position:relative}'
+      + '.pl-fixed th{position:relative;text-align:center}'
       + '.pl-resizer{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;user-select:none;z-index:2}'
+      + '.pl-resizer.edge-left{left:0;right:auto}'
       + '.pl-resizer::before{content:"";position:absolute;left:3px;top:0;bottom:0;width:2px;background:transparent}'
       + '.pl-resizer:hover::before,.pl-resizer.dragging::before{background:var(--accent)}'
       + '.pl-cols{position:relative}'
@@ -1483,8 +1492,10 @@
             + vwidths.map(function (w) { return '<col style="width:' + w + 'px">'; }).join('')
             + (showApprovers ? '<col style="width:170px">' : '')
             + '<col style="width:150px">';
-          var head = vcols.map(function (c) {
-            return '<th data-col="' + c.col + '">' + escapeHtml(c.label) + ' ' + window.TableSort.indicator(sort, c.col)
+          var head = vcols.map(function (c, i) {
+            return '<th data-col="' + c.col + '">'
+              + (i === 0 ? '<span class="pl-resizer edge-left" data-col="' + c.col + '" data-edge="left"></span>' : '')
+              + escapeHtml(c.label) + ' ' + window.TableSort.indicator(sort, c.col)
               + '<span class="pl-resizer" data-col="' + c.col + '"></span></th>';
           }).join('');
           var checkTh = batch ? '<th class="pl-keep" style="text-align:center"><input type="checkbox" data-check-all title="Selecionar todos"></th>' : '';
@@ -1531,7 +1542,8 @@
             rz.addEventListener('mousedown', function (event) {
               event.preventDefault(); event.stopPropagation();
               var colEl = colElAt(vi); if (!colEl) return;
-              var nextCol = vcols[vi + 1] || null;
+              var edge = rz.getAttribute('data-edge');
+              var nextCol = (edge !== 'left') ? (vcols[vi + 1] || null) : null;
               var nextColEl = nextCol ? colElAt(vi + 1) : null;
               var nextName = nextCol ? nextCol.col : null;
               var startX = event.clientX;
@@ -1543,7 +1555,11 @@
               document.body.style.cursor = 'col-resize';
               function onMove(e) {
                 var delta = e.clientX - startX;
-                if (nextColEl) {
+                if (edge === 'left') {
+                  var lw = Math.max(56, startW - delta);
+                  colEl.style.width = lw + 'px';
+                  tableEl.style.width = (startTableW + (lw - startW)) + 'px';
+                } else if (nextColEl) {
                   if (delta < 56 - startW) delta = 56 - startW;
                   if (delta > startNextW - 56) delta = startNextW - 56;
                   colEl.style.width = (startW + delta) + 'px';
