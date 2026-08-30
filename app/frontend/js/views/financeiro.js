@@ -177,6 +177,7 @@ async function initView_financeiro() {
       cell.appendChild(uauBtn);
       item.addEventListener('click', function () { window.openProcessDetail(p); });
     });
+    finCols.autofitTrail(selectElement('fin-body').querySelector('table.ct-fixed'), '.fin-acts');
 
     selectElement('fin-body').querySelectorAll('.fin-alert').forEach(function (alertElement) {
       alertElement.addEventListener('click', function (event) {

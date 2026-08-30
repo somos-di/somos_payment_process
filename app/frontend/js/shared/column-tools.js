@@ -152,6 +152,29 @@
           });
         },
 
+        autofitTrail: function (tableEl, cellSelector) {
+          if (!tableEl) return;
+          var maxW = 0;
+          tableEl.querySelectorAll(cellSelector).forEach(function (cell) {
+            var w = 0;
+            for (var i = 0; i < cell.children.length; i++) {
+              var cs = getComputedStyle(cell.children[i]);
+              w += cell.children[i].offsetWidth + (parseInt(cs.marginLeft, 10) || 0) + (parseInt(cs.marginRight, 10) || 0);
+            }
+            if (w > maxW) maxW = w;
+          });
+          if (!maxW) return;
+          var cols = tableEl.querySelectorAll('colgroup col');
+          var col = cols[cols.length - 1]; if (!col) return;
+          var cur = parseInt(col.style.width, 10) || 0;
+          var want = maxW + 24;
+          if (want > cur) {
+            col.style.width = want + 'px';
+            var tW = parseInt(tableEl.style.width, 10) || Math.round(tableEl.getBoundingClientRect().width);
+            tableEl.style.width = (tW + (want - cur)) + 'px';
+          }
+        },
+
         menuButton: function () {
           return '<div class="ct-cols"><button type="button" class="btn btn-light" data-cols-btn title="Mostrar, ocultar e redimensionar colunas">Colunas</button><div class="ct-cols-menu" data-cols-menu></div></div>';
         },
