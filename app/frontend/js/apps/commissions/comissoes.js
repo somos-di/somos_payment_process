@@ -100,6 +100,7 @@ async function initView_comissoes() {
         cell.appendChild(buttonElement);
       });
     });
+    comCols.autofitTrail(selectElement('com-body').querySelector('table.ct-fixed'), '.fin-acts');
   }
 
   function post(uuid, action, body) { return window.API.post('/commissions/' + uuid + '/' + action, body || {}); }
