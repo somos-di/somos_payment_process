@@ -28,7 +28,7 @@ const loadedScripts = new Set()
 
 const ASSET_V = (function () {
     try {
-        const self = document.querySelector('script[src*="shared/router.js"]')
+        const self = document.querySelector('script[src*="app.bundle.js"], script[src*="shared/router.js"]')
         const match = self && self.src.match(/[?&]v=([^&]+)/)
         return match ? match[1] : ''
     } catch (error) { return '' }
