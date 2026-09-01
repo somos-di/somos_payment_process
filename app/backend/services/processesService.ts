@@ -114,4 +114,8 @@ export class ProcessesService {
   log(token: string, uuid: string, action: string, kind?: number) {
     return unwrap(userClient(token).rpc('log_process_event', { p_uuid: uuid, p_action: action, p_kind: kind ?? 1 }));
   }
+
+  comment(token: string, uuid: string, text: string) {
+    return unwrap(userClient(token).rpc('add_process_comment', { p_uuid: uuid, p_text: text }));
+  }
 }

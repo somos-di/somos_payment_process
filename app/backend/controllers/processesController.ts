@@ -14,6 +14,7 @@ const SolicitationSchema = z.object({
 });
 const BulkSchema = z.object({ items: z.array(SolicitationSchema).min(1).max(1000) });
 const LogSchema = z.object({ action: z.string().min(1).max(200), kind: z.number().int().positive().optional() });
+const CommentSchema = z.object({ text: z.string().trim().min(1).max(2000) });
 const QuickExtractSchema = z.object({ content: z.string().min(1) });
 const CorrectSchema = z.object({
   process: boundedRecord,
@@ -49,6 +50,7 @@ export class ProcessesController {
     this.pending = this.pending.bind(this);
     this.action = this.action.bind(this);
     this.logEvent = this.logEvent.bind(this);
+    this.comment = this.comment.bind(this);
     this.correct = this.correct.bind(this);
     this.setInstallments = this.setInstallments.bind(this);
     this.adminEdit = this.adminEdit.bind(this);
@@ -86,6 +88,13 @@ export class ProcessesController {
     const { uuid } = UuidParamSchema.parse({ uuid: request.params.uuid });
     const { action, kind } = LogSchema.parse(request.body);
     await this.service.log(request.accessToken!, uuid, action, kind);
+    return reply.send({ success: true });
+  }
+
+  async comment(request: FastifyRequest<UuidRoute>, reply: FastifyReply) {
+    const { uuid } = UuidParamSchema.parse({ uuid: request.params.uuid });
+    const { text } = CommentSchema.parse(request.body);
+    await this.service.comment(request.accessToken!, uuid, text);
     return reply.send({ success: true });
   }
 
