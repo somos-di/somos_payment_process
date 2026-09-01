@@ -499,9 +499,9 @@
       + '<div class="pd-hist-head"><h3>Histórico</h3>'
       + '<button type="button" class="pd-hist-toggle" aria-label="Recolher histórico">›</button></div>'
       + '<div class="pd-hist-body col-body">…</div>'
-      + '<div class="pd-hist-comment" style="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)">'
-      + '<textarea class="pd-comment-input" rows="2" maxlength="2000" placeholder="Escreva um comentário… (Ctrl+Enter para enviar)" style="flex:1;resize:vertical;min-height:38px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit"></textarea>'
-      + '<button type="button" class="btn btn-primary pd-comment-send" style="align-self:flex-end">Comentar</button>'
+      + '<div class="pd-hist-comment">'
+      + '<textarea class="pd-comment-input" rows="3" maxlength="2000" placeholder="Escreva um comentário… (Ctrl+Enter para enviar)"></textarea>'
+      + '<button type="button" class="btn btn-primary pd-comment-send">Comentar</button>'
       + '</div>'
       + '</div>'
       + '</div></div>';
