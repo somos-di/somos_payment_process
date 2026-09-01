@@ -9,6 +9,7 @@ export function registerProcessesRoutes(app: FastifyInstance, processes_center: 
   app.post('/processes/bulk', processes_center.createBulk);
   app.post('/processes/approve-batch', processes_center.approveBatch);
   app.post('/processes/:uuid/log', processes_center.logEvent);
+  app.post('/processes/:uuid/comment', processes_center.comment);
   app.post('/processes/:uuid/correct', processes_center.correct);
   app.post('/processes/:uuid/admin-edit', processes_center.adminEdit);
   app.post('/processes/:uuid/installments', processes_center.setInstallments);
