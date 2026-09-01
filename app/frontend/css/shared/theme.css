@@ -1056,6 +1056,42 @@ tbody tr:hover td {
   display: none;
 }
 
+.pd-hist-comment {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.pd-comment-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 60px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pd-comment-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pd-comment-send {
+  align-self: flex-end;
+}
+
+.modal-box.hist-collapsed .pd-hist-comment {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .pd-detail {
     flex-direction: column;
