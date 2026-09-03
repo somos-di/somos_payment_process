@@ -755,10 +755,10 @@
     return s;
   }
 
-  window.fetchProcessesPage = function (kind, reembolso) {
+  window.fetchProcessesPage = function (kind, reembolso, resource) {
     return function (args) {
       var page = args.page, pageSize = args.pageSize;
-      return window.SB.page('v_processes', function (s) {
+      return window.SB.page(resource || 'v_processes', function (s) {
         s = applyProcessFilters(s, kind, args.term, args.filters, reembolso);
         return s.order('id_prc', { ascending: false }).range(page * pageSize, page * pageSize + pageSize - 1);
       }, args.needCount ? 'exact' : null).then(function (res) {

@@ -21,12 +21,15 @@ async function initView_reaprovals() {
   selectElement('ra-clear').addEventListener('click', clearForm);
 
   var histRows = [];
+  var raPage = 0;
   function renderHist() {
     var t = (selectElement('ra-search').value || '').toLowerCase().trim();
-    var data = histRows.filter(function (histRow) {
+    var full = histRows.filter(function (histRow) {
       return !t || [histRow.company_rap, histRow.cost_center_rap, histRow.process_rap, histRow.installment_rap, histRow.approver_rap, histRow.author_nome].join(' ').toLowerCase().indexOf(t) >= 0;
     });
-    if (!data.length) { selectElement('ra-hist').innerHTML = '<div class="empty">Nenhuma reaprovação enviada.</div>'; return; }
+    if (!full.length) { selectElement('ra-hist').innerHTML = '<div class="empty">Nenhuma reaprovação enviada.</div>'; return; }
+    var cp = window.ClientPager(full.length, raPage, 50); raPage = cp.page;
+    var data = cp.slice(full);
     var html = '<div class="table-scroll"><table><thead><tr>'
       + '<th>#</th><th>Data</th><th>Empresa</th><th>Obra</th><th>Processo</th><th>Parcela</th><th>Aprovador</th><th>Mensagem</th><th>Autor</th>'
       + '</tr></thead><tbody>';
@@ -42,15 +45,16 @@ async function initView_reaprovals() {
         + '<td>' + escapeHtml(entry.message_rap || '-') + '</td>'
         + '<td>' + escapeHtml(entry.author_nome || '-') + '</td></tr>';
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div>' + cp.html();
     selectElement('ra-hist').innerHTML = html;
+    cp.wire(selectElement('ra-hist'), function (p) { raPage = p; renderHist(); });
   }
   async function loadHist() {
     selectElement('ra-hist').innerHTML = '<div class="empty">Carregando…</div>';
     try { histRows = (await window.API.get('/reapprovals')) || []; renderHist(); }
     catch (error) { window.viewError(selectElement('ra-hist'), error); }
   }
-  selectElement('ra-search').addEventListener('input', renderHist);
+  selectElement('ra-search').addEventListener('input', function () { raPage = 0; renderHist(); });
   selectElement('ra-refresh').addEventListener('click', loadHist);
 
   selectElement('ra-send').addEventListener('click', async function () {

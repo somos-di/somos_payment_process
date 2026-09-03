@@ -15,6 +15,7 @@ const FILES = [
   'js/shared/consulta-tabs.js',
   'js/shared/process-detail-modal.js',
   'js/shared/column-tools.js',
+  'js/shared/client-pager.js',
   'js/shared/process-approvers-modal.js',
   'js/shared/process-installments-modal.js',
   'js/shared/process-filters.js',
