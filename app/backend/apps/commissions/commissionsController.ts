@@ -8,6 +8,7 @@ import type { CommissionsService } from './commissionsService.js';
 
 
 const NoteSchema = z.object({ note: z.string().trim().max(500).optional() });
+const CommentSchema = z.object({ text: z.string().trim().min(1).max(2000) });
 
 const CancelSchema = z.object({ note: z.string().trim().min(1).max(500) });
 
@@ -51,6 +52,7 @@ export class CommissionsController {
     this.list = this.list.bind(this);
     this.get = this.get.bind(this);
     this.action = this.action.bind(this);
+    this.comment = this.comment.bind(this);
     this.create = this.create.bind(this);
     this.upsertEmpreendimento = this.upsertEmpreendimento.bind(this);
     this.removeEmpreendimento = this.removeEmpreendimento.bind(this);
@@ -81,6 +83,13 @@ export class CommissionsController {
   async get(request: FastifyRequest<UuidRoute>, reply: FastifyReply) {
     const { uuid } = UuidParamSchema.parse(request.params);
     return reply.send({ success: true, data: await this.service.getByUuid(request.accessToken!, uuid) });
+  }
+
+  async comment(request: FastifyRequest<UuidRoute>, reply: FastifyReply) {
+    const { uuid } = UuidParamSchema.parse({ uuid: request.params.uuid });
+    const { text } = CommentSchema.parse(request.body);
+    await this.service.comment(request.accessToken!, uuid, text);
+    return reply.send({ success: true });
   }
 
   async action(request: FastifyRequest<UuidActionRoute>, reply: FastifyReply) {

@@ -7,5 +7,6 @@ export function registerCommissionsRoutes(app: FastifyInstance, commissions_cent
   app.post('/commissions/empreendimentos', commissions_center.upsertEmpreendimento);
   app.post('/commissions/empreendimentos/remove', commissions_center.removeEmpreendimento);
   app.get('/commissions/:uuid', commissions_center.get);
+  app.post('/commissions/:uuid/comment', commissions_center.comment);
   app.post('/commissions/:uuid/:action', commissions_center.action);
 }

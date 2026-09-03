@@ -27,6 +27,10 @@ export class CommissionsService {
     })) as Promise<CommissionTransitionResult>;
   }
 
+  comment(token: string, uuid: string, text: string): Promise<void> {
+    return unwrap(userClient(token).rpc('add_commission_comment', { p_uuid: uuid, p_text: text })) as Promise<void>;
+  }
+
   create(token: string, commission: CommissionInput): Promise<CommissionCreated> {
     return unwrap(userClient(token).rpc('commission_create', {
       p_company: commission.company, p_building: commission.building, p_value: commission.value,

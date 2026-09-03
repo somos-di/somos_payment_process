@@ -238,6 +238,10 @@ async function initView_comissoes() {
       + '<div class="pd-hist-head"><h3>Histórico</h3>'
       + '<button type="button" class="pd-hist-toggle" aria-label="Recolher histórico">›</button></div>'
       + '<div class="pd-hist-body col-body">…</div>'
+      + '<div class="pd-hist-comment">'
+      + '<textarea class="pd-comment-input" rows="3" maxlength="2000" placeholder="Escreva um comentário… (Ctrl+Enter para enviar)"></textarea>'
+      + '<button type="button" class="btn btn-primary pd-comment-send">Comentar</button>'
+      + '</div>'
       + '</div>'
       + '</div></div>';
     o.addEventListener('click', function (event) { if (event.target === o || event.target.classList.contains('modal-x')) o.remove(); });
@@ -260,15 +264,49 @@ async function initView_comissoes() {
       });
     });
     document.body.appendChild(o);
-    try {
-      var hist = await window.Store.get('comm_history', c.uuid_com);
-      o.querySelector('.pd-hist-body').innerHTML = (hist && hist.length)
-        ? '<ul class="timeline">' + hist.map(function (histItem) {
-          return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
-            + '<div class="tl-meta">' + escapeHtml(histItem.user_nome || 'Sistema') + ' · ' + escapeHtml(formatDateTime(histItem.created_at_chs)) + '</div></div></li>';
-        }).join('') + '</ul>'
-        : '<div class="empty">Sem histórico.</div>';
-    } catch (error) { o.querySelector('.pd-hist-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
+
+    async function renderCommHistory() {
+      try {
+        var hist = await window.Store.get('comm_history', c.uuid_com);
+        o.querySelector('.pd-hist-body').innerHTML = (hist && hist.length)
+          ? '<ul class="timeline">' + hist.map(function (histItem) {
+            var kindColor = /^#[0-9a-fA-F]{3,8}$/.test(histItem.kind_color || '') ? histItem.kind_color : '';
+            var kindStyle = kindColor ? ' style="--kind:' + kindColor + '"' : '';
+            return '<li' + kindStyle + '><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
+              + '<div class="tl-meta">' + escapeHtml(histItem.user_nome || 'Sistema') + ' · ' + escapeHtml(formatDateTime(histItem.created_at_chs)) + '</div></div></li>';
+          }).join('') + '</ul>'
+          : '<div class="empty">Sem histórico.</div>';
+      } catch (error) { o.querySelector('.pd-hist-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
+    }
+
+    var commentInput = o.querySelector('.pd-comment-input');
+    var commentSend = o.querySelector('.pd-comment-send');
+    async function submitComment() {
+      var text = (commentInput.value || '').trim();
+      if (!text) return;
+      commentSend.disabled = true; commentInput.disabled = true;
+      try {
+        await window.API.post('/commissions/' + c.uuid_com + '/comment', { text: text });
+        commentInput.value = '';
+        window.Store.invalidate('comm_history');
+        await renderCommHistory();
+        var body = o.querySelector('.pd-hist-body'); if (body) body.scrollTop = 0;
+      } catch (error) {
+        commentInput.title = (error && error.message) || 'Erro ao comentar';
+        commentInput.style.borderColor = 'var(--danger, #ef4444)';
+      } finally {
+        commentSend.disabled = false; commentInput.disabled = false; commentInput.focus();
+      }
+    }
+    if (commentSend) commentSend.addEventListener('click', submitComment);
+    if (commentInput) {
+      commentInput.addEventListener('input', function () { commentInput.style.borderColor = ''; });
+      commentInput.addEventListener('keydown', function (event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); submitComment(); }
+      });
+    }
+
+    await renderCommHistory();
   }
 
   ['com-search', 'com-trilha', 'com-status', 'com-emp', 'com-vendedor', 'com-vde', 'com-vate'].forEach(function (item) { selectElement(item).addEventListener('input', function () { comPage = 0; render(); }); selectElement(item).addEventListener('change', function () { comPage = 0; render(); }); });
