@@ -22,8 +22,8 @@ async function initView_gestao_processos() {
   var processList = await window.ProcessList.mount(selectElement('gp-host'), {
     emptyText: 'Nenhum processo.',
     storageKey: 'gestao-processos',
-    refreshKeys: ['processes_admin'],
-    load: function () { return window.Store.get('processes_admin'); },
+    pageSize: 50,
+    fetchPage: window.fetchProcessesPage(null, false, 'v_processes_admin'),
     extraColumns: [{ label: 'Nº UAU', col: 'uau_number_prc', type: 'text' }],
     actions: [
       { label: 'Editar', cls: 'btn-primary', icon: EDIT_ICON, effect: 'none', run: function (p) { openEdit(p); return Promise.resolve(); } },

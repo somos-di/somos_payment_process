@@ -32,18 +32,35 @@ async function initView_comissoes() {
   }).join('');
 
   var rows = [];
+  var comPage = 0;
   async function reload() {
     selectElement('com-body').innerHTML = '<div class="empty">Carregando…</div>';
-    try { rows = await window.Store.get('commissions'); render(); }
+    try { rows = await window.Store.get('commissions'); fillEmpSelect(); render(); }
     catch (error) { window.viewError(selectElement('com-body'), error); }
+  }
+
+  function fillEmpSelect() {
+    var sel = selectElement('com-emp'); if (!sel) return;
+    var cur = sel.value;
+    var names = Array.from(new Set(rows.map(function (r) { return r.empreendimento_nome; }).filter(Boolean))).sort(function (a, b) { return String(a).localeCompare(String(b)); });
+    sel.innerHTML = '<option value="">Todos</option>' + names.map(function (n) { return '<option value="' + escapeHtml(n) + '"' + (n === cur ? ' selected' : '') + '>' + escapeHtml(n) + '</option>'; }).join('');
   }
 
   function filtered() {
     var searchTerm = (selectElement('com-search').value || '').toLowerCase().trim();
     var trilha = selectElement('com-trilha').value, status = selectElement('com-status').value;
+    var emp = selectElement('com-emp').value;
+    var vend = (selectElement('com-vendedor').value || '').toLowerCase().trim();
+    var vDe = selectElement('com-vde').value !== '' ? parseFloat(selectElement('com-vde').value) : null;
+    var vAte = selectElement('com-vate').value !== '' ? parseFloat(selectElement('com-vate').value) : null;
     return rows.filter(function (row) {
       if (trilha && row.trilha !== trilha) return false;
       if (status !== '' && Number(row.status_step_com) !== Number(status)) return false;
+      if (emp && row.empreendimento_nome !== emp) return false;
+      if (vend && String(row.seller_name_com || '').toLowerCase().indexOf(vend) < 0) return false;
+      var val = Number(row.value_com) || 0;
+      if (vDe != null && !isNaN(vDe) && val < vDe) return false;
+      if (vAte != null && !isNaN(vAte) && val > vAte) return false;
       if (searchTerm && [row.empreendimento_nome, row.seller_name_com, row.client_name_com, row.unit_com, row.id_com].join(' ').toLowerCase().indexOf(searchTerm) < 0) return false;
       return true;
     });
@@ -76,16 +93,19 @@ async function initView_comissoes() {
   if (comActions) { comActions.insertAdjacentHTML('afterbegin', comCols.menuButton()); comCols.wireMenu(comActions); }
 
   function render() {
-    var data = filtered();
-    if (!data.length) { selectElement('com-body').innerHTML = '<div class="empty">Nenhuma comissão.</div>'; return; }
+    var full = filtered();
+    if (!full.length) { selectElement('com-body').innerHTML = '<div class="empty">Nenhuma comissão.</div>'; return; }
+    var cp = window.ClientPager(full.length, comPage, 50); comPage = cp.page;
+    var data = cp.slice(full);
     var html = '<div class="table-scroll"><table class="ct-fixed" style="width:' + comCols.tableWidth([], [380]) + 'px"><colgroup>'
       + comCols.colgroup([], [380]) + '</colgroup><thead><tr>' + comCols.head() + '<th class="ct-keep"></th></tr></thead><tbody>';
     data.forEach(function (entry, index) {
       html += '<tr data-i="' + index + '">' + comCols.cells(entry)
         + '<td class="fin-acts ct-keep" style="white-space:nowrap;text-align:right"></td></tr>';
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div>' + cp.html();
     selectElement('com-body').innerHTML = html;
+    cp.wire(selectElement('com-body'), function (p) { comPage = p; render(); });
     comCols.wireResize(selectElement('com-body').querySelector('table.ct-fixed'), 0);
 
     selectElement('com-body').querySelectorAll('tr[data-i]').forEach(function (row) {
@@ -251,9 +271,9 @@ async function initView_comissoes() {
     } catch (error) { o.querySelector('.pd-hist-body').innerHTML = '<div class="empty">Falha ao carregar histórico.</div>'; }
   }
 
-  ['com-search', 'com-trilha', 'com-status'].forEach(function (item) { selectElement(item).addEventListener('input', render); selectElement(item).addEventListener('change', render); });
+  ['com-search', 'com-trilha', 'com-status', 'com-emp', 'com-vendedor', 'com-vde', 'com-vate'].forEach(function (item) { selectElement(item).addEventListener('input', function () { comPage = 0; render(); }); selectElement(item).addEventListener('change', function () { comPage = 0; render(); }); });
   selectElement('com-refresh').addEventListener('click', done);
-  selectElement('com-clear').addEventListener('click', function () { selectElement('com-search').value = ''; selectElement('com-trilha').value = ''; selectElement('com-status').value = ''; render(); });
+  selectElement('com-clear').addEventListener('click', function () { ['com-search', 'com-trilha', 'com-status', 'com-emp', 'com-vendedor', 'com-vde', 'com-vate'].forEach(function (item) { selectElement(item).value = ''; }); comPage = 0; render(); });
 
   await reload();
 }
