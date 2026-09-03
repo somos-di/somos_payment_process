@@ -270,7 +270,9 @@ async function initView_comissoes() {
         var hist = await window.Store.get('comm_history', c.uuid_com);
         o.querySelector('.pd-hist-body').innerHTML = (hist && hist.length)
           ? '<ul class="timeline">' + hist.map(function (histItem) {
-            return '<li><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
+            var kindColor = /^#[0-9a-fA-F]{3,8}$/.test(histItem.kind_color || '') ? histItem.kind_color : '';
+            var kindStyle = kindColor ? ' style="--kind:' + kindColor + '"' : '';
+            return '<li' + kindStyle + '><span class="tl-dot"></span><div class="tl-card"><div class="tl-act">' + escapeHtml(histItem.action_chs) + '</div>'
               + '<div class="tl-meta">' + escapeHtml(histItem.user_nome || 'Sistema') + ' · ' + escapeHtml(formatDateTime(histItem.created_at_chs)) + '</div></div></li>';
           }).join('') + '</ul>'
           : '<div class="empty">Sem histórico.</div>';
