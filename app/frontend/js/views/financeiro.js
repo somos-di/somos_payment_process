@@ -165,13 +165,15 @@ async function initView_financeiro() {
         rowAlerts.length ? 'Resolva os ' + rowAlerts.length + ' alerta(s) antes de integrar' : 'Enviar UAU',
         async function () {
           if (rowAlerts.length) { toast('Processo com ' + rowAlerts.length + ' alerta(s). Resolva antes de integrar.'); return; }
-          if (!(await confirmDialog('Enviar este processo para integração com o UAU?'))) return;
+          if (uauBtn.disabled) return;
+          uauBtn.disabled = true;
+          if (!(await confirmDialog('Enviar este processo para integração com o UAU?'))) { uauBtn.disabled = false; return; }
           try {
             await window.API.post('/processes/' + p.uuid_prc + '/send-uau');
             window.invalidateFlowCaches();
             toast('Integração disparada. O status será atualizado pela integração externa.', true);
             reloadAll();
-          } catch (error) { toast('Erro: ' + error.message); reloadAll(); }
+          } catch (error) { toast('Erro: ' + error.message); uauBtn.disabled = false; reloadAll(); }
         });
       if (rowAlerts.length) { uauBtn.disabled = true; uauBtn.style.opacity = '0.45'; uauBtn.style.cursor = 'not-allowed'; }
       cell.appendChild(uauBtn);
