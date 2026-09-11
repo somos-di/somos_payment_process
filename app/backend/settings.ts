@@ -41,7 +41,11 @@ export function getSettings(): AppSettings {
       timeoutMs: Number(process.env.UAU_TIMEOUT_MS || 600000),
     },
     n8nBaseUrl: process.env.N8N_BASE_URL || '',
-    integration: { webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '' },
+    integration: {
+      webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '',
+      authHeader: process.env.INTEGRATION_AUTH_HEADER || 'X-INTEGRATION-Authorization',
+      authToken: process.env.INTEGRATION_AUTH_TOKEN || '',
+    },
     reapproval: { workflowEndPoint: process.env.REAPROVAL_WORKFLOW_ENDPOINT || '' },
     processCreator: {
       baseUrl: process.env.PROCESS_CREATOR_URL || 'http://somos_process_creator:8000',

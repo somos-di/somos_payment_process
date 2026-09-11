@@ -8,6 +8,8 @@ export interface UauSettings {
 
 export interface IntegrationSettings {
   webhookEndpoint: string;
+  authHeader: string;
+  authToken: string;
 }
 
 export interface ReapprovalSettings {

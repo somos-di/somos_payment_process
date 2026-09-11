@@ -37,9 +37,12 @@ export class UauIntegrationService {
 
   async sendToUau(token: string, uuid: string): Promise<UauIntegrationResult> {
     const visible = await userClient(token)
-      .from('processes').select('uuid_prc').eq('uuid_prc', uuid).maybeSingle();
+      .from('processes').select('uuid_prc,status_step_prc').eq('uuid_prc', uuid).maybeSingle();
     if (visible.error || !visible.data) {
       throw new AppError('Sem permissão sobre este processo', 403, 'forbidden');
+    }
+    if (Number((visible.data as { status_step_prc?: number }).status_step_prc) === 4) {
+      throw new AppError('Este processo já está em integração; aguarde a conclusão.', 409, 'conflict');
     }
 
     const alerts = await this.pendingAlerts(uuid);
@@ -54,10 +57,14 @@ export class UauIntegrationService {
     const webhookUrl = joinUrl(settings.n8nBaseUrl, settings.integration.webhookEndpoint);
 
     const payload = await this.buildPayload(uuid);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (settings.integration.authToken) {
+      headers[settings.integration.authHeader] = settings.integration.authToken;
+    }
     let response: Response;
     try {
       response = await fetch(webhookUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        method: 'POST', headers, body: JSON.stringify(payload),
       });
     } catch (error) {
       await this.logError(token, uuid, 'Falha ao integrar com UAU: ' + ((error as { message?: string }).message || error));
