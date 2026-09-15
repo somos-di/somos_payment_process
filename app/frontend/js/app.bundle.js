@@ -274,7 +274,7 @@
     return SB.select('v_financeiro_integrados', function (query) { return query.order('id_prc', { ascending: false }); });
   });
   S.register('pending_approvals', function () { return SB.rpc('my_pending_approvals'); });
-  S.register('my_approvals', function () { return SB.select('v_my_approvals', function (query) { return query.order('approved_at_app', { ascending: false }); }); });
+  S.register('my_approvals', function () { return SB.rpc('my_approvals'); });
   S.register('no_approver', function () { return SB.select('v_processes_no_approver'); });
   S.register('processes_admin', function () {
     return SB.select('v_processes_admin', function (query) { return query.order('id_prc', { ascending: false }); });
