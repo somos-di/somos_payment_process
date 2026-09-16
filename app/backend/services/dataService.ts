@@ -13,6 +13,7 @@ const READ_RESOURCES = new Set<string>([
   'v_process_history', 'v_process_approvers', 'v_no_approver', 'v_my_approvals', 'v_financeiro', 'v_financeiro_integrados', 'v_processes_admin', 'processes', 'groups', 'users_group',
   'company_rules', 'building_permission', 'process_kind_rules',
   'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind', 'v_comm_history',
+  'v_supplier_requests', 'v_supplier_history', 'supplier_status_kind',
 ]);
 
 const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group',
