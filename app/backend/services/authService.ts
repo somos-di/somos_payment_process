@@ -85,13 +85,16 @@ export class AuthService {
     const { data, error } = await client
       .from('users').select('name_usr, department_usr, is_admin, uau_user_usr').eq('id_usr', id).maybeSingle();
     if (error) throw new AppError(error.message, 400, 'supabase');
-    let isFinanceiro = false, isCommission = false, isMedicao = false;
+    let isFinanceiro = false, isCommission = false, isMedicao = false, isSupplierRequester = false, isSupplierSender = false;
     try { isFinanceiro = !!(await unwrap(client.rpc('is_financeiro_member'))); } catch { }
     try { isCommission = !!(await unwrap(client.rpc('is_commission_member'))); } catch { }
     try { isMedicao = !!(await unwrap(client.rpc('is_medicao_member'))); } catch { }
+    try { isSupplierRequester = !!(await unwrap(client.rpc('is_supplier_requester'))); } catch { }
+    try { isSupplierSender = !!(await unwrap(client.rpc('is_supplier_sender'))); } catch { }
     return {
       id, email, name: data?.name_usr ?? null, department: data?.department_usr ?? null,
       is_admin: !!data?.is_admin, is_financeiro: isFinanceiro, is_commission: isCommission, is_medicao: isMedicao,
+      is_supplier_requester: isSupplierRequester, is_supplier_sender: isSupplierSender,
       uau_user: data?.uau_user_usr ?? null,
     };
   }

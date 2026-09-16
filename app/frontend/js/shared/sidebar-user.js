@@ -9,6 +9,8 @@
         document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (item) { item.style.display = commShow })
         const medShow = (user && (user.is_medicao || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="medicao"]').forEach(function (item) { item.style.display = medShow })
+        const supShow = (user && (user.is_supplier_requester || user.is_supplier_sender || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="fornecedores"]').forEach(function (item) { item.style.display = supShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }

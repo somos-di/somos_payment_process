@@ -1,0 +1,53 @@
+<main>
+  <style>
+    .sup-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+    .sup-form-grid .full { grid-column: 1 / -1; }
+    .sup-field label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .sup-field input, .sup-field select, .sup-field textarea { width: 100%; }
+    .sup-kind-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+    .sup-kind-toggle button { padding: 7px 16px; background: var(--surface-2); border: 0; cursor: pointer; font-size: 13px; color: var(--text-2); }
+    .sup-kind-toggle button.active { background: var(--accent); color: #fff; }
+    .sup-warn { font-size: 13px; color: #9a6700; background: var(--warn-weak, #fef3c7); border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+    .sup-row-inline { display: flex; gap: 8px; align-items: flex-end; }
+    .sup-row-inline .sup-field { flex: 1; }
+  </style>
+
+  <div class="section-title">Solicitar Fornecedor</div>
+  <div class="section-sub" style="margin-bottom:16px">Cadastro de fornecedores em duas etapas: o <b>solicitante</b> registra o
+    fornecedor (PJ ou PF) e o <b>responsável</b> envia ao UAU. Clique numa linha para ver os dados e o histórico.</div>
+
+  <div class="card" style="padding:0">
+    <div class="pl-toolbar">
+      <div class="pl-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </svg>
+        <input id="sup-search" placeholder="Buscar (nome, documento, nº UAU)…">
+      </div>
+      <div class="pl-filters">
+        <label class="pf-field">Status<select id="sup-status">
+            <option value="">Todos</option>
+          </select></label>
+        <label class="pf-field">Tipo<select id="sup-kind">
+            <option value="">Todos</option>
+            <option value="pj">PJ</option>
+            <option value="pf">PF</option>
+          </select></label>
+      </div>
+      <div class="pl-toolbar-actions">
+        <button class="btn btn-primary" id="sup-new" style="display:none">+ Novo Fornecedor</button>
+        <button class="btn btn-light" id="sup-refresh" title="Recarregar">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px">
+            <path d="M23 4v6h-6M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>Atualizar</button>
+        <button class="btn btn-ghost" id="sup-clear">Limpar filtros</button>
+      </div>
+    </div>
+    <div id="sup-body" style="padding:6px 0">
+      <div class="empty">Carregando…</div>
+    </div>
+  </div>
+</main>

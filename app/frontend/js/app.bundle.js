@@ -291,6 +291,15 @@
   S.register('comm_history', function (uuid) {
     return SB.select('v_comm_history', function (query) { return query.eq('commission_chs', uuid).order('created_at_chs', { ascending: false }); });
   });
+  S.register('supplier_requests', function () {
+    return SB.select('v_supplier_requests', function (query) { return query.order('id_sup', { ascending: false }); });
+  });
+  S.register('supplier_status', function () {
+    return SB.select('supplier_status_kind', function (query) { return query.order('id_sst'); });
+  });
+  S.register('supplier_history', function (uuid) {
+    return SB.select('v_supplier_history', function (query) { return query.eq('request_shs', uuid).order('created_at_shs', { ascending: false }); });
+  });
 
   S.register('installments', function (uuid) {
     return SB.select('installments', function (query) { return query.eq('process_ins', uuid).order('number_ins'); });
@@ -387,6 +396,8 @@
         document.querySelectorAll('.menu-group[data-group="comissoes"]').forEach(function (item) { item.style.display = commShow })
         const medShow = (user && (user.is_medicao || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="medicao"]').forEach(function (item) { item.style.display = medShow })
+        const supShow = (user && (user.is_supplier_requester || user.is_supplier_sender || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="fornecedores"]').forEach(function (item) { item.style.display = supShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }
@@ -2548,6 +2559,7 @@ const ROUTES = {
     'comissoes': { title: 'Pagamento de Comissões', appDir: 'commissions', parentLabel: 'Comissões', commission: true },
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
     'criar-medicao': { title: 'Criação de Medição', folder: 'medicao', parentLabel: 'Medição', medicao: true },
+    'fornecedores': { title: 'Solicitar Fornecedor', appDir: 'supplier_requests', parentLabel: 'Fornecedores', supplier: true },
 }
 
 const loadedScripts = new Set()
@@ -2729,6 +2741,13 @@ async function loadView(route, params) {
     if (meta.medicao) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_medicao && !u.is_admin)) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    if (meta.supplier) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_supplier_requester && !u.is_supplier_sender && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }
