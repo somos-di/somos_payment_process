@@ -4,6 +4,9 @@ import { requireAdmin } from '../middlewares/requireAdmin.js';
 
 export function registerSyncRoutes(app: FastifyInstance, sync_center: SyncController): void {
   const admin = { preHandler: requireAdmin };
+  app.get('/sync/config', admin, sync_center.getConfig);
+  app.post('/sync/config', admin, sync_center.setConfig);
+  app.post('/sync/config/tables', admin, sync_center.setTables);
   app.post('/sync', admin, sync_center.syncAll);
   app.post('/sync/:id', admin, sync_center.syncOne);
 }

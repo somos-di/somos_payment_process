@@ -9,7 +9,7 @@ import { registerProtectedRoutes, registerPublicRoutes } from './routes/index.js
 import { getSettings } from './settings.js';
 
 const settings = getSettings();
-const { controllers, authService, warmer } = createContainer();
+const { controllers, authService, warmer, syncScheduler } = createContainer();
 
 const app = Fastify({ logger: { level: 'info' }, trustProxy: settings.trustProxy, bodyLimit: 70 * 1024 * 1024 });
 
@@ -52,5 +52,7 @@ app.listen({ port: settings.port, host: settings.host })
     warmer.warmAll()
       .then(() => app.log.info('cache aquecido no boot'))
       .catch((error) => app.log.warn({ err: error }, 'falha ao aquecer o cache no boot'));
+    syncScheduler.start();
+    app.log.info('agendador de sincronização iniciado');
   })
   .catch((error) => { app.log.error(error); process.exit(1); });

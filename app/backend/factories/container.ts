@@ -17,6 +17,7 @@ import { CatalogService } from '../services/catalogService.js';
 import { DataService } from '../services/dataService.js';
 import { ProcessesService } from '../services/processesService.js';
 import { UauSyncService } from '../services/syncUauData/sync.js';
+import { SyncScheduler } from '../services/syncUauData/syncScheduler.js';
 import { UauIntegrationService } from '../services/uauIntegrationService.js';
 import { getSettings } from '../settings.js';
 import type { Container, ControllersContainer } from '../types/container.js';
@@ -33,6 +34,9 @@ export function createContainer(): Container {
   const processCreatorGateway = new ProcessCreatorGateway(settings);
   const measurementGateway = new MeasurementGateway(settings);
   const uauSyncService = new UauSyncService(uauGateway, warmer);
+  const syncScheduler = new SyncScheduler(uauSyncService, (message, error) => {
+    if (error) console.warn('[sync]', message, error); else console.info('[sync]', message);
+  });
   const authService = new AuthService();
   const dataService = new DataService(cache);
   const adminService = new AdminService();
@@ -46,5 +50,5 @@ export function createContainer(): Container {
     catalog: new CatalogController(catalogService),
     measurement: new MeasurementController(measurementGateway),
   };
-  return { controllers, authService, warmer };
+  return { controllers, authService, warmer, syncScheduler };
 }
