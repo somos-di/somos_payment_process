@@ -13,13 +13,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="js/shared/theme-init.js?v=99"></script>
-    <link rel="stylesheet" href="css/shared/base.css?v=99">
-    <link rel="stylesheet" href="css/shared/layout.css?v=99">
-    <link rel="stylesheet" href="css/shared/responsive.css?v=99">
-    <link rel="stylesheet" href="css/shared/theme.css?v=99">
-    <link rel="stylesheet" href="css/shared/shell.css?v=99">
-    <link rel="stylesheet" href="css/shared/theme-black.css?v=99">
+    <script src="js/shared/theme-init.js?v=100"></script>
+    <link rel="stylesheet" href="css/shared/base.css?v=100">
+    <link rel="stylesheet" href="css/shared/layout.css?v=100">
+    <link rel="stylesheet" href="css/shared/responsive.css?v=100">
+    <link rel="stylesheet" href="css/shared/theme.css?v=100">
+    <link rel="stylesheet" href="css/shared/shell.css?v=100">
+    <link rel="stylesheet" href="css/shared/theme-black.css?v=100">
     <style>
         .boot-loader {
             position: fixed;
@@ -300,6 +300,32 @@
                 </div>
             </div>
 
+            <div class="menu-group" data-group="fornecedores">
+                <button class="accordion-header" type="button" data-group-name="Fornecedores">
+                    <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7h13v10H3z" />
+                            <path d="M16 10h4l1 3v4h-5z" />
+                            <circle cx="7" cy="19" r="1.6" />
+                            <circle cx="18" cy="19" r="1.6" />
+                        </svg></span>
+                    <span class="label group-name">Fornecedores</span>
+                    <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                    <span class="group-tooltip">Fornecedores</span>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-inner">
+                        <div class="menu-items">
+                            <a class="menu-item" href="#/fornecedores" data-route="fornecedores"><span
+                                    class="mi-dot"></span><span class="label">Solicitar Fornecedor</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="menu-group" data-group="integracao">
                 <button class="accordion-header" type="button" data-group-name="Integração">
                     <span class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -422,7 +448,7 @@
 
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-    <script defer src="js/app.bundle.js?v=99"></script>
+    <script defer src="js/app.bundle.js?v=100"></script>
 </body>
 
 </html>

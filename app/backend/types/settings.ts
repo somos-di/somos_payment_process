@@ -10,6 +10,13 @@ export interface IntegrationSettings {
   webhookEndpoint: string;
   authHeader: string;
   authToken: string;
+  supplierCreateEndpoint: string;
+}
+
+export interface CnpjaSettings {
+  baseUrl: string;
+  token: string;
+  timeoutMs: number;
 }
 
 export interface ReapprovalSettings {
@@ -46,6 +53,7 @@ export interface AppSettings {
   uau: UauSettings;
   n8nBaseUrl: string;
   integration: IntegrationSettings;
+  cnpja: CnpjaSettings;
   reapproval: ReapprovalSettings;
   processCreator: ProcessCreatorSettings;
   measurement: MeasurementSettings;

@@ -45,6 +45,12 @@ export function getSettings(): AppSettings {
       webhookEndpoint: process.env.INTEGRATION_WEBHOOK_ENDPOINT || '',
       authHeader: process.env.INTEGRATION_AUTH_HEADER || 'X-INTEGRATION-Authorization',
       authToken: process.env.INTEGRATION_AUTH_TOKEN || '',
+      supplierCreateEndpoint: process.env.SUPPLIER_CREATE_ENDPOINT || '/webhook/somosflows-supplier-create',
+    },
+    cnpja: {
+      baseUrl: process.env.CNPJA_BASE_URL || '',
+      token: process.env.CNPJA_TOKEN || '',
+      timeoutMs: Number(process.env.CNPJA_TIMEOUT_MS || 30000),
     },
     reapproval: { workflowEndPoint: process.env.REAPROVAL_WORKFLOW_ENDPOINT || '' },
     processCreator: {

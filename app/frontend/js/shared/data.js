@@ -31,6 +31,15 @@
   S.register('comm_history', function (uuid) {
     return SB.select('v_comm_history', function (query) { return query.eq('commission_chs', uuid).order('created_at_chs', { ascending: false }); });
   });
+  S.register('supplier_requests', function () {
+    return SB.select('v_supplier_requests', function (query) { return query.order('id_sup', { ascending: false }); });
+  });
+  S.register('supplier_status', function () {
+    return SB.select('supplier_status_kind', function (query) { return query.order('id_sst'); });
+  });
+  S.register('supplier_history', function (uuid) {
+    return SB.select('v_supplier_history', function (query) { return query.eq('request_shs', uuid).order('created_at_shs', { ascending: false }); });
+  });
 
   S.register('installments', function (uuid) {
     return SB.select('installments', function (query) { return query.eq('process_ins', uuid).order('number_ins'); });
