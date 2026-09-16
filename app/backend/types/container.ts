@@ -7,6 +7,7 @@ import type { MeasurementController } from '../controllers/measurementController
 import type { ProcessesController } from '../controllers/processesController.js';
 import type { SyncController } from '../controllers/syncController.js';
 import type { AuthService } from '../services/authService.js';
+import type { SyncScheduler } from '../services/syncUauData/syncScheduler.js';
 
 export interface ControllersContainer {
   processes: ProcessesController;
@@ -22,4 +23,5 @@ export interface Container {
   controllers: ControllersContainer;
   authService: AuthService;
   warmer: CacheWarmer;
+  syncScheduler: SyncScheduler;
 }
