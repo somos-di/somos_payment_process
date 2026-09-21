@@ -1,28 +1,30 @@
+export type OptText = string | null;
+
 export interface SupplierFields {
-  cnpj?: string;
-  cpf?: string;
-  nome?: string;
-  razao_social?: string;
-  cep?: string;
-  city_id?: string;
-  municipio?: string;
-  uf?: string;
-  logradouro?: string;
-  numero?: string;
-  bairro?: string;
-  complemento?: string;
-  telefone?: string;
-  email?: string;
-  inscricao_estadual?: string;
-  atividade_principal?: string;
-  atividades_secundarias?: string;
+  cnpj?: OptText;
+  cpf?: OptText;
+  nome?: OptText;
+  razao_social?: OptText;
+  cep?: OptText;
+  city_id?: OptText;
+  municipio?: OptText;
+  uf?: OptText;
+  logradouro?: OptText;
+  numero?: OptText;
+  bairro?: OptText;
+  complemento?: OptText;
+  telefone?: OptText;
+  email?: OptText;
+  inscricao_estadual?: OptText;
+  atividade_principal?: OptText;
+  atividades_secundarias?: OptText;
 }
 
 export interface SupplierRequestInput {
   kind: 'pj' | 'pf';
   document: string;
   name: string;
-  fantasy?: string;
+  fantasy?: OptText;
   fields: SupplierFields;
   company?: string;
   building?: string;

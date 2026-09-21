@@ -6,7 +6,7 @@ import type { SupplierTransitionOptions } from '../../types/supplierRequests.js'
 import { UuidParamSchema } from '../../validators/common.js';
 import type { SupplierRequestsService } from './supplierRequestsService.js';
 
-const optText = z.string().trim().max(300).optional();
+const optText = z.string().trim().max(300).nullish();
 const FieldsSchema = z.object({
   cnpj: optText, cpf: optText, nome: optText, razao_social: optText, cep: optText, city_id: optText,
   municipio: optText, uf: optText, logradouro: optText, numero: optText, bairro: optText, complemento: optText,
@@ -17,7 +17,7 @@ const CreateSchema = z.object({
   kind: z.enum(['pj', 'pf']),
   document: z.string().trim().min(1).max(30),
   name: z.string().trim().min(1).max(300),
-  fantasy: z.string().trim().max(300).optional(),
+  fantasy: z.string().trim().max(300).nullish(),
   fields: FieldsSchema.optional().default({}),
   company: z.string().trim().max(50).optional(),
   building: z.string().trim().max(50).optional(),
