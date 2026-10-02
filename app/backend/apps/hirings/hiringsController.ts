@@ -14,6 +14,10 @@ const CreateSchema = z.object({
   salary: z.coerce.number().min(0).max(99999999).nullish(),
   period: optText(200),
   resume_url: optText(2000),
+  cargo: optText(120),
+  level: optText(80),
+  reason: optText(300),
+  social: optText(1000),
 });
 const UpdateSchema = CreateSchema.omit({ department: true });
 const ReasonSchema = z.object({ reason: z.string().trim().min(1).max(500) });
@@ -26,6 +30,8 @@ function toInput(data: z.infer<typeof CreateSchema> | z.infer<typeof UpdateSchem
     name: data.name, contractType: data.contract_type,
     age: data.age ?? null, salary: data.salary ?? null,
     period: data.period ?? null, resumeUrl: data.resume_url ?? null,
+    cargo: data.cargo ?? null, level: data.level ?? null,
+    reason: data.reason ?? null, social: data.social ?? null,
   };
 }
 
