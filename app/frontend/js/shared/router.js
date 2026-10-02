@@ -23,6 +23,8 @@ const ROUTES = {
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
     'criar-medicao': { title: 'Criação de Medição', folder: 'medicao', parentLabel: 'Medição', medicao: true },
     'fornecedores': { title: 'Solicitar Fornecedor', appDir: 'supplier_requests', parentLabel: 'Fornecedores', supplier: true },
+    'contratacoes': { title: 'Contratações', appDir: 'hirings', parentLabel: 'Contratação', hiring: true },
+    'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Contratação', admin: true },
 }
 
 const loadedScripts = new Set()
@@ -211,6 +213,13 @@ async function loadView(route, params) {
     if (meta.supplier) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_supplier_requester && !u.is_supplier_sender && !u.is_admin)) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    if (meta.hiring) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_hiring && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }

@@ -398,6 +398,8 @@
         document.querySelectorAll('.menu-group[data-group="medicao"]').forEach(function (item) { item.style.display = medShow })
         const supShow = (user && (user.is_supplier_requester || user.is_supplier_sender || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="fornecedores"]').forEach(function (item) { item.style.display = supShow })
+        const hirShow = (user && (user.is_hiring || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="contratacao"]').forEach(function (item) { item.style.display = hirShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }
@@ -2560,6 +2562,8 @@ const ROUTES = {
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
     'criar-medicao': { title: 'Criação de Medição', folder: 'medicao', parentLabel: 'Medição', medicao: true },
     'fornecedores': { title: 'Solicitar Fornecedor', appDir: 'supplier_requests', parentLabel: 'Fornecedores', supplier: true },
+    'contratacoes': { title: 'Contratações', appDir: 'hirings', parentLabel: 'Contratação', hiring: true },
+    'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Contratação', admin: true },
 }
 
 const loadedScripts = new Set()
@@ -2748,6 +2752,13 @@ async function loadView(route, params) {
     if (meta.supplier) {
         const u = window.Auth && window.Auth.getUser()
         if (!u || (!u.is_supplier_requester && !u.is_supplier_sender && !u.is_admin)) {
+            window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
+            return
+        }
+    }
+    if (meta.hiring) {
+        const u = window.Auth && window.Auth.getUser()
+        if (!u || (!u.is_hiring && !u.is_admin)) {
             window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
             return
         }

@@ -14,6 +14,7 @@ const READ_RESOURCES = new Set<string>([
   'company_rules', 'building_permission', 'process_kind_rules',
   'v_commissions', 'v_comm_empreendimentos', 'comm_empreendimentos', 'comm_status_kind', 'v_comm_history',
   'v_supplier_requests', 'v_supplier_history', 'supplier_status_kind',
+  'v_hirings', 'v_hiring_history', 'v_departments', 'hiring_status_kind',
 ]);
 
 const ADMIN_RESOURCES = new Set<string>(['v_no_approver', 'groups', 'users_group',

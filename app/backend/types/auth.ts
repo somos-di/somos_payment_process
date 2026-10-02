@@ -34,5 +34,6 @@ export interface UserProfile extends AuthenticatedUser {
   is_medicao: boolean;
   is_supplier_requester: boolean;
   is_supplier_sender: boolean;
+  is_hiring: boolean;
   uau_user: string | null;
 }

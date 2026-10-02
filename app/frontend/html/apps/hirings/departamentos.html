@@ -1,0 +1,28 @@
+<main>
+  <div class="card" style="padding:20px">
+    <div>
+      <div class="section-title">Departamentos & Gestores</div>
+      <div class="section-sub">Defina quem é o <b>gestor</b> de cada departamento. O gestor lança contratações e aprova
+        junto do CFO/CEO. Os departamentos vêm do cadastro existente.</div>
+    </div>
+    <table style="margin-top:16px">
+      <thead>
+        <tr>
+          <th>Departamento</th>
+          <th>Gestores</th>
+          <th style="text-align:right">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="dep-rows">
+        <tr>
+          <td colspan="3" class="empty">Carregando…</td>
+        </tr>
+      </tbody>
+    </table>
+    <div id="dep-msg" class="section-sub" style="margin-top:12px"></div>
+  </div>
+
+  <div id="dep-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-card" id="dep-modal"></div>
+  </div>
+</main>
