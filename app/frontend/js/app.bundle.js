@@ -2562,8 +2562,8 @@ const ROUTES = {
     'comissoes-empreendimentos': { title: 'Empreendimentos (Comissões)', appDir: 'commissions', parentLabel: 'Comissões', admin: true },
     'criar-medicao': { title: 'Criação de Medição', folder: 'medicao', parentLabel: 'Medição', medicao: true },
     'fornecedores': { title: 'Solicitar Fornecedor', appDir: 'supplier_requests', parentLabel: 'Fornecedores', supplier: true },
-    'contratacoes': { title: 'Contratações', appDir: 'hirings', parentLabel: 'Contratação', hiring: true },
-    'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Contratação', admin: true },
+    'contratacoes': { title: 'Banco de Talentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', hiring: true },
+    'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', admin: true },
 }
 
 const loadedScripts = new Set()

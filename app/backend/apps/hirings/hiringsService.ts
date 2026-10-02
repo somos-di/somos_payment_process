@@ -8,6 +8,10 @@ export interface HiringCreateInput {
   salary?: number | null;
   period?: string | null;
   resumeUrl?: string | null;
+  cargo?: string | null;
+  level?: string | null;
+  reason?: string | null;
+  social?: string | null;
 }
 
 export class HiringsService {
@@ -38,6 +42,8 @@ export class HiringsService {
       p_department: input.department, p_name: input.name, p_contract_type: input.contractType,
       p_age: input.age ?? null, p_salary: input.salary ?? null,
       p_period: input.period ?? null, p_resume_url: input.resumeUrl ?? null,
+      p_cargo: input.cargo ?? null, p_level: input.level ?? null,
+      p_reason: input.reason ?? null, p_social: input.social ?? null,
     }));
   }
 
@@ -46,6 +52,8 @@ export class HiringsService {
       p_uuid: uuid, p_name: input.name, p_contract_type: input.contractType,
       p_age: input.age ?? null, p_salary: input.salary ?? null,
       p_period: input.period ?? null, p_resume_url: input.resumeUrl ?? null,
+      p_cargo: input.cargo ?? null, p_level: input.level ?? null,
+      p_reason: input.reason ?? null, p_social: input.social ?? null,
     }));
   }
 
