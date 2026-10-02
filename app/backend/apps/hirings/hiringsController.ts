@@ -49,11 +49,15 @@ export class HiringsController {
     this.resubmit = this.resubmit.bind(this);
     this.cancel = this.cancel.bind(this);
     this.users = this.users.bind(this);
+    this.options = this.options.bind(this);
     this.deptSetManagers = this.deptSetManagers.bind(this);
   }
 
   async users(request: FastifyRequest, reply: FastifyReply) {
     return reply.send({ success: true, data: await this.service.users(request.accessToken!) });
+  }
+  async options(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send({ success: true, data: await this.service.options(request.accessToken!) });
   }
 
   async list(request: FastifyRequest, reply: FastifyReply) {

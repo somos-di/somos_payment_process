@@ -5,6 +5,7 @@ export function registerHiringsRoutes(app: FastifyInstance, hiring_center: Hirin
   app.get('/hirings', hiring_center.list);
   app.get('/hirings/departments', hiring_center.departments);
   app.get('/hirings/users', hiring_center.users);
+  app.get('/hirings/options', hiring_center.options);
   app.post('/hirings/create', hiring_center.create);
   app.get('/hirings/:uuid', hiring_center.get);
   app.get('/hirings/:uuid/history', hiring_center.history);

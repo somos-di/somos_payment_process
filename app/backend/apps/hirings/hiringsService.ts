@@ -37,6 +37,10 @@ export class HiringsService {
     return unwrap(userClient(token).rpc('hiring_list_users'));
   }
 
+  options(token: string) {
+    return unwrap(userClient(token).rpc('hiring_options'));
+  }
+
   create(token: string, input: HiringCreateInput) {
     return unwrap(userClient(token).rpc('hiring_create', {
       p_department: input.department, p_name: input.name, p_contract_type: input.contractType,
