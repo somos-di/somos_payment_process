@@ -1,0 +1,43 @@
+<main>
+  <div class="card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Contratações</div>
+        <div class="section-sub">O gestor lança, a diretoria (CFO/CEO) aprova e o recebedor finaliza. Você só vê as
+          contratações em que está na regra.</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="hir-filter-status" class="input" style="min-width:180px">
+          <option value="">Todos os status</option>
+        </select>
+        <button class="btn btn-light" id="hir-refresh">Atualizar</button>
+        <button class="btn btn-primary" id="hir-new">Nova contratação</button>
+      </div>
+    </div>
+
+    <table style="margin-top:16px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Candidato</th>
+          <th>Departamento</th>
+          <th>Tipo</th>
+          <th>Salário</th>
+          <th>Status</th>
+          <th>Aprovações</th>
+          <th>Lançado por</th>
+        </tr>
+      </thead>
+      <tbody id="hir-rows">
+        <tr>
+          <td colspan="8" class="empty">Carregando…</td>
+        </tr>
+      </tbody>
+    </table>
+    <div id="hir-msg" class="section-sub" style="margin-top:12px"></div>
+  </div>
+
+  <div id="hir-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-card" id="hir-modal"></div>
+  </div>
+</main>

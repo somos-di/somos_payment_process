@@ -11,6 +11,8 @@
         document.querySelectorAll('.menu-group[data-group="medicao"]').forEach(function (item) { item.style.display = medShow })
         const supShow = (user && (user.is_supplier_requester || user.is_supplier_sender || user.is_admin)) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="fornecedores"]').forEach(function (item) { item.style.display = supShow })
+        const hirShow = (user && (user.is_hiring || user.is_admin)) ? '' : 'none'
+        document.querySelectorAll('.menu-group[data-group="contratacao"]').forEach(function (item) { item.style.display = hirShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
     }
