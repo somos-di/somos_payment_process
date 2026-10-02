@@ -19,6 +19,15 @@ async function initView_contratacoes() {
   try { departments = (await window.API.get('/hirings/departments')) || []; } catch (e) { }
   var formDepts = me.is_admin ? departments : departments.filter(function (d) { return (d.gestores || []).some(function (g) { return g.id === me.id; }); });
 
+  var options = {};
+  async function loadOptions() { try { options = (await window.API.get('/hirings/options')) || {}; } catch (e) { options = {}; } }
+  await loadOptions();
+  function optList(kind, fallback) {
+    var merged = fallback.filter(function (x) { return x; }).slice();
+    (options[kind] || []).forEach(function (v) { if (merged.indexOf(v) < 0) merged.push(v); });
+    return merged.sort();
+  }
+
   var all = [];
   async function load() {
     rowsEl.innerHTML = '<tr><td colspan="8" class="empty">Carregando…</td></tr>';
@@ -52,9 +61,9 @@ async function initView_contratacoes() {
   newBtn.addEventListener('click', function () { openForm(null); });
 
   function closeModal() { overlay.style.display = 'none'; modal.innerHTML = ''; }
-  function showModal(html) {
+  function showModal(html, width) {
     overlay.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto';
-    modal.style.cssText = 'background:var(--card,#1b1b1b);color:inherit;border-radius:14px;max-width:640px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)';
+    modal.style.cssText = 'background:var(--card,#1b1b1b);color:inherit;border-radius:14px;max-width:' + (width || 640) + 'px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)';
     modal.innerHTML = html;
   }
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
@@ -81,9 +90,9 @@ async function initView_contratacoes() {
       + '<label style="' + lblStyle + '">Nome do candidato *</label><input id="f-name" style="' + inputStyle + '" value="' + esc(e.name_hir || '') + '">'
       + '<div style="display:flex;gap:12px"><div style="flex:1"><label style="' + lblStyle + '">Idade</label><input id="f-age" type="number" min="0" max="120" style="' + inputStyle + '" value="' + (e.age_hir != null ? e.age_hir : '') + '"></div>'
       + '<div style="flex:1"><label style="' + lblStyle + '">Tipo de contratação *</label><select id="f-type" style="' + inputStyle + '">' + TYPES.map(function (t) { return '<option' + (e.contract_type_hir === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div></div>'
-      + '<div style="display:flex;gap:12px"><div style="flex:1"><label style="' + lblStyle + '">Cargo</label><input id="f-cargo" list="dl-cargo" style="' + inputStyle + '" placeholder="Programador, Analista…" value="' + esc(e.cargo_hir || '') + '">' + dataList('dl-cargo', CARGOS) + '</div>'
-      + '<div style="flex:1"><label style="' + lblStyle + '">Nível</label><input id="f-level" list="dl-level" style="' + inputStyle + '" placeholder="Júnior, Sênior…" value="' + esc(e.level_hir || '') + '">' + dataList('dl-level', LEVELS) + '</div></div>'
-      + '<div style="display:flex;gap:12px"><div style="flex:1"><label style="' + lblStyle + '">Justificativa da contratação</label><select id="f-reason" style="' + inputStyle + '">' + REASONS.map(function (r) { return '<option' + (e.reason_hir === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>'
+      + '<div style="display:flex;gap:12px"><div style="flex:1"><label style="' + lblStyle + '">Cargo</label><input id="f-cargo" list="dl-cargo" style="' + inputStyle + '" placeholder="selecione ou digite um novo" value="' + esc(e.cargo_hir || '') + '">' + dataList('dl-cargo', optList('cargo', CARGOS)) + '</div>'
+      + '<div style="flex:1"><label style="' + lblStyle + '">Nível</label><input id="f-level" list="dl-level" style="' + inputStyle + '" placeholder="selecione ou digite um novo" value="' + esc(e.level_hir || '') + '">' + dataList('dl-level', optList('nivel', LEVELS)) + '</div></div>'
+      + '<div style="display:flex;gap:12px"><div style="flex:1"><label style="' + lblStyle + '">Justificativa da contratação</label><input id="f-reason" list="dl-reason" style="' + inputStyle + '" placeholder="selecione ou digite uma nova" value="' + esc(e.reason_hir || '') + '">' + dataList('dl-reason', optList('justificativa', REASONS)) + '</div>'
       + '<div style="flex:1"><label style="' + lblStyle + '">Salário (opcional)</label><input id="f-salary" type="number" min="0" step="0.01" style="' + inputStyle + '" value="' + (e.salary_hir != null ? e.salary_hir : '') + '"></div></div>'
       + '<label style="' + lblStyle + '">Período (opcional)</label><input id="f-period" style="' + inputStyle + '" value="' + esc(e.period_hir || '') + '">'
       + '<label style="' + lblStyle + '">Redes sociais (LinkedIn, Instagram…)</label><input id="f-social" style="' + inputStyle + '" placeholder="links separados por vírgula" value="' + esc(e.social_hir || '') + '">'
@@ -115,7 +124,7 @@ async function initView_contratacoes() {
         };
         if (existing) await window.API.post('/hirings/' + e.uuid_hir + '/update', body);
         else await window.API.post('/hirings/create', body);
-        closeModal(); await load();
+        await loadOptions(); closeModal(); await load();
       } catch (err) { msg.style.color = '#dc2626'; msg.textContent = err.message; btn.disabled = false; }
     });
   }
@@ -148,20 +157,36 @@ async function initView_contratacoes() {
       + (h.note_hir ? '<div style="margin-top:8px;font-size:13px;opacity:.85"><b>Obs.:</b> ' + esc(h.note_hir) + '</div>' : '')
       + '<div class="section-sub" style="margin-top:16px">Histórico</div><div style="max-height:200px;overflow:auto;margin-top:4px">' + histHtml + '</div>'
       + '<div id="d-msg" style="color:#dc2626;font-size:13px;margin-top:10px"></div>'
-      + '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-light" id="d-close">Fechar</button>'
+      + '<div id="d-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-light" id="d-close">Fechar</button>'
       + actions.map(function (a) { return '<button class="btn ' + a[2] + '" data-act="' + a[0] + '">' + a[1] + '</button>'; }).join('') + '</div>'
-    );
+    , 720);
     document.getElementById('d-close').addEventListener('click', closeModal);
     modal.querySelectorAll('button[data-act]').forEach(function (b) { b.addEventListener('click', function () { doAction(b.getAttribute('data-act'), h); }); });
   }
 
-  async function doAction(act, h) {
+  function doAction(act, h) {
     if (act === 'edit') { openForm(h); return; }
-    var reason = null;
-    if (act === 'reject' || act === 'cancel') {
-      reason = window.prompt(act === 'reject' ? 'Motivo da correção:' : 'Motivo do cancelamento:');
-      if (reason == null || !reason.trim()) return;
-    }
+    if (act === 'reject' || act === 'cancel') { askReason(act, h); return; }
+    runAction(act, h, null);
+  }
+
+  function askReason(act, h) {
+    var label = act === 'reject' ? 'Motivo da correção' : 'Motivo do cancelamento';
+    var holder = document.getElementById('d-actions');
+    holder.style.display = 'block';
+    holder.innerHTML = '<label style="font-size:12px;opacity:.7;display:block;margin-bottom:4px">' + label + ' *</label>'
+      + '<textarea id="d-reason" rows="2" style="width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border,#333);background:var(--bg,#121212);color:inherit;box-sizing:border-box"></textarea>'
+      + '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px"><button class="btn btn-light" id="d-back">Voltar</button><button class="btn btn-primary" id="d-confirm">Confirmar</button></div>';
+    var ta = document.getElementById('d-reason'); ta.focus();
+    document.getElementById('d-back').addEventListener('click', function () { openDetail(h.uuid_hir); });
+    document.getElementById('d-confirm').addEventListener('click', function () {
+      var r = ta.value.trim();
+      if (!r) { ta.style.borderColor = '#dc2626'; ta.focus(); return; }
+      runAction(act, h, r);
+    });
+  }
+
+  async function runAction(act, h, reason) {
     try {
       await window.API.post('/hirings/' + h.uuid_hir + '/' + act, reason != null ? { reason: reason } : undefined);
       closeModal(); await load();
