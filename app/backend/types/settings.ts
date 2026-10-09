@@ -48,6 +48,7 @@ export interface AppSettings {
   cookieName: string;
   cookieSecure: boolean;
   attachmentsBucket: string;
+  analyticsReportsBucket: string;
   redisUrl: string | null;
   cacheTtlMs: number;
   uau: UauSettings;

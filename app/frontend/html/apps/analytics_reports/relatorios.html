@@ -1,0 +1,23 @@
+<main>
+  <style>
+    .ar-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 16px 20px; }
+    .ar-toolbar .field { flex: 1; min-width: 200px; margin: 0; }
+    .ar-meta { padding: 0 20px 14px; font-size: 13px; color: var(--muted); }
+    .ar-frame { display: block; width: 100%; height: calc(100vh - 250px); min-height: 560px; border: 0; }
+  </style>
+
+  <div class="section-title">Relatórios dos empreendimentos</div>
+  <div class="section-sub" style="margin-bottom:16px">Publicados pela Controladoria. Abre a publicação mais
+    recente; escolha outra data para ver uma versão anterior.</div>
+
+  <div class="card" style="padding:0">
+    <div class="ar-toolbar">
+      <div class="field"><label for="ar-development">Empreendimento</label><select id="ar-development"></select></div>
+      <div class="field"><label for="ar-report">Relatório</label><select id="ar-report"></select></div>
+      <div class="field"><label for="ar-version">Publicação</label><select id="ar-version"></select></div>
+      <a class="btn btn-light" id="ar-open" target="_blank" rel="noopener" hidden>Abrir em nova aba ↗</a>
+    </div>
+    <div class="ar-meta" id="ar-meta"></div>
+    <div id="ar-body"><div class="empty">Carregando…</div></div>
+  </div>
+</main>

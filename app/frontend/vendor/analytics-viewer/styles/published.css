@@ -1,0 +1,24 @@
+body.published .report-toolbar {
+  display: none;
+}
+
+body.published .report-heading .muted.small {
+  display: none;
+}
+
+body.published .published-frozen,
+body.published .published-frozen * {
+  cursor: default !important;
+}
+
+body.published .published-frozen :is(select, input, button) {
+  opacity: 0.6;
+}
+
+body.published .published-frozen tr:hover td {
+  background: inherit;
+}
+
+body.published.embedded .topbar {
+  display: none;
+}

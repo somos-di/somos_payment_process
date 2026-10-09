@@ -2564,6 +2564,7 @@ const ROUTES = {
     'fornecedores': { title: 'Solicitar Fornecedor', appDir: 'supplier_requests', parentLabel: 'Fornecedores', supplier: true },
     'contratacoes': { title: 'Banco de Talentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', hiring: true },
     'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', admin: true },
+    'relatorios': { title: 'Relatórios', appDir: 'analytics_reports', parentLabel: 'Relatórios' },
 }
 
 const loadedScripts = new Set()
