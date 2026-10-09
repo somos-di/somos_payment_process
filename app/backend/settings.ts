@@ -30,6 +30,7 @@ export function getSettings(): AppSettings {
     cookieName: process.env.SESSION_COOKIE || 'pp_session',
     cookieSecure: (process.env.COOKIE_SECURE || 'false') === 'true',
     attachmentsBucket: process.env.ATTACHMENTS_BUCKET || 'attachments',
+    analyticsReportsBucket: process.env.ANALYTICS_REPORTS_BUCKET || 'relatorios',
     redisUrl: process.env.REDIS_URL || null,
     cacheTtlMs: Number(process.env.CACHE_TTL_MS || 86400000),
 
