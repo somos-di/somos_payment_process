@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { UnauthorizedError } from '../errors.js';
+import { toAuthenticatedUser } from '../models/accountFlags.js';
 import { adminClient } from '../gateways/supabase.js';
 import { getSettings } from '../settings.js';
 import type { SessionRefresher } from '../types/auth.js';
@@ -12,7 +13,7 @@ export function requireAuth(sessionRefresher: SessionRefresher) {
     if (token) {
       const { data, error } = await adminClient().auth.getUser(token);
       if (!error && data.user) {
-        request.user = { id: data.user.id, email: data.user.email || '' };
+        request.user = toAuthenticatedUser(data.user);
         request.accessToken = token;
         return;
       }
