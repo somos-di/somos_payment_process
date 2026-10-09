@@ -26,7 +26,10 @@ const ROUTES = {
     'contratacoes': { title: 'Banco de Talentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', hiring: true },
     'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', admin: true },
     'relatorios': { title: 'Relatórios', appDir: 'analytics_reports', parentLabel: 'Relatórios' },
+    'trocar-senha': { title: 'Trocar senha', appDir: 'analytics_reports', parentLabel: 'Relatórios' },
 }
+
+const REPORT_VIEWER_ROUTES = ['relatorios', 'trocar-senha']
 
 const loadedScripts = new Set()
 
@@ -181,6 +184,15 @@ async function loadView(route, params) {
     if (route === LOGIN_ROUTE && authed) {
         window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
         return
+    }
+
+    const account = authed && window.Auth.getUser()
+    if (account && account.is_report_viewer) {
+        const allowed = account.must_change_password ? ['trocar-senha'] : REPORT_VIEWER_ROUTES
+        if (allowed.indexOf(route) < 0) {
+            window.location.hash = window.CONFIG.HASH(allowed[0])
+            return
+        }
     }
 
     if (meta.admin) {

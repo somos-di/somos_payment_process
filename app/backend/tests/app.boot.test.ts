@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { createContainer } from '../factories/container.js';
 import { errorHandler } from '../middlewares/errorHandler.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
+import { restrictReportViewers } from '../middlewares/restrictReportViewers.js';
 import { registerProtectedRoutes, registerPublicRoutes } from '../routes/index.js';
 import './_env.js';
 
@@ -17,6 +18,7 @@ async function buildTestApp(): Promise<FastifyInstance> {
   await app.register(async (scopedApp) => { registerPublicRoutes(scopedApp, controllers); }, { prefix: '/api/v1' });
   await app.register(async (scopedApp) => {
     scopedApp.addHook('preHandler', requireAuth(authService));
+    scopedApp.addHook('preHandler', restrictReportViewers);
     registerProtectedRoutes(scopedApp, controllers);
   }, { prefix: '/api/v1' });
   await app.ready();

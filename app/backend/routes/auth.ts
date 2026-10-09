@@ -9,4 +9,5 @@ export function registerPublicAuthRoutes(app: FastifyInstance, auth_center: Auth
 }
 export function registerProtectedAuthRoutes(app: FastifyInstance, auth_center: AuthController): void {
   app.get('/auth/me', auth_center.me);
+  app.post('/auth/password', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, auth_center.changePassword);
 }

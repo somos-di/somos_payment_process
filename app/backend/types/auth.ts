@@ -1,4 +1,9 @@
-export interface AuthenticatedUser {
+export interface AccountFlags {
+  reportViewer: boolean;
+  mustChangePassword: boolean;
+}
+
+export interface AuthenticatedUser extends AccountFlags {
   id: string;
   email: string;
 }
@@ -25,7 +30,7 @@ export interface OAuthStart {
   pkce: string;
 }
 
-export interface UserProfile extends AuthenticatedUser {
+export interface UserProfile extends Pick<AuthenticatedUser, 'id' | 'email'> {
   name: string | null;
   department: number | null;
   is_admin: boolean;
@@ -36,4 +41,6 @@ export interface UserProfile extends AuthenticatedUser {
   is_supplier_sender: boolean;
   is_hiring: boolean;
   uau_user: string | null;
+  is_report_viewer: boolean;
+  must_change_password: boolean;
 }

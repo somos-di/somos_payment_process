@@ -387,6 +387,7 @@
 /* ==== js/shared/sidebar-user.js ==== */
 (function () {
     function reflectAdmin(user) {
+        document.querySelectorAll('.menu-group').forEach(function (item) { item.style.display = '' })
         const show = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="admin"], .menu-group[data-group="integracao"]')
             .forEach(function (item) { item.style.display = show })
@@ -402,6 +403,11 @@
         document.querySelectorAll('.menu-group[data-group="contratacao"]').forEach(function (item) { item.style.display = hirShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
+        const reportViewer = !!(user && user.is_report_viewer)
+        if (reportViewer) {
+            document.querySelectorAll('.menu-group:not([data-group="relatorios"])').forEach(function (item) { item.style.display = 'none' })
+        }
+        document.querySelectorAll('[data-report-viewer-only]').forEach(function (item) { item.style.display = reportViewer ? '' : 'none' })
     }
 
     function reflectUser(user) {
@@ -2565,7 +2571,10 @@ const ROUTES = {
     'contratacoes': { title: 'Banco de Talentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', hiring: true },
     'departamentos': { title: 'Departamentos', appDir: 'hirings', parentLabel: 'Banco de Talentos', admin: true },
     'relatorios': { title: 'Relatórios', appDir: 'analytics_reports', parentLabel: 'Relatórios' },
+    'trocar-senha': { title: 'Trocar senha', appDir: 'analytics_reports', parentLabel: 'Relatórios' },
 }
+
+const REPORT_VIEWER_ROUTES = ['relatorios', 'trocar-senha']
 
 const loadedScripts = new Set()
 
@@ -2720,6 +2729,15 @@ async function loadView(route, params) {
     if (route === LOGIN_ROUTE && authed) {
         window.location.hash = window.CONFIG.HASH(DEFAULT_ROUTE)
         return
+    }
+
+    const account = authed && window.Auth.getUser()
+    if (account && account.is_report_viewer) {
+        const allowed = account.must_change_password ? ['trocar-senha'] : REPORT_VIEWER_ROUTES
+        if (allowed.indexOf(route) < 0) {
+            window.location.hash = window.CONFIG.HASH(allowed[0])
+            return
+        }
     }
 
     if (meta.admin) {

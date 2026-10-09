@@ -1,5 +1,6 @@
 (function () {
     function reflectAdmin(user) {
+        document.querySelectorAll('.menu-group').forEach(function (item) { item.style.display = '' })
         const show = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('.menu-group[data-group="admin"], .menu-group[data-group="integracao"]')
             .forEach(function (item) { item.style.display = show })
@@ -15,6 +16,11 @@
         document.querySelectorAll('.menu-group[data-group="contratacao"]').forEach(function (item) { item.style.display = hirShow })
         const admOnly = (user && user.is_admin) ? '' : 'none'
         document.querySelectorAll('[data-admin-only]').forEach(function (item) { item.style.display = admOnly })
+        const reportViewer = !!(user && user.is_report_viewer)
+        if (reportViewer) {
+            document.querySelectorAll('.menu-group:not([data-group="relatorios"])').forEach(function (item) { item.style.display = 'none' })
+        }
+        document.querySelectorAll('[data-report-viewer-only]').forEach(function (item) { item.style.display = reportViewer ? '' : 'none' })
     }
 
     function reflectUser(user) {

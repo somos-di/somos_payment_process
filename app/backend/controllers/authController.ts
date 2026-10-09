@@ -12,11 +12,19 @@ const LoginSchema = z.object(
   }
 );
 
+const PasswordSchema = z.object({
+  current_password: z.string().min(1),
+  new_password: z.string().min(8).max(128),
+}).refine((data) => data.current_password !== data.new_password, {
+  message: 'A nova senha precisa ser diferente da atual.', path: ['new_password'],
+});
+
 export class AuthController {
   constructor(private readonly service: AuthService) {
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
     this.me = this.me.bind(this);
+    this.changePassword = this.changePassword.bind(this);
     this.oauthStart = this.oauthStart.bind(this);
     this.oauthCallback = this.oauthCallback.bind(this);
   }
@@ -67,8 +75,16 @@ export class AuthController {
   }
 
   async me(request: FastifyRequest, reply: FastifyReply) {
-    const data = await this.service.me(request.accessToken!, request.user!.id, request.user!.email);
+    const data = await this.service.me(request.accessToken!, request.user!);
 
     return reply.send({ success: true, data });
+  }
+
+  async changePassword(request: FastifyRequest, reply: FastifyReply) {
+    const { current_password, new_password } = PasswordSchema.parse(request.body);
+    const { token, refreshToken } = await this.service.changePassword(request.user!, current_password, new_password);
+    setSessionCookies(reply, token, refreshToken);
+
+    return reply.send({ success: true });
   }
 }

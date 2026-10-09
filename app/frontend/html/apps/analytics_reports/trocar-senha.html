@@ -1,0 +1,22 @@
+<main>
+  <div class="section-title">Trocar senha</div>
+  <div class="section-sub" id="ts-intro" style="margin-bottom:16px">Escolha uma senha nova com pelo menos 8 caracteres.</div>
+
+  <div class="card" style="padding:18px 20px;max-width:480px">
+    <form id="ts-form" autocomplete="on">
+      <div class="field"><label for="ts-current">Senha atual</label>
+        <input id="ts-current" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="field"><label for="ts-new">Nova senha</label>
+        <input id="ts-new" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+      </div>
+      <div class="field"><label for="ts-confirm">Repita a nova senha</label>
+        <input id="ts-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+        <button class="btn btn-primary" id="ts-save" type="submit">Salvar senha</button>
+        <span id="ts-status" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+    </form>
+  </div>
+</main>

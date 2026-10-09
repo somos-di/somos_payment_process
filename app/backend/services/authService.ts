@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { AppError, UnauthorizedError } from '../errors.js';
+import { AppError, UnauthorizedError, ValidationError } from '../errors.js';
 import { adminClient, anonClient, unwrap, userClient } from '../gateways/supabase.js';
+import { toAuthenticatedUser, withPasswordChanged } from '../models/accountFlags.js';
 import { getSettings } from '../settings.js';
-import type { OAuthStart, PkceStorage, Session, UserProfile } from '../types/auth.js';
+import type { AuthenticatedUser, OAuthStart, PkceStorage, Session, UserProfile } from '../types/auth.js';
 
 function memStorage(initial: Record<string, string> = {}): PkceStorage {
   const store: Record<string, string> = { ...initial };
@@ -44,7 +45,7 @@ export class AuthService {
     const userRow: Record<string, unknown> = { id_usr: id, email_usr: email };
     if (name) userRow.name_usr = name;
     await adminClient().from('users').upsert(userRow, { onConflict: 'id_usr' });
-    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: { id, email: email } };
+    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: toAuthenticatedUser(data.user!) };
   }
 
   async refresh(refreshToken: string): Promise<Session> {
@@ -53,7 +54,7 @@ export class AuthService {
     return {
       token: data.session.access_token,
       refreshToken: data.session.refresh_token,
-      user: { id: data.user.id, email: data.user.email || '' },
+      user: toAuthenticatedUser(data.user),
     };
   }
 
@@ -77,10 +78,27 @@ export class AuthService {
     this.failed.delete(key);
     const id = data.user!.id, authenticatedEmail = data.user!.email || '';
     await adminClient().from('users').upsert({ id_usr: id, email_usr: authenticatedEmail }, { onConflict: 'id_usr', ignoreDuplicates: true });
-    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: { id, email: authenticatedEmail } };
+    return { token: data.session.access_token, refreshToken: data.session.refresh_token, user: toAuthenticatedUser(data.user!) };
   }
 
-  async me(token: string, id: string, email: string): Promise<UserProfile> {
+  async changePassword(user: AuthenticatedUser, currentPassword: string, newPassword: string): Promise<Session> {
+    const { error } = await anonClient().auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (error) throw new ValidationError('A senha atual não confere.');
+    const accounts = adminClient().auth.admin;
+    const { data, error: readError } = await accounts.getUserById(user.id);
+    if (readError || !data.user) throw new AppError(readError?.message || 'Usuário não encontrado', 400, 'auth');
+    const { error: updateError } = await accounts.updateUserById(user.id, {
+      password: newPassword,
+      app_metadata: withPasswordChanged(data.user.app_metadata),
+    });
+    if (updateError) throw new AppError(updateError.message, 400, 'auth');
+    const { data: signed, error: signError } = await anonClient().auth.signInWithPassword({ email: user.email, password: newPassword });
+    if (signError || !signed.session || !signed.user) throw new UnauthorizedError('Senha trocada; entre de novo com a senha nova.');
+    return { token: signed.session.access_token, refreshToken: signed.session.refresh_token, user: toAuthenticatedUser(signed.user) };
+  }
+
+  async me(token: string, user: AuthenticatedUser): Promise<UserProfile> {
+    const { id, email } = user;
     const client = userClient(token);
     const { data, error } = await client
       .from('users').select('name_usr, department_usr, is_admin, uau_user_usr').eq('id_usr', id).maybeSingle();
@@ -97,6 +115,7 @@ export class AuthService {
       is_admin: !!data?.is_admin, is_financeiro: isFinanceiro, is_commission: isCommission, is_medicao: isMedicao,
       is_supplier_requester: isSupplierRequester, is_supplier_sender: isSupplierSender, is_hiring: isHiring,
       uau_user: data?.uau_user_usr ?? null,
+      is_report_viewer: user.reportViewer, must_change_password: user.mustChangePassword,
     };
   }
 }
