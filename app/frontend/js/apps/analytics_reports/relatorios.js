@@ -9,6 +9,14 @@ async function initView_relatorios() {
     try { return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return String(d); }
   }
+  function formatDay(d) {
+    try { return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' }); }
+    catch (error) { return String(d); }
+  }
+  function formatTime(d) {
+    try { return new Date(d).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }); }
+    catch (error) { return ''; }
+  }
   function unique(values) { return values.filter(function (value, index) { return values.indexOf(value) === index; }); }
   function fill(select, items) {
     select.innerHTML = items.map(function (item) {
@@ -34,8 +42,8 @@ async function initView_relatorios() {
   function fillVersions() {
     var versions = versionsOf(selectElement('ar-development').value, selectElement('ar-report').value);
     fill(selectElement('ar-version'), versions.map(function (version, index) {
-      var label = formatDateTime(version.created_at) + ' (revisão ' + version.revisao + ')';
-      return { value: version.id, label: index === 0 ? label.replace(')', ', mais recente)') : label };
+      var label = formatDay(version.created_at) + ', publicado às ' + formatTime(version.created_at);
+      return { value: version.id, label: index === 0 ? label + ' (mais recente)' : label };
     }));
     openSelected();
   }
